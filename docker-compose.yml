@@ -1,0 +1,9 @@
+services:
+  toolbox:
+    image: genai-toolbox:latest   # uses the local image you already built
+    command: ["--tools-file", "/config/tools.yaml", "--port", "5000"]
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/config
+    restart: unless-stopped
