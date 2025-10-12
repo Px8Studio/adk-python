@@ -1,11 +1,13 @@
-# Minimal config: defines a no-dependency "wait" tool and a toolset that includes it.
-# This lets the server start and exposes at least one tool without needing any external DBs.
+# Minimal, valid config. Tools must be a map, not a list.
+# Exposes one tool ("wait-ms") that requires no external sources.
+# Toolset "my-toolset" includes it.
+
 toolsets:
   my-toolset:
     tools:
       - wait-ms
 
 tools:
-  - name: wait-ms
+  wait-ms:
     kind: wait
     description: "Sleep for a specified duration in milliseconds."
