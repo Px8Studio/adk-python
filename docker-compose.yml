@@ -1,9 +1,20 @@
 services:
   toolbox:
-    image: genai-toolbox:latest   # uses the local image already built
+    image: genai-toolbox:latest
+    container_name: genaimcp-toolbox
     command: ["--tools-file", "/config/tools.yaml", "--port", "5000"]
     ports:
       - "5000:5000"
     volumes:
+      # Updated: now relative to this subfolder
       - ./config:/config
     restart: unless-stopped
+    environment:
+      # Load from root .env via parent directory
+      - DNB_SUBSCRIPTION_KEY=${DNB_SUBSCRIPTION_KEY}
+    networks:
+      - orkhon-net
+
+networks:
+  orkhon-net:
+    driver: bridge
