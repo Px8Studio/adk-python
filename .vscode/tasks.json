@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start MCP Toolbox",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["up", "-d"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/mcp-server-databases"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Stop MCP Toolbox",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["down"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/mcp-server-databases"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP Toolbox Logs",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["logs", "-f", "toolbox"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/mcp-server-databases"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "Restart MCP Toolbox",
+      "type": "shell",
+      "command": "docker-compose",
+      "args": ["restart"],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/mcp-server-databases"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP Toolbox Health Check",
+      "type": "shell",
+      "command": "curl",
+      "args": ["-f", "http://localhost:5000/health"],
+      "problemMatcher": []
+    },
+    {
+      "label": "List MCP Tools",
+      "type": "shell",
+      "command": "curl",
+      "args": ["-s", "http://localhost:5000/tools", "|", "jq"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ]
+}
