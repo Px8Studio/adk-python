@@ -1,0 +1,111 @@
+# ============================================================================
+# DNB API Tools - PRODUCTION Environment
+# ============================================================================
+
+sources:
+  dnb-api-prod:
+    kind: http
+    baseUrl: https://api.dnb.nl
+    timeout: 30s
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_PROD}
+      Accept: application/json
+      User-Agent: Orkhon-Toolbox-Prod/1.0
+    rateLimitPerMinute: 30
+
+tools:
+  dnb-echo-helloworld:
+    kind: http
+    source: dnb-api-prod
+    method: GET
+    path: /echo-api/helloworld
+    description: Test DNB API connectivity (production)
+
+  dnb-statistics-query:
+    kind: http
+    source: dnb-api-prod
+    method: GET
+    path: /statistics/v2024100101/data
+    description: Query DNB statistical data (PRODUCTION)
+    parameters:
+      dataset:
+        type: string
+        description: Dataset identifier
+        required: true
+      filters:
+        type: string
+        description: JSON filter criteria
+        required: false
+      limit:
+        type: integer
+        description: Max results (1-100)
+        default: 50
+      offset:
+        type: integer
+        description: Pagination offset
+        default: 0
+    queryParams:
+      dataset: ${dataset}
+      filters: ${filters}
+      limit: ${limit}
+      offset: ${offset}
+
+  dnb-statistics-metadata:
+    kind: http
+    source: dnb-api-prod
+    method: GET
+    path: /statistics/v2024100101/metadata
+    description: Retrieve metadata (PRODUCTION)
+    parameters:
+      dataset:
+        type: string
+        description: Optional dataset ID
+        required: false
+    queryParams:
+      dataset: ${dataset}
+
+  dnb-public-register-search:
+    kind: http
+    source: dnb-api-prod
+    method: GET
+    path: /public-register/v1/organizations
+    description: Search public register (PRODUCTION)
+    parameters:
+      name:
+        type: string
+        description: Organization name
+        required: false
+      license_type:
+        type: string
+        description: License type
+        required: false
+      status:
+        type: string
+        description: License status
+        default: "active"
+      limit:
+        type: integer
+        description: Results per page
+        default: 20
+      offset:
+        type: integer
+        description: Pagination offset
+        default: 0
+    queryParams:
+      name: ${name}
+      license_type: ${license_type}
+      status: ${status}
+      limit: ${limit}
+      offset: ${offset}
+
+  dnb-public-register-get-org:
+    kind: http
+    source: dnb-api-prod
+    method: GET
+    path: /public-register/v1/organizations/${organization_id}
+    description: Get organization details (PRODUCTION)
+    parameters:
+      organization_id:
+        type: string
+        description: Organization ID
+        required: true
