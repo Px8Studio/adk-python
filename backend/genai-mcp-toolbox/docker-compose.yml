@@ -1,19 +1,34 @@
 services:
   toolbox:
     image: genai-toolbox:latest
-    container_name: genaimcp-toolbox
+    container_name: orkhon-mcp-toolbox
     command: ["--tools-file", "/config/tools.yaml", "--port", "5000"]
     ports:
       - "5000:5000"
     volumes:
-      # Updated: now relative to this subfolder
-      - ./config:/config
+      - ./config:/config:ro  # Read-only for security
     restart: unless-stopped
+    
+    # Load environment variables from local .env file
+    env_file:
+      - .env
+    
+    # Optional: Override specific variables
     environment:
-      # Load from root .env via parent directory
-      - DNB_SUBSCRIPTION_KEY=${DNB_SUBSCRIPTION_KEY}
+      # Uncomment for custom observability
+      # - OTEL_SERVICE_NAME=orkhon-mcp-toolbox
+      - LOG_LEVEL=info
+    
     networks:
       - orkhon-net
+    
+    # Health check for MCP server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   orkhon-net:
