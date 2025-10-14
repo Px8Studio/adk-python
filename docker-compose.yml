@@ -1,6 +1,6 @@
 services:
   toolbox:
-    image: genai-toolbox:latest   # uses the local image you already built
+    image: genai-toolbox:latest   # uses the local image already built
     command: ["--tools-file", "/config/tools.yaml", "--port", "5000"]
     ports:
       - "5000:5000"
