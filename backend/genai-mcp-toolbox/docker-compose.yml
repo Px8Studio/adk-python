@@ -1,8 +1,19 @@
 services:
-  toolbox:
+  # ===========================================================================
+  # GenAI Toolbox - MCP Server (Google's Implementation)
+  # ===========================================================================
+  genai-toolbox-mcp:
     image: genai-toolbox:latest
-    container_name: orkhon-mcp-toolbox
-    command: ["--tools-file", "/config/tools.yaml", "--port", "5000"]
+    container_name: orkhon-genai-toolbox-mcp
+    command: 
+      - "--tools-file"
+      - "/config/tools.yaml"
+      - "--port"
+      - "5000"
+      - "--telemetry-otlp"
+      - "${OTEL_EXPORTER_OTLP_ENDPOINT}"
+      - "--telemetry-service-name"
+      - "${OTEL_SERVICE_NAME}"
     ports:
       - "5000:5000"
     volumes:
@@ -13,11 +24,21 @@ services:
     env_file:
       - .env
     
-    # Optional: Override specific variables
+    # Environment-specific variable selection
     environment:
-      # Uncomment for custom observability
-      # - OTEL_SERVICE_NAME=orkhon-mcp-toolbox
-      - LOG_LEVEL=info
+      # Select dev or prod credentials based on DNB_ENVIRONMENT
+      - DNB_SUBSCRIPTION_KEY=${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_KEY_DEV}}${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_KEY_PROD}}
+      - DNB_SUBSCRIPTION_NAME=${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_NAME_DEV}}${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_NAME_PROD}}
+      
+      # OpenTelemetry configuration
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
+      - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
+      - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
+      - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
+      
+      # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     
     networks:
       - orkhon-net
@@ -29,7 +50,34 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    
+    depends_on:
+      jaeger:
+        condition: service_healthy
+
+  # ===========================================================================
+  # Jaeger - Distributed Tracing (OpenTelemetry Backend)
+  # ===========================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: orkhon-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4318:4318"    # OTLP HTTP receiver
+      - "4317:4317"    # OTLP gRPC receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    networks:
+      - orkhon-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   orkhon-net:
     driver: bridge
+    name: orkhon-network
