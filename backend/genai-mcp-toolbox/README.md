@@ -45,3 +45,34 @@ Rate limit: 30 calls/min
 Headers required: `Ocp-Apim-Subscription-Key`
 
 See [DNB API Services.MD](../apis/mijn-dnb/DNB API Services.MD) for full docs.
+
+┌─────────────────────────────────────────────────────────────┐
+│  MCP Protocol (Anthropic's open standard)                   │
+│  https://github.com/modelcontextprotocol                    │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ implements
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  genai-toolbox (Google's MCP Server Implementation)         │
+│  - Runs as HTTP/SSE server on port 5000                     │
+│  - Exposes tools via MCP protocol                           │
+│  - Handles DB connections, HTTP calls, auth                 │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ consumed by
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  mcp-toolbox-sdk-* (MCP Client SDKs)                        │
+│  - Python/JS/Go clients                                     │
+│  - Connect to Toolbox server via MCP protocol               │
+│  - Convert MCP tools → LangChain/Genkit/custom tools        │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ used by
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Your Agent Code (LangGraph, Genkit, etc.)                  │
+│  - Loads tools via SDK                                      │
+│  - Executes agent logic                                     │
+└─────────────────────────────────────────────────────────────┘
