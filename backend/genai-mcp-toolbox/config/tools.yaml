@@ -9,15 +9,16 @@
 # =============================================================================
 
 sources:
-  # Base DNB API source (shared configuration)
+  # Base DNB API source (environment-aware)
   dnb-api-base:
     kind: http
     baseUrl: https://api.portal.dnb.nl
     timeout: 30s
     headers:
-      # Environment-specific key selection (dev/prod)
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY}
-      X-Subscription-Name: ${DNB_SUBSCRIPTION_NAME}
+      # Conditional selection based on DNB_ENVIRONMENT
+      # If DNB_ENVIRONMENT=prod, use PROD key; otherwise use DEV key
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_${DNB_ENVIRONMENT:dev}}
+      X-Subscription-Name: ${DNB_SUBSCRIPTION_NAME_${DNB_ENVIRONMENT:dev}}
       Accept: application/json
       User-Agent: Orkhon-GenAI-Toolbox/1.0
     # DNB rate limit: 30 calls/min per subscription

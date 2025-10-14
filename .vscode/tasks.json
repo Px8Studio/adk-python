@@ -2,29 +2,16 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "MCP: Start (Development)",
+      "label": "MCP: Start Dev Server",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}/backend/genai-mcp-toolbox/scripts/set-env.ps1",
-        "-Environment",
-        "dev",
-        ";",
-        "docker-compose",
-        "up",
-        "-d"
-      ],
+      "command": "docker-compose --profile dev up -d",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new",
-        "showReuseMessage": false
+        "panel": "new"
       },
       "group": {
         "kind": "build",
@@ -32,21 +19,9 @@
       }
     },
     {
-      "label": "MCP: Start (Production)",
+      "label": "MCP: Start Prod Server",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}/backend/genai-mcp-toolbox/scripts/set-env.ps1",
-        "-Environment",
-        "prod",
-        ";",
-        "docker-compose",
-        "up",
-        "-d"
-      ],
+      "command": "docker-compose --profile prod up -d",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
@@ -57,30 +32,39 @@
       }
     },
     {
-      "label": "MCP: Stop All Services",
+      "label": "MCP: Start Both (Dev + Prod)",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["down"],
+      "command": "docker-compose --profile dev --profile prod up -d",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
       "problemMatcher": []
     },
     {
-      "label": "MCP: Restart GenAI Toolbox",
+      "label": "MCP: Stop All",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["restart", "genai-toolbox-mcp"],
+      "command": "docker-compose --profile dev --profile prod down",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
       "problemMatcher": []
     },
     {
-      "label": "MCP: View Logs (GenAI Toolbox)",
+      "label": "MCP: Test DNB Echo (Dev)",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["logs", "-f", "genai-toolbox-mcp"],
+      "command": "curl -X POST http://localhost:5000/api/tool/dnb-echo-helloworld/execute -H 'Content-Type: application/json' -d '{}'",
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: Test DNB Echo (Prod)",
+      "type": "shell",
+      "command": "curl -X POST http://localhost:5001/api/tool/dnb-echo-helloworld/execute -H 'Content-Type: application/json' -d '{}'",
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: View Dev Logs",
+      "type": "shell",
+      "command": "docker-compose logs -f genai-toolbox-mcp-dev",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
@@ -88,63 +72,14 @@
       "isBackground": true
     },
     {
-      "label": "MCP: View Logs (Jaeger)",
+      "label": "MCP: View Prod Logs",
       "type": "shell",
-      "command": "docker-compose",
-      "args": ["logs", "-f", "jaeger"],
+      "command": "docker-compose logs -f genai-toolbox-mcp-prod",
       "options": {
         "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
       },
       "problemMatcher": [],
       "isBackground": true
-    },
-    {
-      "label": "MCP: Health Check",
-      "type": "shell",
-      "command": "curl",
-      "args": ["-f", "http://localhost:5000/health"],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always"
-      }
-    },
-    {
-      "label": "MCP: List Available Tools",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-Command",
-        "curl -s http://localhost:5000/tools | ConvertFrom-Json | ConvertTo-Json -Depth 10"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
-    },
-    {
-      "label": "MCP: Open Jaeger UI",
-      "type": "shell",
-      "command": "start",
-      "args": ["http://localhost:16686"],
-      "windows": {
-        "command": "cmd",
-        "args": ["/c", "start", "http://localhost:16686"]
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "MCP: Test DNB Echo API",
-      "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-Command",
-        "$body = @{name='dnb-echo-test'; arguments=@{message='Test from VS Code'}} | ConvertTo-Json -Compress; curl -X POST http://localhost:5000/api/tool/execute -H 'Content-Type: application/json' -d $body | ConvertFrom-Json | ConvertTo-Json -Depth 10"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always"
-      }
     }
   ]
 }
