@@ -17,18 +17,20 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./config:/config:ro  # Read-only for security
+      - ./config:/config:ro   # Read-only for security
     restart: unless-stopped
     
     # Load environment variables from local .env file
     env_file:
       - .env
     
-    # Environment-specific variable selection
+    # Simplified: Pass all variables, let tools.yaml handle selection
     environment:
-      # Select dev or prod credentials based on DNB_ENVIRONMENT
-      - DNB_SUBSCRIPTION_KEY=${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_KEY_DEV}}${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_KEY_PROD}}
-      - DNB_SUBSCRIPTION_NAME=${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_NAME_DEV}}${DNB_ENVIRONMENT:+${DNB_SUBSCRIPTION_NAME_PROD}}
+      - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-dev}
+      - DNB_SUBSCRIPTION_KEY_DEV=${DNB_SUBSCRIPTION_KEY_DEV}
+      - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
+      - DNB_SUBSCRIPTION_NAME_DEV=${DNB_SUBSCRIPTION_NAME_DEV}
+      - DNB_SUBSCRIPTION_NAME_PROD=${DNB_SUBSCRIPTION_NAME_PROD}
       
       # OpenTelemetry configuration
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -37,7 +39,7 @@ services:
       - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
       - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
       
-      # Logging
+            # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
     
     networks:
