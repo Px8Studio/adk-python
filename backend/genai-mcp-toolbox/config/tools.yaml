@@ -1,0 +1,35 @@
+# Minimal, valid config. Tools must be a map, not a list.
+# Exposes one tool ("wait-ms") that requires no external sources.
+# Toolset "my-toolset" includes it.
+
+toolsets:
+  my-toolset:
+    - wait-ms
+
+sources:
+  dnb-http:
+    kind: http
+    baseUrl: https://api.portal.dnb.nl
+    timeout: 10s
+    headers:
+      # Provide the DNB subscription key via environment variable
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY}
+
+tools:
+  # Example read-only GET endpoint; adjust path/query to the API you use
+  dnb-example-get:
+    kind: http
+    source: dnb-http
+    method: GET
+    path: /your/api/path
+    description: Example DNB GET call
+    parameters:
+      query:
+        type: string
+        description: Query string
+    queryParams:
+      q: ${query}
+  wait-ms:
+    kind: wait
+    description: "Sleep for a specified duration in milliseconds."
+    timeout: "5s"
