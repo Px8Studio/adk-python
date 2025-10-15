@@ -54,6 +54,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    
+    depends_on:
+      jaeger:
+        condition: service_healthy
 
   # ===========================================================================
   # Jaeger - Distributed Tracing (OpenTelemetry Backend)
@@ -68,6 +73,12 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
       - orkhon-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 networks:
   orkhon-net:
