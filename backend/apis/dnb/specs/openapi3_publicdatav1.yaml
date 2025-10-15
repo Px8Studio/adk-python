@@ -1,0 +1,2105 @@
+openapi: 3.0.1
+info:
+  title: Public Register
+  description: <b>Description:</b> The public register contains publications of organizations that are able to provide financial services. Search here if for example a bank has a license. Or a crypto company has been registered. More information can be found at https://www.dnb.nl/en/public-register.
+  version: v1
+servers:
+  - url: https://api.dnb.nl/publicdata/v1
+paths:
+  '/api/publicregister/{registerCode}/Organizations':
+    get:
+      tags:
+        - Organizations
+      summary: Retrieve latest relation numbers for register.
+      description: "Gets a list of all organizations of the specified register. Only the relation number of the organization are\r\nreturned."
+      operationId: get-api-publicregister-registercode-organizations
+      parameters:
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: page
+          in: query
+          description: The page number. Where 1 indicates the first page. Defaults to the first page.
+          schema:
+            type: integer
+            format: int32
+            example: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: The amount of records one page contains. Defaults to 10 records. Maximum of 25 records is allowed.
+          schema:
+            type: integer
+            format: int32
+            example: 10
+          example: 10
+      responses:
+        '200':
+          description: A list of relation numbers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationRelationNumbersView'
+              example:
+                registerCode: string
+                registerName: string
+                publishDate: string
+                relationNumbers:
+                  - relationNumber: string
+                _metadata:
+                  page: 0
+                  pageSize: 0
+                  hasMorePages: true
+                  totalCount: 0
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{registerCode}/Organizations/historicalrecord/{date}':
+    get:
+      tags:
+        - Organizations
+      summary: Retrieve historical relation numbers for register.
+      description: "Gets a list of all organizations of the specified register on the specified date. Only the relation number of the organization are\r\nreturned."
+      operationId: get-api-publicregister-registercode-organizations-historicalrecord-date
+      parameters:
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: date
+          in: path
+          description: The date of when the publication was published.
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: YYYY-MM-dd (2024-01-30)
+        - name: page
+          in: query
+          description: The page number. Where 1 indicates the first page. Defaults to the first page.
+          schema:
+            type: integer
+            format: int32
+            example: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: The amount of records one page contains. Defaults to 10 records. Maximum of 25 records is allowed.
+          schema:
+            type: integer
+            format: int32
+            example: 10
+          example: 10
+      responses:
+        '200':
+          description: A list of relation numbers on the specified date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationRelationNumbersView'
+              example:
+                registerCode: string
+                registerName: string
+                publishDate: string
+                relationNumbers:
+                  - relationNumber: string
+                _metadata:
+                  page: 0
+                  pageSize: 0
+                  hasMorePages: true
+                  totalCount: 0
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/{registerCode}/Organizations':
+    get:
+      tags:
+        - Organizations
+      summary: Retrieve latest organizations for relation numbers.
+      description: Gets the organization details for the specified relation number.
+      operationId: get-api-publicregister-languagecode-registercode-organizations
+      parameters:
+        - name: languageCode
+          in: path
+          description: The language code.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: relationNumbers
+          in: query
+          description: The relation numbers. Duplicates and empty values are ignored. Maximum of 25 relation numbers can be provided.
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: The organization details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDetailsView'
+              example:
+                registerCode: string
+                registerName: string
+                publishDate: string
+                organizations:
+                  - chamberOfCommerce: string
+                    branchNumber: string
+                    legalDuration: string
+                    relationNumber: string
+                    statutoryPlace: string
+                    statutoryCountry: string
+                    rsinCode: string
+                    isInLiquidation: true
+                    dateOfLiquidation: string
+                    isMain: true
+                    leiCode: string
+                    classifications:
+                      - name: string
+                    officialNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    statutoryNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    tradeNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    contactChannels:
+                      - contactChannelType: string
+                        street: string
+                        houseNumber: string
+                        houseNumberAddition: string
+                        postalCode: string
+                        city: string
+                        countryIsoCode: string
+                        location: string
+                        description: string
+                        emailAddress: string
+                        url: string
+                        phoneNumber: string
+                        isPostOfficeBox: true
+                        postOfficeNumber: string
+                    registrations:
+                      - id: string
+                        registerArticleGroupCode: string
+                        description: string
+                        actArticleName: string
+                        actArticleCode: string
+                        actDepartment: string
+                        actName: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                        irrevocableDate: string
+                        registrationType: string
+                        involvedProduct: string
+                        country:
+                          isoCode: string
+                          name: string
+                        allowedMifidActivities:
+                          - financialInstrument: string
+                            allowedActivityName: string
+                            actActivityRegisterCode: string
+                            validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                        allowedActivities:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            definitiveDate: string
+                            actActivityName: string
+                        conditions:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            name: string
+                            description: string
+                            definitiveDate: string
+                    relatedOrganizations:
+                      - registerRelationCode: string
+                        percentageParticipation: string
+                        remarks: string
+                        definitiveDate: string
+                        startDate: string
+                        childOrganization:
+                          chamberOfCommerce: string
+                          legalDuration: string
+                          relationNumber: string
+                          statutoryPlace: string
+                          statutoryCountry: string
+                          rsinCode: string
+                          isInLiquidation: true
+                          dateOfLiquidation: string
+                          isMain: true
+                          isFrom: true
+                          isApf: true
+                          leiCode: string
+                          classifications:
+                            - name: string
+                          officialNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          statutoryNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          tradeNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          contactChannels:
+                            - contactChannelType: string
+                              street: string
+                              houseNumber: string
+                              houseNumberAddition: string
+                              postalCode: string
+                              city: string
+                              countryIsoCode: string
+                              location: string
+                              description: string
+                              emailAddress: string
+                              url: string
+                              phoneNumber: string
+                              isPostOfficeBox: true
+                              postOfficeNumber: string
+                    coveredBonds:
+                      - programName: string
+                        issueDate: string
+                        registrationDate: string
+                        remarks: string
+                        isInAccordanceWith: true
+                        endDate: string
+                        monthlyInvestorReport: string
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/{registerCode}/Organizations/historicalrecord/{date}':
+    get:
+      tags:
+        - Organizations
+      summary: Retrieve historical organizations for relation numbers.
+      description: Gets the organization details for the specified relation number on the specified date.
+      operationId: get-api-publicregister-languagecode-registercode-organizations-historicalrec
+      parameters:
+        - name: languageCode
+          in: path
+          description: The language code.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: date
+          in: path
+          description: The date of when the publication was published.
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: YYYY-MM-dd (2024-01-30)
+        - name: relationNumbers
+          in: query
+          description: The relation numbers. Duplicates and empty values are ignored. Maximum of 25 relation numbers can be provided.
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: The organization details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDetailsView'
+              example:
+                registerCode: string
+                registerName: string
+                publishDate: string
+                organizations:
+                  - chamberOfCommerce: string
+                    branchNumber: string
+                    legalDuration: string
+                    relationNumber: string
+                    statutoryPlace: string
+                    statutoryCountry: string
+                    rsinCode: string
+                    isInLiquidation: true
+                    dateOfLiquidation: string
+                    isMain: true
+                    leiCode: string
+                    classifications:
+                      - name: string
+                    officialNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    statutoryNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    tradeNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    contactChannels:
+                      - contactChannelType: string
+                        street: string
+                        houseNumber: string
+                        houseNumberAddition: string
+                        postalCode: string
+                        city: string
+                        countryIsoCode: string
+                        location: string
+                        description: string
+                        emailAddress: string
+                        url: string
+                        phoneNumber: string
+                        isPostOfficeBox: true
+                        postOfficeNumber: string
+                    registrations:
+                      - id: string
+                        registerArticleGroupCode: string
+                        description: string
+                        actArticleName: string
+                        actArticleCode: string
+                        actDepartment: string
+                        actName: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                        irrevocableDate: string
+                        registrationType: string
+                        involvedProduct: string
+                        country:
+                          isoCode: string
+                          name: string
+                        allowedMifidActivities:
+                          - financialInstrument: string
+                            allowedActivityName: string
+                            actActivityRegisterCode: string
+                            validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                        allowedActivities:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            definitiveDate: string
+                            actActivityName: string
+                        conditions:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            name: string
+                            description: string
+                            definitiveDate: string
+                    relatedOrganizations:
+                      - registerRelationCode: string
+                        percentageParticipation: string
+                        remarks: string
+                        definitiveDate: string
+                        startDate: string
+                        childOrganization:
+                          chamberOfCommerce: string
+                          legalDuration: string
+                          relationNumber: string
+                          statutoryPlace: string
+                          statutoryCountry: string
+                          rsinCode: string
+                          isInLiquidation: true
+                          dateOfLiquidation: string
+                          isMain: true
+                          isFrom: true
+                          isApf: true
+                          leiCode: string
+                          classifications:
+                            - name: string
+                          officialNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          statutoryNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          tradeNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          contactChannels:
+                            - contactChannelType: string
+                              street: string
+                              houseNumber: string
+                              houseNumberAddition: string
+                              postalCode: string
+                              city: string
+                              countryIsoCode: string
+                              location: string
+                              description: string
+                              emailAddress: string
+                              url: string
+                              phoneNumber: string
+                              isPostOfficeBox: true
+                              postOfficeNumber: string
+                    coveredBonds:
+                      - programName: string
+                        issueDate: string
+                        registrationDate: string
+                        remarks: string
+                        isInAccordanceWith: true
+                        endDate: string
+                        monthlyInvestorReport: string
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/Publications/{registerCode}':
+    get:
+      tags:
+        - Publications
+      summary: Retrieve latest publication.
+      description: Gets the latest publication for the specified language code and register code.
+      operationId: get-api-publicregister-languagecode-publications-registercode
+      parameters:
+        - name: languageCode
+          in: path
+          description: The publication in the specified language.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The publication in the specified register.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: page
+          in: query
+          description: The page number. Where 1 indicates the first page. Defaults to the first page.
+          schema:
+            type: integer
+            format: int32
+            example: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: The amount of records one page contains. Defaults to 10 records. Maximum of 25 records is allowed.
+          schema:
+            type: integer
+            format: int32
+            example: 10
+          example: 10
+      responses:
+        '200':
+          description: The publication is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicationView'
+              example:
+                registerName: string
+                registerCode: string
+                languageCode:
+                  code: string
+                publishDate: string
+                organizations:
+                  - chamberOfCommerce: string
+                    branchNumber: string
+                    legalDuration: string
+                    relationNumber: string
+                    statutoryPlace: string
+                    statutoryCountry: string
+                    rsinCode: string
+                    isInLiquidation: true
+                    dateOfLiquidation: string
+                    isMain: true
+                    leiCode: string
+                    classifications:
+                      - name: string
+                    officialNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    statutoryNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    tradeNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    contactChannels:
+                      - contactChannelType: string
+                        street: string
+                        houseNumber: string
+                        houseNumberAddition: string
+                        postalCode: string
+                        city: string
+                        countryIsoCode: string
+                        location: string
+                        description: string
+                        emailAddress: string
+                        url: string
+                        phoneNumber: string
+                        isPostOfficeBox: true
+                        postOfficeNumber: string
+                    registrations:
+                      - id: string
+                        registerArticleGroupCode: string
+                        description: string
+                        actArticleName: string
+                        actArticleCode: string
+                        actDepartment: string
+                        actName: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                        irrevocableDate: string
+                        registrationType: string
+                        involvedProduct: string
+                        country:
+                          isoCode: string
+                          name: string
+                        allowedMifidActivities:
+                          - financialInstrument: string
+                            allowedActivityName: string
+                            actActivityRegisterCode: string
+                            validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                        allowedActivities:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            definitiveDate: string
+                            actActivityName: string
+                        conditions:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            name: string
+                            description: string
+                            definitiveDate: string
+                    relatedOrganizations:
+                      - registerRelationCode: string
+                        percentageParticipation: string
+                        remarks: string
+                        definitiveDate: string
+                        startDate: string
+                        childOrganization:
+                          chamberOfCommerce: string
+                          legalDuration: string
+                          relationNumber: string
+                          statutoryPlace: string
+                          statutoryCountry: string
+                          rsinCode: string
+                          isInLiquidation: true
+                          dateOfLiquidation: string
+                          isMain: true
+                          isFrom: true
+                          isApf: true
+                          leiCode: string
+                          classifications:
+                            - name: string
+                          officialNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          statutoryNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          tradeNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          contactChannels:
+                            - contactChannelType: string
+                              street: string
+                              houseNumber: string
+                              houseNumberAddition: string
+                              postalCode: string
+                              city: string
+                              countryIsoCode: string
+                              location: string
+                              description: string
+                              emailAddress: string
+                              url: string
+                              phoneNumber: string
+                              isPostOfficeBox: true
+                              postOfficeNumber: string
+                    coveredBonds:
+                      - programName: string
+                        issueDate: string
+                        registrationDate: string
+                        remarks: string
+                        isInAccordanceWith: true
+                        endDate: string
+                        monthlyInvestorReport: string
+                _metadata:
+                  page: 0
+                  pageSize: 0
+                  hasMorePages: true
+                  totalCount: 0
+        '404':
+          description: No publication was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: string
+                title: string
+                status: 0
+                detail: string
+                instance: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/Publications/{registerCode}/historicalrecord/{date}':
+    get:
+      tags:
+        - Publications
+      summary: Retrieve historical publication.
+      description: "Gets the publication which was published on the specified date for the specified language code and register code. Publications\r\nolder than one year can not be provided."
+      operationId: get-api-publicregister-languagecode-publications-registercode-historicalreco
+      parameters:
+        - name: languageCode
+          in: path
+          description: The publication in the specified language.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The publication in the specified register.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: date
+          in: path
+          description: The date of when the publication was published.
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: YYYY-MM-dd (2024-01-30)
+        - name: page
+          in: query
+          description: The page number. Where 1 indicates the first page. Defaults to the first page.
+          schema:
+            type: integer
+            format: int32
+            example: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: The amount of records one page contains. Defaults to 10 records. Maximum of 25 records is allowed.
+          schema:
+            type: integer
+            format: int32
+            example: 10
+          example: 10
+      responses:
+        '200':
+          description: The publication is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicationView'
+              example:
+                registerName: string
+                registerCode: string
+                languageCode:
+                  code: string
+                publishDate: string
+                organizations:
+                  - chamberOfCommerce: string
+                    branchNumber: string
+                    legalDuration: string
+                    relationNumber: string
+                    statutoryPlace: string
+                    statutoryCountry: string
+                    rsinCode: string
+                    isInLiquidation: true
+                    dateOfLiquidation: string
+                    isMain: true
+                    leiCode: string
+                    classifications:
+                      - name: string
+                    officialNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    statutoryNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    tradeNames:
+                      - name: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                    contactChannels:
+                      - contactChannelType: string
+                        street: string
+                        houseNumber: string
+                        houseNumberAddition: string
+                        postalCode: string
+                        city: string
+                        countryIsoCode: string
+                        location: string
+                        description: string
+                        emailAddress: string
+                        url: string
+                        phoneNumber: string
+                        isPostOfficeBox: true
+                        postOfficeNumber: string
+                    registrations:
+                      - id: string
+                        registerArticleGroupCode: string
+                        description: string
+                        actArticleName: string
+                        actArticleCode: string
+                        actDepartment: string
+                        actName: string
+                        validityPeriodStartDate: string
+                        validityPeriodEndDate: string
+                        irrevocableDate: string
+                        registrationType: string
+                        involvedProduct: string
+                        country:
+                          isoCode: string
+                          name: string
+                        allowedMifidActivities:
+                          - financialInstrument: string
+                            allowedActivityName: string
+                            actActivityRegisterCode: string
+                            validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                        allowedActivities:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            definitiveDate: string
+                            actActivityName: string
+                        conditions:
+                          - validityPeriodStartDate: string
+                            validityPeriodEndDate: string
+                            name: string
+                            description: string
+                            definitiveDate: string
+                    relatedOrganizations:
+                      - registerRelationCode: string
+                        percentageParticipation: string
+                        remarks: string
+                        definitiveDate: string
+                        startDate: string
+                        childOrganization:
+                          chamberOfCommerce: string
+                          legalDuration: string
+                          relationNumber: string
+                          statutoryPlace: string
+                          statutoryCountry: string
+                          rsinCode: string
+                          isInLiquidation: true
+                          dateOfLiquidation: string
+                          isMain: true
+                          isFrom: true
+                          isApf: true
+                          leiCode: string
+                          classifications:
+                            - name: string
+                          officialNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          statutoryNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          tradeNames:
+                            - name: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          contactChannels:
+                            - contactChannelType: string
+                              street: string
+                              houseNumber: string
+                              houseNumberAddition: string
+                              postalCode: string
+                              city: string
+                              countryIsoCode: string
+                              location: string
+                              description: string
+                              emailAddress: string
+                              url: string
+                              phoneNumber: string
+                              isPostOfficeBox: true
+                              postOfficeNumber: string
+                    coveredBonds:
+                      - programName: string
+                        issueDate: string
+                        registrationDate: string
+                        remarks: string
+                        isInAccordanceWith: true
+                        endDate: string
+                        monthlyInvestorReport: string
+                _metadata:
+                  page: 0
+                  pageSize: 0
+                  hasMorePages: true
+                  totalCount: 0
+        '404':
+          description: No publication was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: string
+                title: string
+                status: 0
+                detail: string
+                instance: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/Publications/search':
+    get:
+      tags:
+        - Publications
+      summary: Search publications.
+      description: "Searches all current publications within the registers based on the specified search criteria. Only organizations\r\nwhere the name or registration matches are returned."
+      operationId: get-api-publicregister-languagecode-publications-search-registercode-registe
+      parameters:
+        - name: languageCode
+          in: path
+          description: The publication in the specified language.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: RegisterCode
+          in: query
+          description: (Required) Search within a specific register.
+          required: true
+          schema:
+            type: string
+            example: WFTAF
+          example: WFTAF
+        - name: OrganizationName
+          in: query
+          description: '(Optional) The name of the organization. Used as a wild cart search on the trade, statutory, and official names.'
+          schema:
+            type: string
+            example: De Nederlandsche Bank
+          example: De Nederlandsche Bank
+        - name: ActArticleName
+          in: query
+          description: (Optional) Search registrations based on the act article name.
+          schema:
+            type: string
+            example: Art. 2:112 Wft financiële instelling met bijkantoor in EER
+          example: Art. 2:112 Wft financiële instelling met bijkantoor in EER
+        - name: page
+          in: query
+          description: The page number. Where 1 indicates the first page. Defaults to the first page.
+          schema:
+            type: integer
+            format: int32
+            example: 1
+          example: 1
+        - name: pageSize
+          in: query
+          description: The amount of records one page contains. Defaults to 10 records. Maximum of 25 records is allowed.
+          schema:
+            type: integer
+            format: int32
+            example: 10
+          example: 10
+      responses:
+        '200':
+          description: The publication is returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicationView'
+              example:
+                - registerName: string
+                  registerCode: string
+                  languageCode:
+                    code: string
+                  publishDate: string
+                  organizations:
+                    - chamberOfCommerce: string
+                      branchNumber: string
+                      legalDuration: string
+                      relationNumber: string
+                      statutoryPlace: string
+                      statutoryCountry: string
+                      rsinCode: string
+                      isInLiquidation: true
+                      dateOfLiquidation: string
+                      isMain: true
+                      leiCode: string
+                      classifications:
+                        - name: string
+                      officialNames:
+                        - name: string
+                          validityPeriodStartDate: string
+                          validityPeriodEndDate: string
+                      statutoryNames:
+                        - name: string
+                          validityPeriodStartDate: string
+                          validityPeriodEndDate: string
+                      tradeNames:
+                        - name: string
+                          validityPeriodStartDate: string
+                          validityPeriodEndDate: string
+                      contactChannels:
+                        - contactChannelType: string
+                          street: string
+                          houseNumber: string
+                          houseNumberAddition: string
+                          postalCode: string
+                          city: string
+                          countryIsoCode: string
+                          location: string
+                          description: string
+                          emailAddress: string
+                          url: string
+                          phoneNumber: string
+                          isPostOfficeBox: true
+                          postOfficeNumber: string
+                      registrations:
+                        - id: string
+                          registerArticleGroupCode: string
+                          description: string
+                          actArticleName: string
+                          actArticleCode: string
+                          actDepartment: string
+                          actName: string
+                          validityPeriodStartDate: string
+                          validityPeriodEndDate: string
+                          irrevocableDate: string
+                          registrationType: string
+                          involvedProduct: string
+                          country:
+                            isoCode: string
+                            name: string
+                          allowedMifidActivities:
+                            - financialInstrument: string
+                              allowedActivityName: string
+                              actActivityRegisterCode: string
+                              validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                          allowedActivities:
+                            - validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                              definitiveDate: string
+                              actActivityName: string
+                          conditions:
+                            - validityPeriodStartDate: string
+                              validityPeriodEndDate: string
+                              name: string
+                              description: string
+                              definitiveDate: string
+                      relatedOrganizations:
+                        - registerRelationCode: string
+                          percentageParticipation: string
+                          remarks: string
+                          definitiveDate: string
+                          startDate: string
+                          childOrganization:
+                            chamberOfCommerce: string
+                            legalDuration: string
+                            relationNumber: string
+                            statutoryPlace: string
+                            statutoryCountry: string
+                            rsinCode: string
+                            isInLiquidation: true
+                            dateOfLiquidation: string
+                            isMain: true
+                            isFrom: true
+                            isApf: true
+                            leiCode: string
+                            classifications:
+                              - name: string
+                            officialNames:
+                              - name: string
+                                validityPeriodStartDate: string
+                                validityPeriodEndDate: string
+                            statutoryNames:
+                              - name: string
+                                validityPeriodStartDate: string
+                                validityPeriodEndDate: string
+                            tradeNames:
+                              - name: string
+                                validityPeriodStartDate: string
+                                validityPeriodEndDate: string
+                            contactChannels:
+                              - contactChannelType: string
+                                street: string
+                                houseNumber: string
+                                houseNumberAddition: string
+                                postalCode: string
+                                city: string
+                                countryIsoCode: string
+                                location: string
+                                description: string
+                                emailAddress: string
+                                url: string
+                                phoneNumber: string
+                                isPostOfficeBox: true
+                                postOfficeNumber: string
+                      coveredBonds:
+                        - programName: string
+                          issueDate: string
+                          registrationDate: string
+                          remarks: string
+                          isInAccordanceWith: true
+                          endDate: string
+                          monthlyInvestorReport: string
+                  _metadata:
+                    page: 0
+                    pageSize: 0
+                    hasMorePages: true
+                    totalCount: 0
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/{registerCode}/RegisterArticles':
+    get:
+      tags:
+        - RegisterArticles
+      summary: Retrieve latest act articles.
+      description: Gets all registered act articles in the specified language for the specific register.
+      operationId: get-api-publicregister-languagecode-registercode-registerarticles
+      parameters:
+        - name: languageCode
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: ''
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+      responses:
+        '200':
+          description: A list of act article names in the specified language.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegisterArticleView'
+              example:
+                - actArticleName: string
+                  actArticleCode: string
+        '400':
+          description: Either the language code or register code is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '404':
+          description: No registered act articles have been found for the specified register.
+  /api/publicregister/Registers:
+    get:
+      tags:
+        - Registers
+      summary: Retrieve all registers.
+      description: Gets all active registers.
+      operationId: get-api-publicregister-registers
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegisterView'
+              example:
+                - name: string
+                  code: string
+                  type: { }
+                  lastPublishDate: string
+  '/api/publicregister/{languageCode}/{registerCode}/Registrations/ActArticleNames':
+    get:
+      tags:
+        - Registrations
+      summary: Retrieve latest act article names.
+      description: Gets distinct act article names for all registrations for the specified register.
+      operationId: get-api-publicregister-languagecode-registercode-registrations-actarticlenam
+      parameters:
+        - name: languageCode
+          in: path
+          description: The language code.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+      responses:
+        '200':
+          description: A distinct list of Act Article Names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationActArticleNameView'
+              example:
+                - actArticleName: string
+        '404':
+          description: No Act Article Names were found for the specified criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  '/api/publicregister/{languageCode}/{registerCode}/Registrations/ActArticleNames/historicalrecord/{date}':
+    get:
+      tags:
+        - Registrations
+      summary: Retrieve historical act article names.
+      description: Gets distinct act article names for all registrations for the specified register on the specified publish date.
+      operationId: get-api-publicregister-languagecode-registercode-registrations-actarticlenam-1
+      parameters:
+        - name: languageCode
+          in: path
+          description: The language code.
+          required: true
+          schema:
+            type: string
+          example: NL
+        - name: registerCode
+          in: path
+          description: The register code.
+          required: true
+          schema:
+            type: string
+          example: WFTAF
+        - name: date
+          in: path
+          description: The date of when the publication was published.
+          required: true
+          schema:
+            type: string
+            format: date-time
+          example: YYYY-MM-dd (2024-01-30)
+      responses:
+        '200':
+          description: A distinct list of Act Article Names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationActArticleNameView'
+              example:
+                - actArticleName: string
+        '404':
+          description: No Act Article Names were found for the specified criteria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadResponseView'
+              example:
+                errorMessage: string
+  /api/publicregister/SupportedLanguages:
+    get:
+      tags:
+        - SupportedLanguages
+      summary: Retrieve languages.
+      description: Gets all supported languages.
+      operationId: get-api-publicregister-supportedlanguages
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LanguageView'
+              example:
+                - code: string
+components:
+  schemas:
+    AllowedActivityView:
+      type: object
+      properties:
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the allowed activity
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the allowed activity
+          format: date-time
+          nullable: true
+        definitiveDate:
+          type: string
+          description: If end data has value the definitive date is the time to check if the allowed activity can be closed
+          format: date-time
+          nullable: true
+        actActivityName:
+          type: string
+          description: The name of the Act Activity which is the parent of the Allowed Activity
+          nullable: true
+      additionalProperties: false
+      description: The allowed activity
+    AllowedMifidActivityView:
+      type: object
+      properties:
+        financialInstrument:
+          type: string
+          description: The instrument
+          nullable: true
+        allowedActivityName:
+          type: string
+          description: The name of the Allowed Activity
+          nullable: true
+        actActivityRegisterCode:
+          type: string
+          description: The code of the parent Act Activity
+          nullable: true
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the allowed activity
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the allowed activity
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: The allowed mifid activity. Is specific for Banks and other institutions that need to follow the MIFID rules
+    BadResponseView:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+          description: The error message.
+          nullable: true
+      additionalProperties: false
+      description: Encapsulates a more detailed error message.
+    ChildOrganizationView:
+      type: object
+      properties:
+        chamberOfCommerce:
+          type: string
+          description: The chamber of commerce number
+          nullable: true
+        legalDuration:
+          type: string
+          description: The legal duration type of the organization
+          nullable: true
+        relationNumber:
+          type: string
+          description: The relation number as known by the DNB
+          nullable: true
+        statutoryPlace:
+          type: string
+          description: The statutory place of where the organization is located
+          nullable: true
+        statutoryCountry:
+          type: string
+          description: The statutory country of where the organization is located
+          nullable: true
+        rsinCode:
+          type: string
+          description: The RSIN code
+          nullable: true
+        isInLiquidation:
+          type: boolean
+          description: Whether or not the organization has declared bankruptcy
+          nullable: true
+        dateOfLiquidation:
+          type: string
+          description: The date of the declared bankrupty
+          format: date-time
+          nullable: true
+        isMain:
+          type: boolean
+          description: If true the organization is a parent organization. Otherwise it's a child organization
+        isFrom:
+          type: boolean
+          description: ''
+          nullable: true
+        isApf:
+          type: boolean
+          description: Whether or not the organization has an APF relation
+          nullable: true
+        leiCode:
+          type: string
+          description: The leicode of the organization
+          nullable: true
+        classifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassificationView'
+          description: The classifications of the organization
+          nullable: true
+        officialNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialNameView'
+          description: The official names of the organization
+          nullable: true
+        statutoryNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatutoryNameView'
+          description: The statutory names of the organization
+          nullable: true
+        tradeNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/TradeNameView'
+          description: The trade names of the organization
+          nullable: true
+        contactChannels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactChannelView'
+          description: The addresses of the organization
+          nullable: true
+      additionalProperties: false
+      description: The child organization of a parent organization
+    ClassificationView:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the classification
+          nullable: true
+      additionalProperties: false
+      description: The classification
+    ConditionView:
+      type: object
+      properties:
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the registration condition
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the registration condition
+          format: date-time
+          nullable: true
+        name:
+          type: string
+          description: The name of the registration condition
+          nullable: true
+        description:
+          type: string
+          description: The description of the registration condition
+          nullable: true
+        definitiveDate:
+          type: string
+          description: The decision date of whether or not the registration condition can be ended definitively. As long as this date is in the future the registration condition still applies even if the end date has a value
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: The registration condition
+    ContactChannelView:
+      type: object
+      properties:
+        contactChannelType:
+          type: string
+          description: The type indicating what kind of address the contact channel is
+          nullable: true
+        street:
+          type: string
+          description: The name of the street
+          nullable: true
+        houseNumber:
+          type: string
+          description: The house number
+          nullable: true
+        houseNumberAddition:
+          type: string
+          description: The house number addition
+          nullable: true
+        postalCode:
+          type: string
+          description: The postal code of the address
+          nullable: true
+        city:
+          type: string
+          description: The city
+          nullable: true
+        countryIsoCode:
+          type: string
+          description: A two letter iso code indicating the country of where the address is located
+          nullable: true
+        location:
+          type: string
+          description: The location
+          nullable: true
+        description:
+          type: string
+          description: Any remarks which belong to the address
+          nullable: true
+        emailAddress:
+          type: string
+          description: The email address
+          nullable: true
+        url:
+          type: string
+          description: The website
+          nullable: true
+        phoneNumber:
+          type: string
+          description: The phone number
+          nullable: true
+        isPostOfficeBox:
+          type: boolean
+          description: Whether or not the address is a postbox
+        postOfficeNumber:
+          type: string
+          description: The postbox number
+          nullable: true
+      additionalProperties: false
+      description: 'The address, emailaddress or URL'
+    CountryView:
+      type: object
+      properties:
+        isoCode:
+          type: string
+          description: An unique two letter iso code
+          nullable: true
+        name:
+          type: string
+          description: The name of the country
+          nullable: true
+      additionalProperties: false
+      description: The country
+    CoveredBondView:
+      type: object
+      properties:
+        programName:
+          type: string
+          description: The name of the program
+          nullable: true
+        issueDate:
+          type: string
+          description: The start date
+          format: date-time
+          nullable: true
+        registrationDate:
+          type: string
+          description: The date of the registration
+          format: date-time
+          nullable: true
+        remarks:
+          type: string
+          description: Any remarks of the covered bond
+          nullable: true
+        isInAccordanceWith:
+          type: boolean
+          description: Whether or not the covered bond is in accordance with the DNB
+          nullable: true
+        endDate:
+          type: string
+          description: The end date of the covered bond
+          format: date-time
+          nullable: true
+        monthlyInvestorReport:
+          type: string
+          description: The monthly investor report
+          nullable: true
+      additionalProperties: false
+      description: The covered bond
+    LanguageView:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The code of the supported language
+          nullable: true
+      additionalProperties: false
+      description: The supported languages
+    OfficialNameView:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name
+          nullable: true
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the name
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the name
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: The official name
+    OrganizationDetailsView:
+      type: object
+      properties:
+        registerCode:
+          type: string
+          description: The code of the register the organizations belongs to
+          nullable: true
+        registerName:
+          type: string
+          description: The name of the register
+          nullable: true
+        publishDate:
+          type: string
+          description: When the register has been last published
+          format: date-time
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationView'
+          description: The organizations which belong to the register
+          nullable: true
+      additionalProperties: false
+      description: The organization details of a specific register
+    OrganizationRelationNumberView:
+      type: object
+      properties:
+        relationNumber:
+          type: string
+          description: The relation number as known by the DNB
+          nullable: true
+      additionalProperties: false
+      description: The relation number of an organization
+    OrganizationRelationNumbersView:
+      type: object
+      properties:
+        registerCode:
+          type: string
+          description: The code of the register the relation numbers belong to
+          nullable: true
+        registerName:
+          type: string
+          description: The name of the register
+          nullable: true
+        publishDate:
+          type: string
+          description: The last date the register has been published
+          format: date-time
+        relationNumbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationRelationNumberView'
+          description: The relation numbers which belong to the register
+          nullable: true
+        _metadata:
+          allOf:
+            - $ref: '#/components/schemas/PaginationDetailsView'
+          description: The pagination details.
+          nullable: true
+      additionalProperties: false
+      description: The relation numbers of the organization in a specific register
+    OrganizationView:
+      type: object
+      properties:
+        chamberOfCommerce:
+          type: string
+          description: The number as known in the chamber of commerce
+          nullable: true
+        branchNumber:
+          type: string
+          description: The branch number of the organization.
+          nullable: true
+        legalDuration:
+          type: string
+          description: The legal duration of the organization
+          nullable: true
+        relationNumber:
+          type: string
+          description: The relation number as known by the DNB
+          nullable: true
+        statutoryPlace:
+          type: string
+          description: The statutory place of the organization
+          nullable: true
+        statutoryCountry:
+          type: string
+          description: The statutory country of the organization
+          nullable: true
+        rsinCode:
+          type: string
+          description: The RSIN code of the organization
+          nullable: true
+        isInLiquidation:
+          type: boolean
+          description: Whether or not the organization has declared bankruptcy
+          nullable: true
+        dateOfLiquidation:
+          type: string
+          description: When the bankruptcy got declared
+          format: date-time
+          nullable: true
+        isMain:
+          type: boolean
+          description: Whether or not this organization is the parent organization
+        leiCode:
+          type: string
+          description: The LEI code of the organization
+          nullable: true
+        classifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassificationView'
+          description: The classifications of the organization
+          nullable: true
+        officialNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/OfficialNameView'
+          description: The official names of the organization
+          nullable: true
+        statutoryNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatutoryNameView'
+          description: The statutory names of the organization
+          nullable: true
+        tradeNames:
+          type: array
+          items:
+            $ref: '#/components/schemas/TradeNameView'
+          description: The trade names of the organization
+          nullable: true
+        contactChannels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactChannelView'
+          description: The addresses of the organization
+          nullable: true
+        registrations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegistrationView'
+          description: The registrations of the organizations
+          nullable: true
+        relatedOrganizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelatedOrganizationView'
+          description: The related organizations belonging to this organization
+          nullable: true
+        coveredBonds:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoveredBondView'
+          description: The covered bonds of the organization
+          nullable: true
+      additionalProperties: false
+      description: A specific organization
+    PaginationDetailsView:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: The number of the page. Where 1 indicates the first page.
+          format: int32
+        pageSize:
+          type: integer
+          description: The total records of one page.
+          format: int32
+        hasMorePages:
+          type: boolean
+          description: Whether or not more pages exists.
+        totalCount:
+          type: integer
+          description: The total amount of records.
+          format: int32
+      additionalProperties: false
+      description: The meta details of the pagination.
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          format: int32
+          nullable: true
+        detail:
+          type: string
+          nullable: true
+        instance:
+          type: string
+          nullable: true
+      additionalProperties: { }
+    PublicationView:
+      type: object
+      properties:
+        registerName:
+          type: string
+          description: The name of the register
+          nullable: true
+        registerCode:
+          type: string
+          description: The code of the register
+          nullable: true
+        languageCode:
+          allOf:
+            - $ref: '#/components/schemas/LanguageView'
+          description: The language code of the publication
+          nullable: true
+        publishDate:
+          type: string
+          description: When this publication was published
+          format: date-time
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationView'
+          description: The organizations belonging to the publication
+          nullable: true
+        _metadata:
+          allOf:
+            - $ref: '#/components/schemas/PaginationDetailsView'
+          description: The pagination details
+          nullable: true
+      additionalProperties: false
+      description: The publication details of a specific register
+    RegisterArticleView:
+      type: object
+      properties:
+        actArticleName:
+          type: string
+          description: The name of the act article
+          nullable: true
+        actArticleCode:
+          type: string
+          description: The code of the act article
+          nullable: true
+      additionalProperties: false
+      description: The configured act articles
+    RegisterType:
+      enum:
+        - TheNetherlands
+        - DutchCaribbean
+      type: string
+      description: An enum for all possible types of registers
+    RegisterView:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the register
+          nullable: true
+        code:
+          type: string
+          description: The code of the register
+          nullable: true
+        type:
+          allOf:
+            - $ref: '#/components/schemas/RegisterType'
+          description: The type of the register
+        lastPublishDate:
+          type: string
+          description: When the register was last published
+          format: date-time
+      additionalProperties: false
+      description: The register
+    RegistrationActArticleNameView:
+      type: object
+      properties:
+        actArticleName:
+          type: string
+          description: The name of the act article
+          nullable: true
+      additionalProperties: false
+      description: The act article of the registrations
+    RegistrationView:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The identifier of the registration as known by DNB
+          format: uuid
+        registerArticleGroupCode:
+          type: string
+          description: The code of the group that groups the different register articles together
+          nullable: true
+        description:
+          type: string
+          description: The description of the registration
+          nullable: true
+        actArticleName:
+          type: string
+          description: The name of the underlying act article
+          nullable: true
+        actArticleCode:
+          type: string
+          description: The code of the underlying act article
+          nullable: true
+        actDepartment:
+          type: string
+          description: The department of the act article
+          nullable: true
+        actName:
+          type: string
+          description: The name of the act
+          nullable: true
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the registration
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the registration
+          format: date-time
+          nullable: true
+        irrevocableDate:
+          type: string
+          description: If end data has value the irrevoable date is the time to check if the registration can be closed
+          format: date-time
+          nullable: true
+        registrationType:
+          type: string
+          description: The type of the registration
+          nullable: true
+        involvedProduct:
+          type: string
+          description: The product
+          nullable: true
+        country:
+          allOf:
+            - $ref: '#/components/schemas/CountryView'
+          description: The country for where the registration has been applied
+          nullable: true
+        allowedMifidActivities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedMifidActivityView'
+          description: The allowed mifid activities
+          nullable: true
+        allowedActivities:
+          type: array
+          items:
+            $ref: '#/components/schemas/AllowedActivityView'
+          description: The allowed activities which this registration contains
+          nullable: true
+        conditions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConditionView'
+          description: The conditions of this registration
+          nullable: true
+      additionalProperties: false
+      description: The registration
+    RelatedOrganizationView:
+      type: object
+      properties:
+        registerRelationCode:
+          type: string
+          description: the relation code
+          nullable: true
+        percentageParticipation:
+          type: string
+          description: The percentage of participation
+          nullable: true
+        remarks:
+          type: string
+          description: The remarks
+          nullable: true
+        definitiveDate:
+          type: string
+          description: The definitive date that the releated organization is no longer related
+          format: date-time
+          nullable: true
+        startDate:
+          type: string
+          description: The start date of the relation
+          format: date-time
+          nullable: true
+        childOrganization:
+          allOf:
+            - $ref: '#/components/schemas/ChildOrganizationView'
+          description: The related organization details
+          nullable: true
+      additionalProperties: false
+      description: The related organization of a different organization
+    StatutoryNameView:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The statutory name
+          nullable: true
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the name
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the name
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: The statutory name details
+    TradeNameView:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The trade name
+          nullable: true
+        validityPeriodStartDate:
+          type: string
+          description: The start date of the trade name
+          format: date-time
+          nullable: true
+        validityPeriodEndDate:
+          type: string
+          description: The end date of the trade name
+          format: date-time
+          nullable: true
+      additionalProperties: false
+      description: The trade name details
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    apiKeyQuery:
+      type: apiKey
+      name: subscription-key
+      in: query
+security:
+  - apiKeyHeader: [ ]
+  - apiKeyQuery: [ ]
