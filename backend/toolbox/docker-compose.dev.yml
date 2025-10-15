@@ -1,11 +1,12 @@
+name: orkhon-toolbox-dev
+
 services:
   # ===========================================================================
   # GenAI Toolbox - MCP Server (Google's Implementation)
   # ===========================================================================
   genai-toolbox-mcp:
     image: genai-toolbox:latest
-    container_name: orkhon-genai-toolbox-mcp
-    
+    # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
     # Dynamic command based on environment
     command: >
       sh -c '
@@ -21,20 +22,14 @@ services:
         --telemetry-service-name "$${OTEL_SERVICE_NAME}"
         --log-level info
       '
-    
     ports:
       - "5000:5000"
-    
     volumes:
       - ./config:/config:ro
-    
     restart: unless-stopped
-    
     env_file:
       - .env
-    
     environment:
-      # Pass all environment variables (docker-compose will substitute from .env)
       - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-dev}
       - DNB_SUBSCRIPTION_KEY_DEV=${DNB_SUBSCRIPTION_KEY_DEV}
       - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
@@ -45,17 +40,14 @@ services:
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
       - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
       - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
-    
     networks:
       - orkhon-net
-    
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-    
     depends_on:
       jaeger:
         condition: service_healthy
@@ -65,10 +57,10 @@ services:
   # ===========================================================================
   jaeger:
     image: jaegertracing/all-in-one:latest
-    container_name: orkhon-jaeger
+    # container_name: orkhon-jaeger  # keep removed
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "4318:4318"    # OTLP HTTP receiver
+      - "16686:16686"
+      - "4318:4318"
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
