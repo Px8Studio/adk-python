@@ -109,3 +109,21 @@ tools:
         type: string
         description: Organization ID
         required: true
+
+toolsets:
+  dnb-banking:
+    - dnb-stats-household-savings
+    - dnb-stats-mfi-interest-rates
+    - dnb-stats-mortgage-loans
+  
+  dnb-pension-funds:
+    - dnb-stats-pension-funds-balance-sheet
+    - dnb-stats-individual-pension-funds
+  
+  dnb-securities:
+    - dnb-stats-household-securities
+    - dnb-stats-esg-bonds-holdings
+  
+  dnb-all:
+    - dnb-stats-household-savings
+    - dnb-stats-pension-funds-balance-sheet
