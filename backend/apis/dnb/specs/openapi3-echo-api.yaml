@@ -1,0 +1,33 @@
+openapi: 3.0.1
+info:
+  title: DNB Echo API
+  description: <b>Description:</b> This API can be used to make test calls.
+  version: '1.0'
+servers:
+  - url: https://api.dnb.nl/echo-api
+paths:
+  /helloworld:
+    get:
+      summary: Retrieve 'Hello World'
+      description: A demonstration of a GET call.
+      operationId: retrieve-resource
+      responses:
+        '200':
+          description: Returned in all cases.
+          content:
+            application/json:
+              example:
+                helloWorld: DNB API Services
+components:
+  securitySchemes:
+    apiKeyHeader:
+      type: apiKey
+      name: Ocp-Apim-Subscription-Key
+      in: header
+    apiKeyQuery:
+      type: apiKey
+      name: subscription-key
+      in: query
+security:
+  - apiKeyHeader: [ ]
+  - apiKeyQuery: [ ]
