@@ -45,12 +45,106 @@
     {
       "label": "MCP: Test DNB Echo API (via Toolbox)",
       "type": "shell",
-      "command": "curl -X POST http://localhost:5000/execute -H 'Content-Type: application/json' -d '{\"tool\":\"dnb-echo-hello\",\"arguments\":{}}'",
+      "command": "curl.exe",
+      "args": [
+        "-X", "POST",
+        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
+        "-H", "Content-Type: application/json",
+        "-d", "\"{}\"",
+        "-v"
+      ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
         "panel": "new"
       }
+    },
+    {
+      "label": "MCP: Test DNB Echo API (via Toolbox - PowerShell)",
+      "type": "shell",
+      "command": "Invoke-WebRequest",
+      "args": [
+        "-Uri", "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
+        "-Method", "POST",
+        "-ContentType", "application/json",
+        "-Body", "'{}'",
+        "-UseBasicParsing"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "MCP: Test DNB Echo API (via Toolbox - File)",
+      "type": "shell",
+      "command": "curl.exe",
+      "args": [
+        "-X", "POST",
+        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
+        "-H", "Content-Type: application/json",
+        "--data-raw", "{}",
+        "-w", "\\n%{http_code}\\n"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "DNB: Test Echo API (Direct)",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "https://api.dnb.nl/echo-api/helloworld"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "DNB: Get Statistics Metadata",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-H", "Accept: application/json",
+        "https://api.dnb.nl/statistics/v2024100101/metadata"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "DNB: Query Statistics (Sample)",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "https://api.dnb.nl/statistics/v2024100101/data?limit=5"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "MCP: Open API Explorer (OpenAPI UI)",
+      "type": "shell",
+      "command": "code",
+      "args": [
+        "--open-url",
+        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/statistics-api-v2024100101.yaml"
+      ],
+      "problemMatcher": []
     }
   ]
 }
