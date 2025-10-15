@@ -1,0 +1,14 @@
+{
+  "name": "orkhon-toolbox",
+  "version": "1.0.0",
+  "scripts": {
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "docker:prod:down": "docker-compose -f docker-compose.prod.yml down",
+    "docker:dev:logs": "docker-compose -f docker-compose.dev.yml logs -f",
+    "docker:prod:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "docker:dev:restart": "docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp",
+    "docker:prod:restart": "docker-compose -f docker-compose.prod.yml restart genai-toolbox-mcp"
+  }
+}
