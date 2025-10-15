@@ -3,9 +3,19 @@
 # ============================================================================
 
 sources:
-  dnb-api-dev:
+  dnb-publicdata:
     kind: http
-    baseUrl: https://api.dnb.nl
+    baseUrl: https://api.dnb.nl/publicdata/v1
+    timeout: 30s
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+      Accept: application/json
+      User-Agent: Orkhon-Toolbox-Dev/1.0
+    rateLimitPerMinute: 30
+
+  dnb-statistics:
+    kind: http
+    baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
     timeout: 30s
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
@@ -14,102 +24,459 @@ sources:
     rateLimitPerMinute: 30
 
 tools:
-  # DNB Echo API - actual spec from documentation
-  dnb-echo-helloworld:
+  # ============================================================================
+  # PUBLIC REGISTER API - Organization Search & Licensing
+  # ============================================================================
+  
+  dnb-publicregister-organizations-list:
     kind: http
-    source: dnb-api-dev
+    source: dnb-publicdata
     method: GET
-    path: /echo-api/helloworld
+    path: /api/publicregister/${registerCode}/Organizations
     description: |
-      Test DNB API connectivity with the Echo API Hello World endpoint.
-      Returns: {"helloWorld": "DNB API Services"}
-      Use this to validate your development API key.
-
-  dnb-statistics-query:
-    kind: http
-    source: dnb-api-dev
-    method: GET
-    path: /statistics/v2024100101/data
-    description: Query DNB statistical data (banking sector, payments, balance of payments)
+      Get list of all relation numbers for organizations in a specific register.
+      Useful for: Finding all licensed entities (banks, crypto companies, investment firms)
     parameters:
-      dataset:
+      registerCode:
         type: string
-        description: Dataset identifier
+        description: Register code (e.g., WFTAF for financial institutions)
         required: true
-      filters:
-        type: string
-        description: JSON filter criteria
-        required: false
-      limit:
+      page:
         type: integer
-        description: Max results (1-100)
-        default: 50
-      offset:
+        description: Page number (default 1)
+        default: 1
+      pageSize:
         type: integer
-        description: Pagination offset
-        default: 0
+        description: Records per page (max 25, default 10)
+        default: 10
     queryParams:
-      dataset: ${dataset}
-      filters: ${filters}
-      limit: ${limit}
-      offset: ${offset}
+      page: ${page}
+      pageSize: ${pageSize}
 
-  dnb-statistics-metadata:
+  dnb-publicregister-organizations-details:
     kind: http
-    source: dnb-api-dev
+    source: dnb-publicdata
     method: GET
-    path: /statistics/v2024100101/metadata
-    description: Retrieve metadata about available DNB statistical datasets
+    path: /api/publicregister/${languageCode}/${registerCode}/Organizations
+    description: |
+      Get detailed organization information including licenses, registrations, and contact details.
+      Useful for: Checking license status, finding company details, compliance verification
     parameters:
-      dataset:
+      languageCode:
         type: string
-        description: Optional dataset ID
-        required: false
-    queryParams:
-      dataset: ${dataset}
-
-  dnb-public-register-search:
-    kind: http
-    source: dnb-api-dev
-    method: GET
-    path: /public-register/v1/organizations
-    description: Search DNB public register for licensed financial organizations
-    parameters:
-      name:
-        type: string
-        description: Organization name (partial match)
-        required: false
-      license_type:
-        type: string
-        description: License type (bank, crypto, investment-firm)
-        required: false
-      status:
-        type: string
-        description: License status (active, revoked, expired)
-        default: "active"
-      limit:
-        type: integer
-        description: Results per page (1-100)
-        default: 20
-      offset:
-        type: integer
-        description: Pagination offset
-        default: 0
-    queryParams:
-      name: ${name}
-      license_type: ${license_type}
-      status: ${status}
-      limit: ${limit}
-      offset: ${offset}
-
-  dnb-public-register-get-org:
-    kind: http
-    source: dnb-api-dev
-    method: GET
-    path: /public-register/v1/organizations/${organization_id}
-    description: Get detailed information about a specific organization
-    parameters:
-      organization_id:
-        type: string
-        description: Unique organization identifier
+        description: Language code (NL or EN)
         required: true
+        default: "EN"
+      registerCode:
+        type: string
+        description: Register code (e.g., WFTAF)
+        required: true
+      relationNumbers:
+        type: array
+        description: Relation numbers (max 25)
+        required: true
+    queryParams:
+      relationNumbers: ${relationNumbers}
+
+  dnb-publicregister-search:
+    kind: http
+    source: dnb-publicdata
+    method: GET
+    path: /api/publicregister/${languageCode}/Publications/search
+    description: |
+      Search publications by organization name or registration type.
+      Useful for: Finding companies by name, searching by license type
+    parameters:
+      languageCode:
+        type: string
+        description: Language code (NL or EN)
+        required: true
+        default: "EN"
+      RegisterCode:
+        type: string
+        description: Register code to search within
+        required: true
+      OrganizationName:
+        type: string
+        description: Organization name (wildcard search)
+        required: false
+      ActArticleName:
+        type: string
+        description: Search by act article name
+        required: false
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 10
+    queryParams:
+      RegisterCode: ${RegisterCode}
+      OrganizationName: ${OrganizationName}
+      ActArticleName: ${ActArticleName}
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Banks & Monetary Data
+  # ============================================================================
+
+  dnb-stats-household-savings:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /dutch-household-savings-month
+    description: |
+      Monthly Dutch household savings data from January 1998 onwards.
+      Useful for: Analyzing savings trends, household financial behavior
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+      sort:
+        type: string
+        description: "Sort field and direction (e.g., 'period desc')"
+        default: "period desc"
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+      sort: ${sort}
+
+  dnb-stats-mfi-interest-rates:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /mfi-household-deposits-and-loans-interest-rates-month
+    description: |
+      MFI household deposits and loans interest rates by month.
+      Useful for: Analyzing interest rate trends, mortgage rate analysis
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+      sort:
+        type: string
+        default: "period desc"
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+      sort: ${sort}
+
+  dnb-stats-mortgage-loans:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /residential-mortgage-loans-provided-to-households-by-sector
+    description: |
+      Overview of residential mortgages by sector (banks, pension funds, etc.).
+      Useful for: Mortgage market analysis, sector exposure tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Exchange Rates & Interest Rates
+  # ============================================================================
+
+  dnb-stats-exchange-rates-daily:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-day
+    description: |
+      Daily exchange rates of the euro and gold price (current half-year).
+      Useful for: FX analysis, gold price tracking, currency risk assessment
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-ecb-interest-rates:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /european-central-bank-interest-rates
+    description: |
+      ECB policy rates (deposit facility, main refinancing, marginal lending).
+      Useful for: Monetary policy analysis, rate forecasting
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-market-interest-rates:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /market-interest-rates-month
+    description: |
+      Money market and capital market interest rates (monthly).
+      Useful for: Yield curve analysis, market rate trends
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Pension Funds
+  # ============================================================================
+
+  dnb-stats-pension-funds-balance-sheet:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /pension-funds-balance-sheet
+    description: |
+      Quarterly balance sheet of all Dutch pension funds by geography since 2002.
+      Useful for: Pension fund analysis, asset allocation tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-individual-pension-funds:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /individual-pension-fund-data-quarter
+    description: |
+      Individual pension fund data including funding ratios and returns (from 2015Q1).
+      Useful for: Comparing pension funds, analyzing specific fund performance
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Balance of Payments & International
+  # ============================================================================
+
+  dnb-stats-balance-of-payments:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /balance-of-payments-quarter
+    description: |
+      Quarterly balance of payments (current, capital, and financial accounts).
+      Useful for: International trade analysis, capital flow tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-net-external-assets:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /net-external-assets-quarter
+    description: |
+      External asset position of Dutch residents vis-à-vis non-residents.
+      Useful for: International investment position analysis
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-fdi-income-distribution:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /geographical-distribution-of-inward-and-outward-fdi-income
+    description: |
+      Geographical distribution of foreign direct investment income.
+      Useful for: FDI analysis, tax treaty jurisdiction tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Payment Systems & Cash
+  # ============================================================================
+
+  dnb-stats-payment-transactions:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /number-and-value-of-retail-payment-transactions
+    description: |
+      Quarterly retail payment statistics (domestic and cross-border).
+      Useful for: Payment behavior analysis, cashless transaction trends
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Securities & Investment Funds
+  # ============================================================================
+
+  dnb-stats-household-securities:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /investments-by-dutch-households-in-securities-by-instrument-category
+    description: |
+      Dutch household investments in securities by instrument type.
+      Useful for: Retail investor behavior, securities market analysis
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-esg-bonds-holdings:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /holding-of-bonds-by-type-of-sustainability-characteristic-by-sector
+    description: |
+      ESG bond holdings by sustainability type (green, social, sustainable).
+      Useful for: Sustainable finance analysis, ESG investment tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Insurance Sector
+  # ============================================================================
+
+  dnb-stats-insurers-balance-sheet:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /insurance-corporations-balance-sheet-quarter
+    description: |
+      Quarterly balance sheet of all Dutch insurance corporations.
+      Useful for: Insurance sector analysis, asset allocation tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  dnb-stats-insurance-premiums-claims:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /premiums-claims-and-costs-by-line-of-business-of-life-insurers-solvency-ii-quarter
+    description: |
+      Life insurance premiums, claims and costs by business line (Solvency II).
+      Useful for: Insurance profitability analysis, claims ratio tracking
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
+
+  # ============================================================================
+  # STATISTICS API - Macroeconomic Indicators
+  # ============================================================================
+
+  dnb-stats-macroeconomic-scoreboard:
+    kind: http
+    source: dnb-statistics
+    method: GET
+    path: /macroeconomic-scoreboard-quarter
+    description: |
+      Quarterly macroeconomic indicators for the Netherlands.
+      Useful for: Economic health assessment, macro analysis
+    parameters:
+      page:
+        type: integer
+        default: 1
+      pageSize:
+        type: integer
+        default: 2000
+    queryParams:
+      page: ${page}
+      pageSize: ${pageSize}
