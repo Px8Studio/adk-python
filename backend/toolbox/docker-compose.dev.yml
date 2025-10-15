@@ -5,23 +5,24 @@ services:
   # GenAI Toolbox - MCP Server (Google's Implementation)
   # ===========================================================================
   genai-toolbox-mcp:
-    image: genai-toolbox:latest
+    image: ghcr.io/googleapis/genai-toolbox:0.17.0
     # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
-    # Dynamic command based on environment
-    command: >
-      sh -c '
-      if [ "$DNB_ENVIRONMENT" = "prod" ]; then
-        TOOLS_FILE="/config/tools.prod.yaml"
-      else
-        TOOLS_FILE="/config/tools.dev.yaml"
-      fi &&
-      /app/toolbox 
-        --tools-file $$TOOLS_FILE
-        --port 5000
-        --telemetry-otlp "$${OTEL_EXPORTER_OTLP_ENDPOINT}"
-        --telemetry-service-name "$${OTEL_SERVICE_NAME}"
-        --log-level info
-      '
+    # Let the image's ENTRYPOINT run the binary; only pass flags here
+    command:
+      - --tools-file
+      - /config/tools.${DNB_ENVIRONMENT:-dev}.yaml
+      - --address
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --telemetry-otlp
+      # NOTE: endpoint must be host:port (no scheme). e.g., "jaeger:4318"
+      # Use a dedicated var to avoid accidentally passing "http://..."
+      - ${OTEL_COLLECTOR_HOSTPORT:-jaeger:4318}
+      - --telemetry-service-name
+      - ${OTEL_SERVICE_NAME}
+      - --log-level
+      - info
     ports:
       - "5000:5000"
     volumes:
@@ -35,19 +36,14 @@ services:
       - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
       - DNB_SUBSCRIPTION_NAME_DEV=${DNB_SUBSCRIPTION_NAME_DEV}
       - DNB_SUBSCRIPTION_NAME_PROD=${DNB_SUBSCRIPTION_NAME_PROD}
-      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      # Ensure no scheme in this value (jaeger:4318). Used only for the flag above.
+      - OTEL_COLLECTOR_HOSTPORT=${OTEL_COLLECTOR_HOSTPORT:-jaeger:4318}
       - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
-      - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
-      - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
     networks:
       - orkhon-net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     depends_on:
       jaeger:
         condition: service_healthy
@@ -70,6 +66,31 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+
+  # ===========================================================================
+  # GenAI Toolbox - Standalone Tool (Dockerized)
+  # ===========================================================================
+  toolbox:
+    image: genai-toolbox:latest
+    container_name: orkhon-toolbox
+    command: 
+      - "--tools-file"
+      - "/config/tools.yaml"
+      - "--address"
+      - "0.0.0.0"
+      - "--port"
+      - "5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config:/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
       start_period: 10s
 
 networks:
