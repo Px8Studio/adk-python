@@ -1,71 +1,85 @@
 # ============================================================================
 # DNB API Tools - DEVELOPMENT Environment
-# Single source of truth with all available tools
+# Optimized for GenAI Toolbox OpenAPI tool generation
 # ============================================================================
 
 sources:
-  dnb-statistics:
-    kind: http
-    baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
-    timeout: 30s
-    headers:
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
-      Accept: application/json
-      User-Agent: Orkhon-Toolbox-Dev/1.0
-    rateLimitPerMinute: 30
-
-  dnb-publicdata:
-    kind: http
-    baseUrl: https://api.dnb.nl/publicdata/v1
-    timeout: 30s
-    headers:
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
-      Accept: application/json
-      User-Agent: Orkhon-Toolbox-Dev/1.0
-    rateLimitPerMinute: 30
-
-  dnb-echo:
-    kind: http
-    baseUrl: https://api.dnb.nl/echo-api
-    timeout: 30s
-    headers:
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
-      Accept: application/json
-      User-Agent: Orkhon-Toolbox-Dev/1.0
-    rateLimitPerMinute: 30
-
-# Instead of defining 100+ individual tools, use OpenAPI spec
-tools:
-  # Load all DNB Statistics API endpoints automatically
   dnb-statistics-api:
     kind: openapi
-    source: dnb-statistics
-    spec: file://./specs/openapi3_statisticsdatav2024100101.yaml
-    # Optional: filter which operations to include
-    includeOperations:
-      - getExchangeRatesOfTheEuroAndGoldPriceDay
-      - getMarketInterestRatesDay
-      - getDutchHouseholdSavingsMonth
-      # ... or leave empty to include ALL operations
-    
-  # Or include everything with a prefix
-  dnb-all-apis:
-    kind: openapi
-    source: dnb-statistics
-    spec: file://./specs/openapi3_statisticsdatav2024100101.yaml
-    operationIdPrefix: dnb_  # This will prefix all tool names
+    # Path relative to where docker-compose mounts the volume
+    spec: file:///app/specs/openapi3_statisticsdatav2024100101.yaml
+    baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+      Accept: application/json
+      User-Agent: Orkhon-Toolbox-Dev/1.0
+    timeout: 30s
+    rateLimitPerMinute: 30
+
+  # Optional: Add Public Register API if you have its spec
+  # dnb-public-register-api:
+  #   kind: openapi
+  #   spec: file:///app/specs/openapi3_publicregisterv1.yaml
+  #   baseUrl: https://api.dnb.nl/public-register/v1
+  #   headers:
+  #     Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+  #     Accept: application/json
+  #   timeout: 30s
+  #   rateLimitPerMinute: 30
+
+tools:
+  # Echo test tool (manual definition since it's simple)
+  dnb-echo-test:
+    kind: http
+    method: GET
+    url: https://api.dnb.nl/echo-api/helloworld
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+    description: Test DNB API connectivity (development environment)
 
 toolsets:
-  # Now you can reference the dynamically generated tools
+  # Main banking statistics
   dnb-banking:
-    - dnb_getDutchHouseholdSavingsMonth
-    - dnb_getMfiHouseholdDepositsAndLoansInterestRatesMonth
-    - dnb_getKeyIndicatorsMonetaryStatisticsMonth
-    - dnb_getBalanceSheetOfDutchBasedMfisNotIncludingDnbMonth
-    
+    source: dnb-statistics-api
+    tags: 
+      - Banks
+    description: Tools for querying Dutch banking sector statistics including balance sheets, loans, deposits, and payment data
+
+  # Interest rates and foreign exchange
+  dnb-interest-rates:
+    source: dnb-statistics-api
+    tags:
+      - "Interest rates and exchange rates"
+    description: Tools for querying interest rates, exchange rates (EUR/USD, etc.), gold prices, and forward rates
+
+  # Securities and investment data  
+  dnb-securities:
+    source: dnb-statistics-api
+    tags:
+      - Securities
+    description: Tools for querying securities statistics including bond yields, equity data, and investment fund information
+
+  # Macroeconomic indicators
   dnb-macro:
-    - dnb_getMacroeconomicScoreboardQuarter
-    - dnb_getMacroeconomicScoreboardYear
-    
-  dnb-all:
-    - dnb-all-apis  # Reference the entire OpenAPI spec
+    source: dnb-statistics-api
+    tags:
+      - "Macroeconomic indicators"
+    description: Tools for querying macroeconomic data including GDP, inflation, employment, and fiscal indicators
+
+  # International trade and balance of payments
+  dnb-trade:
+    source: dnb-statistics-api
+    tags:
+      - "The Netherlands and abroad"
+    description: Tools for querying balance of payments, international investment positions, and cross-border trade data
+
+  # All-in-one toolset for general queries
+  dnb-all-statistics:
+    source: dnb-statistics-api
+    description: Complete set of DNB statistical tools across all categories. Use when query topic is unclear or spans multiple domains.
+
+  # Testing toolset
+  dnb-testing:
+    tools:
+      - dnb-echo-test
+    description: Connectivity and authentication testing tools
