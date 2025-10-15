@@ -204,6 +204,62 @@ curl http://localhost:5000/health             # Health status
 
 ---
 
+## API Exploration & Testing
+
+### Quick Start: Validate DNB Connectivity
+
+**Option A: VS Code REST Client** (Recommended)
+1. Open `backend/apis/dnb/tests/dnb-statistics.http`
+2. Click "Send Request" above each test
+3. View responses in split pane
+
+**Option B: VS Code Tasks**
+- `Ctrl+Shift+P` → "Run Task"
+- Select `DNB: Test Echo API (Direct)`
+
+**Option C: Command Line**
+```bash
+# Test connectivity
+curl -H "Ocp-Apim-Subscription-Key: $DNB_SUBSCRIPTION_KEY_DEV" \
+  https://api.dnb.nl/echo-api/helloworld
+
+# Get API metadata
+curl -H "Ocp-Apim-Subscription-Key: $DNB_SUBSCRIPTION_KEY_DEV" \
+  https://api.dnb.nl/statistics/v2024100101/metadata
+```
+
+### Interactive API Explorer
+
+**42Crunch OpenAPI Extension:**
+1. Install extension: `42crunch.vscode-openapi`
+2. Open `backend/apis/dnb/specs/statistics-api-v2024100101.yaml`
+3. Click "Preview" icon (📄) in top-right
+4. Swagger UI appears in VS Code sidebar
+5. Add authentication: Click 🔒 → Paste `DNB_SUBSCRIPTION_KEY_DEV`
+
+**Alternative: Swagger Editor (Web)**
+```bash
+# Start local Swagger UI
+docker run -p 8080:8080 -e SWAGGER_JSON=/specs/statistics-api-v2024100101.yaml \
+  -v $(pwd)/backend/apis/dnb/specs:/specs \
+  swaggerapi/swagger-ui
+```
+Open http://localhost:8080
+
+### Downloading API Definitions
+
+**From DNB Portal:**
+1. Login: https://api.portal.dnb.nl/
+2. Navigate to Statistics API → v2024100101
+3. Click "API Definition" → Download YAML/JSON
+4. Save to `backend/apis/dnb/specs/`
+
+**If OpenAPI spec not available:**
+- Check API documentation for Postman collections
+- Use [Postman to OpenAPI](https://github.com/kevinswiber/postman2openapi) converter
+
+---
+
 ## Directory Structure
 
 ```
