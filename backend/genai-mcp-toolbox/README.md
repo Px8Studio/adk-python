@@ -78,99 +78,88 @@ Your Agent → MCP Client SDK → MCP Protocol → MCP Server (Toolbox) → Data
 
 ### 1. Configure Environment Variables
 
-Create/edit `.env` file in this directory:
+Create `.env` file in this directory:
 
 ```bash
-# Environment selection
+# Environment selection (determines which tools.yaml to load)
 DNB_ENVIRONMENT=dev  # Change to 'prod' for production
 
-# DEVELOPMENT credentials
+# DEVELOPMENT credentials (loaded when DNB_ENVIRONMENT=dev)
 DNB_SUBSCRIPTION_KEY_DEV=b590652c6246466fb08e5418395f8b12
 DNB_SUBSCRIPTION_NAME_DEV=dnb-solven-dev
 
-# PRODUCTION credentials
+# PRODUCTION credentials (loaded when DNB_ENVIRONMENT=prod)
 DNB_SUBSCRIPTION_KEY_PROD=1abbc3f1fe774d94ab09b70597838791
 DNB_SUBSCRIPTION_NAME_PROD=dnb-solven
 
-# Observability (OpenTelemetry)
+# OpenTelemetry (shared across environments)
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 OTEL_SERVICE_NAME=orkhon-genai-toolbox-mcp
 ```
 
-**Key Strategy:**
-- **Primary (DEV)**: Local development, testing
-- **Secondary (PROD)**: Cloud deployment
-- **Rotation**: Regenerate every 6 months at https://api.portal.dnb.nl/
+**Environment-Based Configuration:**
+- `DNB_ENVIRONMENT=dev` → Uses `config/tools.dev.yaml`
+- `DNB_ENVIRONMENT=prod` → Uses `config/tools.prod.yaml`
+- Docker Compose automatically selects the correct file and API key
 
-### 2. Start the MCP Server
+### 2. Start the Stack
 
-**Option 1: VS Code Tasks** (Recommended)
-```
-Press Ctrl+Shift+P → "Run Task"
-→ "MCP: Start (Development)" or "MCP: Start (Production)"
-```
-
-**Option 2: Command Line**
 ```bash
-# Development
-.\scripts\set-env.ps1 -Environment dev
+# Development mode (default)
 docker-compose up -d
 
-# Production
+# Production mode
+echo "DNB_ENVIRONMENT=prod" > .env.local
+docker-compose --env-file .env.local up -d
+```
+
+### 3. Verify Configuration
+
+```bash
+# Check which environment is active
+docker-compose exec genai-toolbox-mcp printenv DNB_ENVIRONMENT
+
+# Verify correct tools file is loaded
+docker-compose logs genai-toolbox-mcp | grep "tools\..*\.yaml"
+
+# Test connectivity
+curl http://localhost:5000/api/tools
+```
+
+---
+
+## Environment Switching
+
+**Option A: Edit .env directly**
+```bash
+# Switch to production
+sed -i 's/^DNB_ENVIRONMENT=.*/DNB_ENVIRONMENT=prod/' .env
+docker-compose restart genai-toolbox-mcp
+```
+
+**Option B: Use environment switcher script**
+```powershell
+# Windows (PowerShell)
 .\scripts\set-env.ps1 -Environment prod
-docker-compose up -d
 
-# Verify health
-curl http://localhost:5000/health
+# Linux/Mac
+./scripts/set-env.sh prod
 ```
 
-**What starts:**
-- `genai-toolbox-mcp` container on port 5000 (MCP server)
-- `jaeger` container on port 16686 (tracing UI)
+---
 
-### 3. Explore DNB APIs
+## Configuration Files
 
-**Available DNB endpoints in `config/tools.yaml`:**
-
-| Tool ID | API | Description |
-|---------|-----|-------------|
-| `dnb-echo-test` | DNB Echo API | Test authentication and connectivity |
-| `dnb-statistics-query` | Statistics API v2024100101 | Financial sector data, balance of payments |
-| `dnb-statistics-metadata` | Statistics API v2024100101 | Dataset structure and filters |
-| `dnb-public-register-search` | Public Register v1 | Search licensed organizations (banks, crypto) |
-| `dnb-public-register-get-org` | Public Register v1 | Get detailed org information |
-| `dnb-api-health` | Health endpoint | API status and rate limits |
-
-**Test an endpoint:**
-```bash
-# Via VS Code task: "MCP: Test DNB Echo API"
-
-# Or manually:
-curl -X POST http://localhost:5000/api/tool/execute \
-  -H "Content-Type: application/json" \
-  -d '{"name":"dnb-echo-test","arguments":{"message":"Hello DNB"}}'
+```
+config/
+├── tools.dev.yaml    # Development environment tools (uses DEV subscription key)
+└── tools.prod.yaml   # Production environment tools (uses PROD subscription key)
 ```
 
-### 4. Connect Your Agent
-
-```python
-# Install client SDK
-pip install toolbox-langchain
-
-# In your agent code
-from toolbox_langchain import ToolboxClient
-from langgraph.prebuilt import create_react_agent
-
-async with ToolboxClient("http://localhost:5000") as client:
-    # MCP protocol: discover all tools from tools.yaml
-    tools = await client.aload_toolset()
-    
-    # Use with LangGraph
-    agent = create_react_agent(llm, tools)
-    result = await agent.ainvoke({
-        "messages": [("user", "Search DNB register for ING Bank")]
-    })
-```
+**Key Differences:**
+- Different `Ocp-Apim-Subscription-Key` headers (via `${DNB_SUBSCRIPTION_KEY_DEV}` / `${DNB_SUBSCRIPTION_KEY_PROD}`)
+- Separate rate limits (dev: 30/min, prod: 100/min)
+- Different `User-Agent` strings for tracking
 
 ---
 

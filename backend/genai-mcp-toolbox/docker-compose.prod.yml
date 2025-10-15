@@ -5,55 +5,57 @@ services:
   genai-toolbox-mcp:
     image: genai-toolbox:latest
     container_name: orkhon-genai-toolbox-mcp
-    
-    # Dynamic command based on environment
-    command: >
-      sh -c '
-      if [ "$DNB_ENVIRONMENT" = "prod" ]; then
-        TOOLS_FILE="/config/tools.prod.yaml"
-      else
-        TOOLS_FILE="/config/tools.dev.yaml"
-      fi &&
-      /app/toolbox 
-        --tools-file $$TOOLS_FILE
-        --port 5000
-        --telemetry-otlp "$${OTEL_EXPORTER_OTLP_ENDPOINT}"
-        --telemetry-service-name "$${OTEL_SERVICE_NAME}"
-        --log-level info
-      '
-    
+    command: 
+      - "--tools-file"
+      - "/config/tools.yaml"
+      - "--port"
+      - "5000"
+      - "--telemetry-otlp"
+      - "${OTEL_EXPORTER_OTLP_ENDPOINT}"
+      - "--telemetry-service-name"
+      - "${OTEL_SERVICE_NAME}"
     ports:
       - "5000:5000"
-    
     volumes:
-      - ./config:/config:ro
-    
+      - ./config:/config:ro   # Read-only for security
     restart: unless-stopped
     
+    # Load environment variables from local .env file
     env_file:
       - .env
     
+    # Simplified: Pass all variables, let tools.yaml handle selection
     environment:
-      # Pass all environment variables (docker-compose will substitute from .env)
       - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-dev}
       - DNB_SUBSCRIPTION_KEY_DEV=${DNB_SUBSCRIPTION_KEY_DEV}
       - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
       - DNB_SUBSCRIPTION_NAME_DEV=${DNB_SUBSCRIPTION_NAME_DEV}
       - DNB_SUBSCRIPTION_NAME_PROD=${DNB_SUBSCRIPTION_NAME_PROD}
+      
+      # OpenTelemetry configuration
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
       - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
       - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
       - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
+      
+            # Logging
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     
     networks:
       - orkhon-net
     
+    # Health check for MCP server
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
+    
+    depends_on:
+      jaeger:
+        condition: service_healthy
 
   # ===========================================================================
   # Jaeger - Distributed Tracing (OpenTelemetry Backend)
@@ -64,12 +66,20 @@ services:
     ports:
       - "16686:16686"  # Jaeger UI
       - "4318:4318"    # OTLP HTTP receiver
+      - "4317:4317"    # OTLP gRPC receiver
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
     networks:
       - orkhon-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 networks:
   orkhon-net:
+    driver: bridge
     name: orkhon-network
-    external: true

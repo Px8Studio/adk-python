@@ -50,15 +50,78 @@
       "problemMatcher": []
     },
     {
+      "label": "MCP: Health Check (Dev)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5000/health -Method GET | Select-Object -ExpandProperty Content"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: Health Check (Prod)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5001/health -Method GET | Select-Object -ExpandProperty Content"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: List Available Tools (Dev)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5000/api/tools -Method GET | Select-Object -ExpandProperty Content"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: List Available Tools (Prod)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5001/api/tools -Method GET | Select-Object -ExpandProperty Content"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "MCP: Test DNB Echo (Dev)",
       "type": "shell",
-      "command": "curl -X POST http://localhost:5000/api/tool/dnb-echo-helloworld/execute -H 'Content-Type: application/json' -d '{}'",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5000/api/tool/dnb-echo-helloworld/execute -Method POST -ContentType 'application/json' -Body '{}' | Select-Object -ExpandProperty Content"
+      ],
       "problemMatcher": []
     },
     {
       "label": "MCP: Test DNB Echo (Prod)",
       "type": "shell",
-      "command": "curl -X POST http://localhost:5001/api/tool/dnb-echo-helloworld/execute -H 'Content-Type: application/json' -d '{}'",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Invoke-WebRequest -Uri http://localhost:5001/api/tool/dnb-echo-helloworld/execute -Method POST -ContentType 'application/json' -Body '{}' | Select-Object -ExpandProperty Content"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "MCP: Open Jaeger UI",
+      "type": "shell",
+      "command": "start http://localhost:16686",
+      "windows": {
+        "command": "start http://localhost:16686"
+      },
+      "linux": {
+        "command": "xdg-open http://localhost:16686"
+      },
+      "osx": {
+        "command": "open http://localhost:16686"
+      },
       "problemMatcher": []
     },
     {
