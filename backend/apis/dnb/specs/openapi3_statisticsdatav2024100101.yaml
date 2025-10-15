@@ -9,6 +9,7 @@ info:
   version: v2024100101
 servers:
   - url: https://api.dnb.nl/statisticsdata/v2024100101
+
 paths:
   /exchange-rates-of-the-euro-and-gold-price-day:
     get:
