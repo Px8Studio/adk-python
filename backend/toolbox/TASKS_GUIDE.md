@@ -2,6 +2,26 @@
 
 This guide explains all available VS Code tasks for managing and testing the GenAI Toolbox MCP server.
 
+## ⚡ Quick Reference Card
+
+| Category | Task | What It Does |
+|----------|------|--------------|
+| 🚀 **Start/Stop** | MCP: Start Dev Server | Start both Toolbox + Jaeger |
+| 🚀 **Start/Stop** | MCP: Stop Dev Server | Stop everything cleanly |
+| 🚀 **Start/Stop** | MCP: Restart Dev Server | Quick restart (Toolbox only) |
+| 🔬 **Jaeger** | Jaeger: Check Health Status | Is Jaeger healthy? |
+| 🔬 **Jaeger** | Jaeger: Clear All Traces | Fresh start, delete all traces |
+| 🔬 **Jaeger** | Jaeger: View Logs (Live) | Monitor trace ingestion |
+| 🌐 **Open UI** | MCP: Open Toolbox Web UI | Browse tools at :5000/ui |
+| 🌐 **Open UI** | MCP: Open Jaeger Tracing UI | View traces at :16686 |
+| 🧪 **Testing** | DNB: Test Echo API (via Toolbox) | Quick connectivity test |
+| 🧪 **Testing** | Toolbox: List All Tools | See what's configured |
+| 📊 **Logs** | MCP: View Dev Logs (Live) | Monitor Toolbox activity |
+| 📊 **Logs** | MCP: View All Logs (Live) | See both containers |
+| ⚡ **Magic** | 🚀 Full Restart: Stop → Start → Open UI | One-click complete refresh |
+
+---
+
 ## 📋 How to Run Tasks
 
 ### Method 1: Command Palette
@@ -103,6 +123,66 @@ docker ps --filter name=orkhon-toolbox
 - ✅ Quick health check
 - ✅ Shows port mappings
 - ✅ Shows container uptime
+
+---
+
+### 🔬 Jaeger Tracing Management
+
+#### **Jaeger: Restart Container**
+Restarts only the Jaeger container (not Toolbox)
+```bash
+docker-compose -f docker-compose.dev.yml restart jaeger
+```
+- ✅ Use when Jaeger becomes unresponsive
+- ✅ Clears all stored traces (in-memory storage)
+- ✅ Faster than restarting everything
+- ⚠️ All existing traces will be lost
+
+#### **Jaeger: View Logs (Live)**
+Shows live logs from the Jaeger container
+```bash
+docker-compose -f docker-compose.dev.yml logs -f jaeger
+```
+- ✅ Monitor trace ingestion
+- ✅ Debug OTLP connection issues
+- ✅ See Jaeger startup messages
+- ⚠️ Press `Ctrl+C` to stop
+
+#### **Jaeger: Check Health Status**
+Verifies that Jaeger container is healthy
+```bash
+docker inspect orkhon-toolbox-dev-jaeger-1 --format='{{.State.Health.Status}}'
+```
+**Expected Output:** `healthy`
+- ✅ Quick health verification
+- ✅ Returns: `healthy`, `unhealthy`, or `starting`
+- ⚠️ If unhealthy, check logs with "Jaeger: View Logs"
+
+#### **Jaeger: Test OTLP Endpoint**
+Tests that the OpenTelemetry Protocol endpoint is accepting connections
+```bash
+curl -s -o /dev/null -w '%{http_code}' \
+  -X POST http://localhost:4318/v1/traces \
+  -H 'Content-Type: application/json' \
+  -d '{"resourceSpans":[]}'
+```
+**Expected Output:** `200`
+- ✅ Verifies OTLP receiver is running
+- ✅ Tests Toolbox → Jaeger connection path
+- ✅ Returns HTTP status code
+- ⚠️ Port 4318 is the OTLP HTTP endpoint
+
+#### **Jaeger: Clear All Traces (Restart Container)**
+Clears all stored traces by restarting Jaeger
+```bash
+docker-compose -f docker-compose.dev.yml restart jaeger
+```
+- ✅ Fresh start for testing
+- ✅ Useful when traces become cluttered
+- ⚠️ Same as "Jaeger: Restart Container"
+- ⚠️ All traces will be permanently lost
+
+**Note:** Jaeger uses in-memory storage by default, so traces are lost on restart. For persistent traces, you would need to configure a backend like Elasticsearch or Cassandra.
 
 ---
 
@@ -264,6 +344,18 @@ Check if another application is using port 5000:
 netstat -ano | findstr :5000
 ```
 
+### Jaeger shows no traces?
+1. Check Jaeger health: Run **"Jaeger: Check Health Status"**
+2. Test OTLP endpoint: Run **"Jaeger: Test OTLP Endpoint"**
+3. Check Toolbox logs for telemetry errors: Run **"MCP: View Dev Logs (Live)"**
+4. Verify Jaeger endpoint in docker-compose.dev.yml: `jaeger:4318`
+
+### Traces not appearing after API calls?
+- Generate some activity first: Run **"DNB: Test Echo API (via Toolbox)"**
+- Wait 10-30 seconds for traces to propagate
+- Refresh Jaeger UI
+- Check that `--telemetry-otlp` flag is set in docker-compose configuration
+
 ---
 
 ## 📚 Related Files
@@ -281,16 +373,28 @@ netstat -ano | findstr :5000
 1. **Start your day:**
    - Run: `MCP: Start Dev Server`
    - Run: `MCP: Open Toolbox Web UI`
+   - Run: `MCP: Open Jaeger Tracing UI`
 
 2. **During development:**
    - Use: `MCP: View Dev Logs (Live)` in a separate terminal
    - Test with: `DNB: Test Echo API (via Toolbox)`
+   - Monitor traces: Check Jaeger UI for request flows
 
-3. **After config changes:**
+3. **Debugging traces:**
+   - Run: `Jaeger: Check Health Status` - Verify Jaeger is healthy
+   - Run: `Jaeger: Test OTLP Endpoint` - Test trace collection
+   - Use: `Jaeger: View Logs (Live)` to see trace ingestion
+
+4. **After config changes:**
    - Run: `MCP: Restart Dev Server`
    - Or use: `🚀 Full Restart: Stop → Start → Open UI`
 
-4. **End your day:**
+5. **Clean slate for testing:**
+   - Run: `Jaeger: Clear All Traces` - Remove old traces
+   - Test your workflow
+   - Check Jaeger UI for new traces
+
+6. **End your day:**
    - Run: `MCP: Stop Dev Server`
 
 ---
@@ -302,6 +406,10 @@ netstat -ano | findstr :5000
 - **Check status first:** Run `MCP: Check Container Status` before starting
 - **Clear cache:** Use rebuild task if experiencing strange Docker issues
 - **Environment variables:** Always verify your `.env` file is up to date
+- **Jaeger traces:** Remember traces are stored in-memory and cleared on restart
+- **Trace debugging:** Use Jaeger UI to find slow API calls and bottlenecks
+- **Multiple terminals:** Run logs in dedicated terminals for better monitoring
+- **Health checks:** Regularly verify Jaeger health if traces aren't appearing
 
 ---
 
