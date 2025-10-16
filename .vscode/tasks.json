@@ -6,7 +6,7 @@
       "type": "shell",
       "command": "docker-compose -f docker-compose.dev.yml up -d",
       "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
@@ -19,7 +19,7 @@
       "type": "shell",
       "command": "docker-compose -f docker-compose.prod.yml up -d",
       "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": []
     },
@@ -28,7 +28,7 @@
       "type": "shell",
       "command": "docker-compose -f docker-compose.dev.yml down",
       "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": []
     },
@@ -145,6 +145,60 @@
         "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/statistics-api-v2024100101.yaml"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "MCP: Open Toolbox Web UI",
+      "type": "shell",
+      "command": "Start-Process",
+      "args": [
+        "http://localhost:5000/ui/"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Jaeger Tracing UI",
+      "type": "shell",
+      "command": "Start-Process",
+      "args": [
+        "http://localhost:16686"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: View Dev Logs",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      }
+    },
+    {
+      "label": "MCP: Restart Dev Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     }
   ]
 }
