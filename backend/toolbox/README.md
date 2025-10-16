@@ -76,54 +76,58 @@ Your Agent → MCP Client SDK → MCP Protocol → MCP Server (Toolbox) → Data
 
 ## Quick Start
 
-### 1. Configure Environment Variables
-
-Create `.env` file in this directory:
+### 1. Create `.env` file
 
 ```bash
-# Environment selection (determines which tools.yaml to load)
-DNB_ENVIRONMENT=dev  # Change to 'prod' for production
+DNB_ENVIRONMENT=dev  # or 'prod'
 
-# DEVELOPMENT credentials (loaded when DNB_ENVIRONMENT=dev)
+# Dev credentials
 DNB_SUBSCRIPTION_KEY_DEV=b590652c6246466fb08e5418395f8b12
 DNB_SUBSCRIPTION_NAME_DEV=dnb-solven-dev
 
-# PRODUCTION credentials (loaded when DNB_ENVIRONMENT=prod)
+# Prod credentials
 DNB_SUBSCRIPTION_KEY_PROD=1abbc3f1fe774d94ab09b70597838791
 DNB_SUBSCRIPTION_NAME_PROD=dnb-solven
 
-# OpenTelemetry (shared across environments)
+# Observability
 OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 OTEL_SERVICE_NAME=orkhon-genai-toolbox-mcp
 ```
 
-**Environment-Based Configuration:**
-- `DNB_ENVIRONMENT=dev` → Uses `config/tools.dev.yaml`
-- `DNB_ENVIRONMENT=prod` → Uses `config/tools.prod.yaml`
-- Docker Compose automatically selects the correct file and API key
-
-### 2. Start the Stack
+### 2. Start Services
 
 ```bash
-# Development mode (default)
+# Development
 docker-compose up -d
 
-# Production mode
-echo "DNB_ENVIRONMENT=prod" > .env.local
-docker-compose --env-file .env.local up -d
+# Production (edit .env first: DNB_ENVIRONMENT=prod)
+docker-compose up -d
+
+# Or use npm scripts
+npm run docker:dev       # Start dev
+npm run docker:prod      # Start prod (after editing .env)
 ```
 
-### 3. Verify Configuration
+### 3. Verify
 
 ```bash
-# Check which environment is active
-docker-compose exec genai-toolbox-mcp printenv DNB_ENVIRONMENT
+# Check services
+docker-compose ps
 
-# Verify correct tools file is loaded
-docker-compose logs genai-toolbox-mcp | grep "tools\..*\.yaml"
-
-# Test connectivity
+# Test endpoint
 curl http://localhost:5000/api/tools
+
+# View logs
+docker-compose logs -f genai-toolbox-mcp
+
+# Open Jaeger UI
+open http://localhost:16686
+```
+
+### 4. Stop
+
+```bash
+docker-compose down
 ```
 
 ---
