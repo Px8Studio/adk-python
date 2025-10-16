@@ -125,7 +125,9 @@ Ran terminal command: Start-Process http://localhost:5000
 
 | **URL** | **What It Is** | **Purpose** |
 |---|---|---|
-| `http://localhost:5000` | **GenAI Toolbox UI** | Browse & test your DNB API tools |
+| `http://localhost:5000/ui/` | **GenAI Toolbox Web UI** | Browse & test your DNB API tools |
+| `http://localhost:5000/ui/tools` | **Tools Browser** | View and test individual tools |
+| `http://localhost:5000/ui/toolsets` | **Toolsets Browser** | View toolset configurations |
 | `http://localhost:5000/api/toolset/` | **REST API** | Programmatic access for agents |
 | `http://localhost:16686` | **Jaeger Tracing UI** | Monitor performance & debug issues |
 
@@ -137,11 +139,13 @@ Ran terminal command: Start-Process http://localhost:5000
 
 ## 🎓 When to Use Each
 
-### **Use GenAI Toolbox UI (`:5000`)** when:
+### **Use GenAI Toolbox UI (`:5000/ui/`)** when:
 - ✅ Testing if your tools work
 - ✅ Checking tool parameters
 - ✅ Debugging tool configuration
 - ✅ Showing stakeholders what APIs are available
+
+**Note:** The web UI requires the `--ui` flag to be enabled in the Docker Compose configuration, which is now set by default.
 
 ### **Use Jaeger (`:16686`)** when:
 - ✅ Investigating slow requests ("Why did this take 10 seconds?")
