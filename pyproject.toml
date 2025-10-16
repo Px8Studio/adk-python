@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 toolbox-langchain = "^0.5.2"
+langchain-google-vertexai = "^2.1.2"
 
 
 [build-system]
