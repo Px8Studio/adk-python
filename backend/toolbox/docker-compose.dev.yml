@@ -68,31 +68,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # ===========================================================================
-  # GenAI Toolbox - Standalone Tool (Dockerized)
-  # ===========================================================================
-  toolbox:
-    image: genai-toolbox:latest
-    container_name: orkhon-toolbox
-    command: 
-      - "--tools-file"
-      - "/config/tools.yaml"
-      - "--address"
-      - "0.0.0.0"
-      - "--port"
-      - "5000"
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./config:/config:ro
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
 networks:
   orkhon-net:
     name: orkhon-network
