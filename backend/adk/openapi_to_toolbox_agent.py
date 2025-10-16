@@ -26,7 +26,11 @@ from enum import Enum
 SCRIPT_DIR = Path(__file__).parent
 DNB_DIR = SCRIPT_DIR.parent / "apis" / "dnb"
 SPECS_DIR = DNB_DIR / "specs"
+GENERATED_DIR = DNB_DIR / "generated"
 TOOLBOX_DIR = DNB_DIR.parent.parent / "toolbox" / "config"
+
+# Ensure generated directory exists
+GENERATED_DIR.mkdir(exist_ok=True)
 
 
 class AuthType(Enum):
@@ -611,7 +615,7 @@ def convert_api(api_name: str, output_file: Optional[Path] = None) -> bool:
         
         # Output file
         if output_file is None:
-            output_file = DNB_DIR / f"tools.{api_name}.generated.yaml"
+            output_file = GENERATED_DIR / f"tools.{api_name}.generated.yaml"
         
         # Write YAML
         with open(output_file, 'w', encoding='utf-8') as f:
@@ -685,7 +689,7 @@ def diff_api(api_name: str) -> bool:
         print(f"❌ Unknown API: {api_name}")
         return False
     
-    generated_file = DNB_DIR / f"tools.{api_name}.generated.yaml"
+    generated_file = GENERATED_DIR / f"tools.{api_name}.generated.yaml"
     manual_file = TOOLBOX_DIR / "tools.dev.yaml"
     
     if not generated_file.exists():
@@ -710,7 +714,7 @@ def diff_api(api_name: str) -> bool:
         print(report)
         
         # Save report
-        report_file = DNB_DIR / f"tools.{api_name}.diff-report.txt"
+        report_file = GENERATED_DIR / f"tools.{api_name}.diff-report.txt"
         with open(report_file, 'w', encoding='utf-8') as f:
             f.write(report)
         
