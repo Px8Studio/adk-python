@@ -11,6 +11,7 @@ toolbox-langchain = "^0.5.2"
 langchain-google-vertexai = "^2.1.2"
 langgraph = "^0.6.10"
 google-adk = "^1.16.0"
+uv = "^0.9.3"
 
 
 [build-system]
