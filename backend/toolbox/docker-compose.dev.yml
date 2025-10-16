@@ -5,7 +5,7 @@ services:
   # GenAI Toolbox - MCP Server (Google's Implementation)
   # ===========================================================================
   genai-toolbox-mcp:
-    image: ghcr.io/googleapis/genai-toolbox:0.17.0
+    image: genai-toolbox:latest  # Use local image
     # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
     # Let the image's ENTRYPOINT run the binary; only pass flags here
     command:

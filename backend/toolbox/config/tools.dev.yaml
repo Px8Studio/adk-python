@@ -1,85 +1,64 @@
 # ============================================================================
 # DNB API Tools - DEVELOPMENT Environment
-# Optimized for GenAI Toolbox OpenAPI tool generation
+# GenAI Toolbox Configuration (HTTP sources and tools)
 # ============================================================================
 
 sources:
+  # DNB Statistics API HTTP source
   dnb-statistics-api:
-    kind: openapi
-    # Path relative to where docker-compose mounts the volume
-    spec: file:///app/specs/openapi3_statisticsdatav2024100101.yaml
-    baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
+    kind: http
+    baseUrl: https://api.dnb.nl/statistics/v2024100101
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
       Accept: application/json
       User-Agent: Orkhon-Toolbox-Dev/1.0
     timeout: 30s
-    rateLimitPerMinute: 30
 
-  # Optional: Add Public Register API if you have its spec
-  # dnb-public-register-api:
-  #   kind: openapi
-  #   spec: file:///app/specs/openapi3_publicregisterv1.yaml
-  #   baseUrl: https://api.dnb.nl/public-register/v1
-  #   headers:
-  #     Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
-  #     Accept: application/json
-  #   timeout: 30s
-  #   rateLimitPerMinute: 30
-
-tools:
-  # Echo test tool (manual definition since it's simple)
-  dnb-echo-test:
+  # DNB Echo API source (for testing)
+  dnb-echo-api:
     kind: http
-    method: GET
-    url: https://api.dnb.nl/echo-api/helloworld
+    baseUrl: https://api.dnb.nl/echo-api
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
-    description: Test DNB API connectivity (development environment)
+    timeout: 10s
+
+tools:
+  # Echo test tool
+  dnb-echo-helloworld:
+    kind: http
+    source: dnb-echo-api
+    method: GET
+    path: /helloworld
+    description: Test DNB API connectivity by calling the echo endpoint
+
+  # Get statistics metadata
+  dnb-get-metadata:
+    kind: http
+    source: dnb-statistics-api
+    method: GET
+    path: /metadata
+    description: Retrieve metadata about available statistical datasets from DNB
+
+  # Query statistics data
+  dnb-query-statistics:
+    kind: http
+    source: dnb-statistics-api
+    method: GET
+    path: /data
+    description: Query Dutch banking statistics data with optional filters
+    queryParams:
+      - name: limit
+        type: integer
+        description: Maximum number of results to return
+        required: false
+      - name: offset
+        type: integer
+        description: Number of results to skip
+        required: false
 
 toolsets:
-  # Main banking statistics
-  dnb-banking:
-    source: dnb-statistics-api
-    tags: 
-      - Banks
-    description: Tools for querying Dutch banking sector statistics including balance sheets, loans, deposits, and payment data
-
-  # Interest rates and foreign exchange
-  dnb-interest-rates:
-    source: dnb-statistics-api
-    tags:
-      - "Interest rates and exchange rates"
-    description: Tools for querying interest rates, exchange rates (EUR/USD, etc.), gold prices, and forward rates
-
-  # Securities and investment data  
-  dnb-securities:
-    source: dnb-statistics-api
-    tags:
-      - Securities
-    description: Tools for querying securities statistics including bond yields, equity data, and investment fund information
-
-  # Macroeconomic indicators
-  dnb-macro:
-    source: dnb-statistics-api
-    tags:
-      - "Macroeconomic indicators"
-    description: Tools for querying macroeconomic data including GDP, inflation, employment, and fiscal indicators
-
-  # International trade and balance of payments
-  dnb-trade:
-    source: dnb-statistics-api
-    tags:
-      - "The Netherlands and abroad"
-    description: Tools for querying balance of payments, international investment positions, and cross-border trade data
-
-  # All-in-one toolset for general queries
-  dnb-all-statistics:
-    source: dnb-statistics-api
-    description: Complete set of DNB statistical tools across all categories. Use when query topic is unclear or spans multiple domains.
-
-  # Testing toolset
-  dnb-testing:
-    tools:
-      - dnb-echo-test
-    description: Connectivity and authentication testing tools
+  # Main DNB tools collection
+  dnb-tools:
+    - dnb-echo-helloworld
+    - dnb-get-metadata
+    - dnb-query-statistics
