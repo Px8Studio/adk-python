@@ -40,7 +40,7 @@ services:
       - OTEL_COLLECTOR_HOSTPORT=${OTEL_COLLECTOR_HOSTPORT:-jaeger:4318}
       - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
-      - OTEL_METRICS_EXPORTER=none
+      - OTEL_METRICS_EXPORTER=none  # Already set ✅
       - OTEL_LOGS_EXPORTER=none
     networks:
       - orkhon-net
