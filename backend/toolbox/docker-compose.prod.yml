@@ -10,6 +10,7 @@ services:
       - "/config/tools.yaml"
       - "--port"
       - "5000"
+      - "--ui"
       - "--telemetry-otlp"
       - "${OTEL_EXPORTER_OTLP_ENDPOINT}"
       - "--telemetry-service-name"
