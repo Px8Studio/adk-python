@@ -1,6 +1,9 @@
 {
   "version": "2.0.0",
   "tasks": [
+    // ============================================================
+    // Server Management - Development
+    // ============================================================
     {
       "label": "MCP: Start Dev Server",
       "type": "shell",
@@ -11,17 +14,14 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
-      }
-    },
-    {
-      "label": "MCP: Start Prod Server",
-      "type": "shell",
-      "command": "docker-compose -f docker-compose.prod.yml up -d",
-      "options": {
-        "cwd": "${workspaceFolder}/backend/toolbox"
+        "panel": "shared",
+        "clear": true,
+        "close": false
       },
-      "problemMatcher": []
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
     },
     {
       "label": "MCP: Stop Dev Server",
@@ -30,66 +30,12 @@
       "options": {
         "cwd": "${workspaceFolder}/backend/toolbox"
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "MCP: Stop Prod Server",
-      "type": "shell",
-      "command": "docker-compose -f docker-compose.prod.yml down",
-      "options": {
-        "cwd": "${workspaceFolder}/backend/toolbox"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "MCP: Open API Explorer (OpenAPI UI)",
-      "type": "shell",
-      "command": "code",
-      "args": [
-        "--open-url",
-        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/statistics-api-v2024100101.yaml"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "label": "MCP: Open Toolbox Web UI",
-      "type": "shell",
-      "command": "Start-Process",
-      "args": [
-        "http://localhost:5000/ui/"
-      ],
       "problemMatcher": [],
-      "presentation": {
-        "reveal": "never",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "MCP: Open Jaeger Tracing UI",
-      "type": "shell",
-      "command": "Start-Process",
-      "args": [
-        "http://localhost:16686"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "never",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "MCP: View Dev Logs",
-      "type": "shell",
-      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
-      "options": {
-        "cwd": "${workspaceFolder}/backend/toolbox"
-      },
-      "problemMatcher": [],
-      "isBackground": true,
       "presentation": {
         "reveal": "always",
-        "panel": "dedicated",
-        "focus": true
+        "panel": "shared",
+        "clear": true,
+        "close": false
       }
     },
     {
@@ -102,7 +48,300 @@
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      }
+    },
+    {
+      "label": "MCP: Rebuild & Start Dev Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      }
+    },
+    // ============================================================
+    // Server Management - Production
+    // ============================================================
+    {
+      "label": "MCP: Start Prod Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.prod.yml up -d",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: Stop Prod Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.prod.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Monitoring & Debugging
+    // ============================================================
+    {
+      "label": "MCP: View Dev Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: View All Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: Check Container Status",
+      "type": "shell",
+      "command": "docker ps --filter name=orkhon-toolbox",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Web UI Shortcuts
+    // ============================================================
+    // ============================================================
+    // Web UI Shortcuts
+    // ============================================================
+    {
+      "label": "MCP: Open Toolbox Web UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:5000/ui/'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Jaeger Tracing UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:16686'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Statistics OpenAPI Spec",
+      "type": "shell",
+      "command": "code",
+      "args": [
+        "--open-url",
+        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Public Register OpenAPI Spec",
+      "type": "shell",
+      "command": "code",
+      "args": [
+        "--open-url",
+        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/openapi3_publicdatav1.yaml"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    // ============================================================
+    // API Testing
+    // ============================================================
+    // ============================================================
+    // API Testing
+    // ============================================================
+    {
+      "label": "DNB: Test Echo API (Direct)",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-i",
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "https://api.dnb.nl/echo-api/helloworld"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB: Test Echo API (via Toolbox)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB: Get Statistics Metadata",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-H",
+        "Accept: application/json",
+        "https://api.dnb.nl/statistics/v2024100101/metadata",
+        "|",
+        "jq",
+        "."
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB: Query Statistics Sample",
+      "type": "shell",
+      "command": "curl",
+      "args": [
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-H",
+        "Accept: application/json",
+        "https://api.dnb.nl/statistics/v2024100101/data?limit=5",
+        "|",
+        "jq",
+        "."
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List All Tools",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List DNB Toolset",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb-tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Quick Actions
+    // ============================================================
+    {
+      "label": "🚀 Full Restart: Stop → Start → Open UI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "MCP: Stop Dev Server",
+        "MCP: Start Dev Server",
+        "MCP: Open Toolbox Web UI"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
       }
     }
   ]
