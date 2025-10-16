@@ -1,8 +1,5 @@
 .env
 
-# Temporary/Auto-generated folders
-backend/genai-mcp-toolbox/
-
 # Python
 __pycache__/
 *.py[cod]
