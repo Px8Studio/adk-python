@@ -146,6 +146,75 @@
       }
     },
     // ============================================================
+    // Jaeger Tracing Management
+    // ============================================================
+    {
+      "label": "Jaeger: Restart Container",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: View Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Check Health Status",
+      "type": "shell",
+      "command": "docker inspect orkhon-toolbox-dev-jaeger-1 --format='{{.State.Health.Status}}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Test OTLP Endpoint",
+      "type": "shell",
+      "command": "curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4318/v1/traces -H 'Content-Type: application/json' -d '{\"resourceSpans\":[]}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Clear All Traces (Restart Container)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
     // Web UI Shortcuts
     // ============================================================
     // ============================================================
