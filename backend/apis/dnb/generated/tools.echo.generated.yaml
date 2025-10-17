@@ -6,7 +6,7 @@ sources:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY}
     timeout: 30s
 tools:
-  retrieve_resource:
+  dnb_echo_helloworld:
     kind: http
     source: echo_api
     method: GET
@@ -14,4 +14,4 @@ tools:
     description: Retrieve 'Hello World'
 toolsets:
   dnb_echo_tools:
-  - retrieve_resource
+  - dnb_echo_helloworld
