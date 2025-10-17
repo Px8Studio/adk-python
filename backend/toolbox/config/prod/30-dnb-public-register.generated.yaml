@@ -27,7 +27,7 @@ tools:
       type: string
       description: The register code.
       required: true
-  dnb_public_register_api_publicregister_organizations_historicalr:
+  dnb_public_register_api_publicregister_organizations_historicalrecord:
     kind: http
     source: public_register_api
     method: GET
@@ -78,7 +78,7 @@ tools:
       type: string
       description: The publication in the specified register.
       required: true
-  dnb_public_register_api_publicregister_publications_historicalre:
+  dnb_public_register_api_publicregister_publications_historicalrecord:
     kind: http
     source: public_register_api
     method: GET
@@ -164,7 +164,22 @@ tools:
     method: GET
     path: /api/publicregister/Registers
     description: Retrieve all registers.
-  dnb_public_register_api_publicregister_registrations_actarticlen:
+  dnb_public_register_api_publicregister_registrations_actarticlenames:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
+    description: Retrieve latest act article names.
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The language code.
+      required: true
+    - name: registerCode
+      type: string
+      description: The register code.
+      required: true
+  dnb_public_register_api_publicregister_registrations_actarticlenames_historicalrecord:
     kind: http
     source: public_register_api
     method: GET
@@ -192,14 +207,14 @@ tools:
 toolsets:
   dnb_public_register_tools:
   - dnb_public_register_api_publicregister_organizations
-  - dnb_public_register_api_publicregister_organizations_historicalr
+  - dnb_public_register_api_publicregister_organizations_historicalrecord
   - dnb_public_register_api_publicregister_organizations
-  - dnb_public_register_api_publicregister_organizations_historicalr
+  - dnb_public_register_api_publicregister_organizations_historicalrecord
   - dnb_public_register_api_publicregister_publications
-  - dnb_public_register_api_publicregister_publications_historicalre
+  - dnb_public_register_api_publicregister_publications_historicalrecord
   - dnb_public_register_api_publicregister_publications_search
   - dnb_public_register_api_publicregister_registerarticles
   - dnb_public_register_api_publicregister_registers
-  - dnb_public_register_api_publicregister_registrations_actarticlen
-  - dnb_public_register_api_publicregister_registrations_actarticlen
+  - dnb_public_register_api_publicregister_registrations_actarticlenames
+  - dnb_public_register_api_publicregister_registrations_actarticlenames_historicalrecord
   - dnb_public_register_api_publicregister_supportedlanguages
