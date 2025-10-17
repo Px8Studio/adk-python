@@ -85,20 +85,48 @@ def port_in_use(port: int) -> bool:
         return result == 0
 
 
-def wait_for_http_ok(url: str, timeout_seconds: int = 15, interval: float = 1.5) -> bool:
+def _http_ok(url: str, timeout: float = 1.5) -> bool:
     import urllib.request
     import urllib.error
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as resp:
+            return 200 <= resp.status < 300
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, socket.timeout):
+        return False
+
+
+def wait_for_toolbox_ready(health_url: str, timeout_seconds: int = 30, interval: float = 1.5) -> tuple[bool, Optional[str]]:
+    """
+    Wait for Toolbox to become ready by probing multiple endpoints.
+    Returns (ready, url_that_responded_200 or None)
+    """
+    # Derive base URL from provided health_url
+    # Accept forms like http://localhost:5000/health
+    base = health_url
+    if "/" in base:
+        # strip to scheme://host:port/
+        try:
+            from urllib.parse import urlparse
+            p = urlparse(base)
+            if p.scheme and p.netloc:
+                base = f"{p.scheme}://{p.netloc}/"
+            else:
+                base = "http://localhost:5000/"
+        except Exception:
+            base = "http://localhost:5000/"
+    candidates = [
+        base + "health",         # some builds
+        base + "api/toolset/",   # definitive API index
+        base + "ui/",            # UI endpoint
+    ]
 
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        try:
-            with urllib.request.urlopen(url, timeout=1.5) as resp:
-                if 200 <= resp.status < 300:
-                    return True
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, socket.timeout):
-            pass
+        for url in candidates:
+            if _http_ok(url, timeout=1.5):
+                return True, url
         time.sleep(interval)
-    return False
+    return False, None
 
 
 def env_with_venv_path(base: Optional[dict] = None) -> dict:
@@ -289,13 +317,14 @@ def toolbox_start_or_restart(restart: bool, wait_seconds: int, show_logs_on_fail
         print_err("Docker compose command failed.")
         return False
 
-    print_info(f"Waiting up to {wait_seconds}s for Toolbox health...")
-    ready = wait_for_http_ok(TOOLBOX_HEALTH_URL, timeout_seconds=wait_seconds)
+    print_info(f"Waiting up to {wait_seconds}s for Toolbox readiness...")
+    ready, url = wait_for_toolbox_ready(TOOLBOX_HEALTH_URL, timeout_seconds=wait_seconds)
     if ready:
-        print_ok("Toolbox is healthy.")
+        where = url or "unknown endpoint"
+        print_ok(f"Toolbox is ready (200 at {where}).")
         return True
 
-    print_err("Toolbox health check failed within timeout.")
+    print_err("Toolbox readiness check failed within timeout.")
     print_info(f"Tip: {(' '.join(dc))} -f {TOOLBOX_COMPOSE} logs")
     if show_logs_on_fail:
         print_compose_status(tail=120)
@@ -426,10 +455,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     tb = sub.add_parser("toolbox", help="Manage GenAI Toolbox.")
     tb_sub = tb.add_subparsers(dest="action", required=True)
     tb_start = tb_sub.add_parser("start", help="Start Toolbox (docker compose up -d).")
-    tb_start.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
+    tb_start.add_argument("--wait", type=int, default=30, help="Seconds to wait for Toolbox readiness.")
     tb_start.add_argument("--show-logs-on-fail", action="store_true", help="On health timeout, show compose ps and recent logs.")
     tb_restart = tb_sub.add_parser("restart", help="Restart Toolbox containers.")
-    tb_restart.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
+    tb_restart.add_argument("--wait", type=int, default=30, help="Seconds to wait for Toolbox readiness.")
     tb_restart.add_argument("--show-logs-on-fail", action="store_true", help="On health timeout, show compose ps and recent logs.")
     tb_sub.add_parser("down", help="Stop Toolbox (docker compose down).")
     tb_sub.add_parser("logs", help="Show Toolbox logs (snapshot).")
@@ -440,7 +469,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     qs = sub.add_parser("quick-start", help="Run diagnostics, start Toolbox, then start ADK Web.")
     qs.add_argument("--skip-diagnostics", action="store_true")
     qs.add_argument("--restart-toolbox", action="store_true")
-    qs.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox to become healthy.")
+    qs.add_argument("--wait", type=int, default=30, help="Seconds to wait for Toolbox to become ready.")
     qs.add_argument("--force-kill-port", action="store_true", help="Kill processes on port 8000 if needed.")
     qs.add_argument("--show-logs-on-fail", action="store_true", help="On Toolbox health timeout, show compose ps and recent logs.")
 
