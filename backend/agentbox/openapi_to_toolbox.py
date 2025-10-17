@@ -388,21 +388,50 @@ class GenAIToolboxGenerator:
         self.parser = parser
     
     def generate_source_id(self) -> str:
-        """Generate source ID"""
-        return f"{self.api_id}-api"
+        """Generate source ID using underscores (GenAI Toolbox convention)"""
+        return f"{self.api_id.replace('-', '_')}_api"
     
     def generate_tool_id(self, operation: Dict, method: str, path: str) -> str:
-        """Generate tool ID from operation"""
+        """Generate tool ID from operation
+        
+        Following GenAI Toolbox naming conventions:
+        - Use underscores (not hyphens) for tool names
+        - Tool names should be valid Python identifiers
+        - Must start with letter or underscore
+        - Can contain a-z, A-Z, 0-9, underscores, dots
+        """
         # Try operationId first
         if 'operationId' in operation:
             op_id = operation['operationId']
-            # Clean up operationId
-            return op_id.replace('_', '-').lower()
+            # Clean up operationId - use underscores (GenAI Toolbox convention)
+            sanitized = op_id.replace('-', '_').lower()
+            
+            # Ensure starts with letter or underscore
+            if sanitized and sanitized[0].isdigit():
+                sanitized = f"tool_{sanitized}"
+            
+            # Remove any invalid characters (keep only alphanumeric, underscore, dot)
+            sanitized = re.sub(r'[^a-z0-9_.]', '_', sanitized)
+            
+            # Truncate to 64 characters (LLM requirement)
+            if len(sanitized) > 64:
+                sanitized = sanitized[:64]
+            
+            return sanitized
         
         # Fallback: use method + path
-        # Remove leading slash and parameters
-        clean_path = path.strip('/').replace('/', '-').replace('{', '').replace('}', '')
-        return f"{self.api_id}-{method}-{clean_path}".lower()
+        # Remove leading slash and parameters, use underscores
+        clean_path = path.strip('/').replace('/', '_').replace('{', '').replace('}', '').replace('-', '_')
+        tool_id = f"{self.api_id}_{method}_{clean_path}".lower()
+        
+        # Ensure valid identifier
+        tool_id = re.sub(r'[^a-z0-9_.]', '_', tool_id)
+        
+        # Truncate to 64 characters
+        if len(tool_id) > 64:
+            tool_id = tool_id[:64]
+        
+        return tool_id
     
     def generate_source(self) -> SourceDefinition:
         """Generate HTTP source definition"""
@@ -441,7 +470,8 @@ class GenAIToolboxGenerator:
     
     def generate_toolset(self, tools: List[ToolDefinition]) -> Dict[str, List[str]]:
         """Generate toolset definition for this API"""
-        toolset_name = f"dnb-{self.api_id}-tools"
+        # Use underscores for toolset names (GenAI Toolbox convention)
+        toolset_name = f"dnb_{self.api_id.replace('-', '_')}_tools"
         tool_ids = [tool.id for tool in tools]
         return {toolset_name: tool_ids}
     
