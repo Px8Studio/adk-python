@@ -13,3 +13,12 @@
 # limitations under the License.
 
 """DNB Agent package for accessing DNB APIs via GenAI Toolbox."""
+
+from __future__ import annotations
+
+from typing import Annotated
+from pydantic.json_schema import SkipJsonSchema
+from mcp.client.session import ClientSession
+
+# Public field safe alias (excluded from JSON Schema)
+MCPClientSession = Annotated[ClientSession, SkipJsonSchema(True)]
