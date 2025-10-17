@@ -1,115 +1,127 @@
-# ========================================
-# ADK + GenAI Toolbox Diagnostic Tool
-# ========================================
-# Run this to check your development environment setup
-
-param(
-  [switch]$Verbose
-)
+# ADK Setup Diagnostic Tool
+# Checks all prerequisites and dependencies for ADK Web development
 
 $ErrorActionPreference = "Continue"
+Set-StrictMode -Version Latest
 
-# Get project root (two levels up from script location)
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$VenvPath = Join-Path $ProjectRoot ".venv"
-$VenvPython = Join-Path $VenvPath "Scripts\python.exe"
-$ToolboxPath = Join-Path $ProjectRoot "..\genai-toolbox"
-
-Write-Host "`n========================================"
-Write-Host "  ADK + GenAI Toolbox Diagnostic Tool"
-Write-Host "========================================`n"
-
 $issues = @()
 $warnings = @()
 
-# [1/7] Check Poetry installation
+Write-Host "========================================"
+Write-Host "  ADK Setup Diagnostic Tool"
+Write-Host "========================================`n"
+
+# [1/7] Check Poetry
 Write-Host "[1/7] Checking Poetry installation..." -ForegroundColor Cyan
 try {
   $poetryVersion = & poetry --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ Poetry installed: $poetryVersion" -ForegroundColor Green
   } else {
-    Write-Host "   ✗ Poetry not working properly" -ForegroundColor Red
-    $issues += "Poetry not functioning"
+    Write-Host "   ✗ Poetry command failed" -ForegroundColor Red
+    $issues += "Poetry not installed"
   }
 } catch {
   Write-Host "   ✗ Poetry not found in PATH" -ForegroundColor Red
   $issues += "Poetry not installed"
 }
 
-# [2/7] Check Poetry virtual environment
+# [2/7] Check Virtual Environment
 Write-Host "`n[2/7] Checking Poetry virtual environment..." -ForegroundColor Cyan
-if (Test-Path $VenvPath) {
-  Write-Host "   ✓ Virtual environment found at: $VenvPath" -ForegroundColor Green
+$venvPath = Join-Path $ProjectRoot ".venv"
+$venvPython = Join-Path $venvPath "Scripts\python.exe"
+
+if (Test-Path $venvPath) {
+  Write-Host "   ✓ Virtual environment exists at: $venvPath" -ForegroundColor Green
   
-  if (Test-Path $VenvPython) {
+  if (Test-Path $venvPython) {
     try {
-      $venvPyVersion = & $VenvPython --version 2>&1
-      Write-Host "   ✓ Python in venv: $venvPyVersion" -ForegroundColor Green
+      $pyVersion = & $venvPython --version 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "   ✓ Python executable found: $pyVersion" -ForegroundColor Green
+      } else {
+        Write-Host "   ✗ Python executable not working" -ForegroundColor Red
+        $issues += "Python in venv not working"
+      }
     } catch {
-      Write-Host "   ✗ Python in venv not working" -ForegroundColor Red
-      $issues += "Virtual environment Python not functional"
+      Write-Host "   ✗ Failed to check Python version" -ForegroundColor Red
+      $issues += "Python in venv not working"
     }
   } else {
     Write-Host "   ✗ Python executable not found in venv" -ForegroundColor Red
-    $issues += "Virtual environment incomplete"
+    $issues += "Python executable missing from venv"
   }
 } else {
-  Write-Host "   ✗ Virtual environment not found at: $VenvPath" -ForegroundColor Red
-  Write-Host "     Run 'poetry install' in: $ProjectRoot" -ForegroundColor Yellow
+  Write-Host "   ✗ Virtual environment not found at: $venvPath" -ForegroundColor Red
   $issues += "Virtual environment not created"
 }
 
-# [3/7] Check required Python packages in venv
-Write-Host "`n[3/7] Checking required Python packages..." -ForegroundColor Cyan
-if (Test-Path $VenvPython) {
-  $requiredPackages = @(
-    @{Name="google-adk"; Import="google.adk"},
-    @{Name="langchain"; Import="langchain"},
-    @{Name="langgraph"; Import="langgraph"},
-    @{Name="toolbox-core"; Import="toolbox_core"}
-  )
-  
-  foreach ($pkg in $requiredPackages) {
-    $null = & $VenvPython -c "import $($pkg.Import)" 2>&1
-    if ($LASTEXITCODE -eq 0) {
-      Write-Host "   ✓ $($pkg.Name) installed" -ForegroundColor Green
-    } else {
-      Write-Host "   ✗ $($pkg.Name) not found" -ForegroundColor Red
-      $issues += "$($pkg.Name) missing from venv"
-    }
-  }
-} else {
-  Write-Host "   ⊘ Skipped (venv not available)" -ForegroundColor Yellow
-}
-
-# [4/7] Check port availability
-Write-Host "`n[4/7] Checking port 5000..." -ForegroundColor Cyan
+# [3/7] Check Docker
+Write-Host "`n[3/7] Checking Docker..." -ForegroundColor Cyan
 try {
-  $tcp = New-Object System.Net.Sockets.TcpClient
-  $tcp.Connect("localhost", 5000)
-  $tcp.Close()
-  Write-Host "   ⚠ Port 5000 is already in use" -ForegroundColor Yellow
-  
-  # Try to identify what's using it
-  try {
-    $null = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
-    Write-Host "     GenAI Toolbox is already running" -ForegroundColor Green
-  } catch {
-    Write-Host "     Another process is using port 5000" -ForegroundColor Yellow
-    $warnings += "Port 5000 occupied by non-toolbox process"
+  $dockerVersion = & docker --version 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ✓ Docker installed: $dockerVersion" -ForegroundColor Green
+    
+    # Check if Docker is running
+    try {
+      $null = & docker ps 2>&1
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "   ✓ Docker daemon is running" -ForegroundColor Green
+      } else {
+        Write-Host "   ⚠ Docker installed but daemon not running" -ForegroundColor Yellow
+        $warnings += "Docker daemon not running"
+      }
+    } catch {
+      Write-Host "   ⚠ Docker installed but daemon not accessible" -ForegroundColor Yellow
+      $warnings += "Docker daemon not accessible"
+    }
+  } else {
+    Write-Host "   ✗ Docker command failed" -ForegroundColor Red
+    $issues += "Docker not installed"
   }
 } catch {
-  Write-Host "   ✓ Port 5000 is available" -ForegroundColor Green
+  Write-Host "   ✗ Docker not found in PATH" -ForegroundColor Red
+  $issues += "Docker not installed"
 }
 
-# [5/7] Check Google Cloud credentials
-Write-Host "`n[5/7] Checking Google Cloud authentication..." -ForegroundColor Cyan
+# [4/7] Check Node.js and npm
+Write-Host "`n[4/7] Checking Node.js and npm..." -ForegroundColor Cyan
+try {
+  $nodeVersion = & node --version 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ✓ Node.js installed: $nodeVersion" -ForegroundColor Green
+  } else {
+    Write-Host "   ✗ Node.js command failed" -ForegroundColor Red
+    $warnings += "Node.js not working properly"
+  }
+} catch {
+  Write-Host "   ⚠ Node.js not found (required for ADK Web UI)" -ForegroundColor Yellow
+  $warnings += "Node.js not installed"
+}
+
+try {
+  $npmVersion = & npm --version 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host "   ✓ npm installed: $npmVersion" -ForegroundColor Green
+  } else {
+    Write-Host "   ✗ npm command failed" -ForegroundColor Red
+    $warnings += "npm not working properly"
+  }
+} catch {
+  Write-Host "   ⚠ npm not found" -ForegroundColor Yellow
+  $warnings += "npm not installed"
+}
+
+# [5/7] Check Google Cloud SDK and credentials
+Write-Host "`n[5/7] Checking Google Cloud configuration..." -ForegroundColor Cyan
 $gcpConfigured = $false
 
 if ($env:GOOGLE_APPLICATION_CREDENTIALS) {
+  Write-Host "   GOOGLE_APPLICATION_CREDENTIALS set" -ForegroundColor Cyan
   if (Test-Path $env:GOOGLE_APPLICATION_CREDENTIALS) {
-    Write-Host "   ✓ Service account credentials: $env:GOOGLE_APPLICATION_CREDENTIALS" -ForegroundColor Green
+    Write-Host "   ✓ Credentials file found: $env:GOOGLE_APPLICATION_CREDENTIALS" -ForegroundColor Green
     $gcpConfigured = $true
   } else {
     Write-Host "   ✗ Credentials file not found: $env:GOOGLE_APPLICATION_CREDENTIALS" -ForegroundColor Red
@@ -139,38 +151,40 @@ Write-Host "`n[6/7] Checking GenAI Toolbox..." -ForegroundColor Cyan
 try {
   $dockerPs = & docker ps --filter "name=genai-toolbox" --format "{{.Names}}" 2>&1
   if ($LASTEXITCODE -eq 0 -and $dockerPs) {
-    Write-Host "   ✓ GenAI Toolbox running in Docker: $dockerPs" -ForegroundColor Green
+    Write-Host "   ✓ GenAI Toolbox Docker container found: $dockerPs" -ForegroundColor Green
+    
+    # Check if container is running
+    try {
+      $response = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
+      Write-Host "   ✓ GenAI Toolbox is responding on port 5000" -ForegroundColor Green
+    } catch {
+      Write-Host "   ⚠ Container exists but not responding on port 5000" -ForegroundColor Yellow
+      $warnings += "GenAI Toolbox container not responding"
+    }
+  } else {
+    Write-Host "   ⊘ GenAI Toolbox Docker container not running" -ForegroundColor Yellow
+    $warnings += "GenAI Toolbox container not running"
   }
 } catch {
-  # Docker not available, check binary
+  Write-Host "   ⊘ Could not check Docker containers" -ForegroundColor Yellow
 }
 
-# Check binary
-$toolboxBinary = Join-Path $ToolboxPath "genai-toolbox.exe"
+# Check for binary
+$toolboxBinary = Join-Path (Split-Path -Parent $ProjectRoot) "genai-toolbox\genai-toolbox.exe"
 if (Test-Path $toolboxBinary) {
   Write-Host "   ✓ GenAI Toolbox binary found at: $toolboxBinary" -ForegroundColor Green
 } else {
-  Write-Host "   ⚠ GenAI Toolbox binary not found" -ForegroundColor Yellow
-  Write-Host "     Expected at: $toolboxBinary" -ForegroundColor Yellow
+  Write-Host "   ⚠ GenAI Toolbox binary not found (Docker recommended)" -ForegroundColor Yellow
   $warnings += "GenAI Toolbox binary not found (Docker recommended)"
-}
-
-# Check Docker Compose files
-$dockerComposeFile = Join-Path $ProjectRoot "backend\toolbox\docker-compose.dev.yml"
-if (Test-Path $dockerComposeFile) {
-  Write-Host "   ✓ Docker Compose config found: docker-compose.dev.yml" -ForegroundColor Green
-} else {
-  Write-Host "   ⚠ Docker Compose config not found" -ForegroundColor Yellow
-  $warnings += "Docker Compose configuration missing"
 }
 
 # [7/7] Check project structure
 Write-Host "`n[7/7] Checking project structure..." -ForegroundColor Cyan
 
 $requiredPaths = @(
-  @{Path="pyproject.toml"; Type="Poetry config"},
-  @{Path="backend\adk"; Type="ADK backend"},
-  @{Path="backend\toolbox"; Type="Toolbox config"}
+  @{Path = "pyproject.toml"; Type = "Poetry configuration"}
+  @{Path = "backend\adk\agents"; Type = "ADK agents directory"}
+  @{Path = "backend\toolbox"; Type = "Toolbox configuration"}
 )
 
 foreach ($item in $requiredPaths) {
@@ -218,13 +232,12 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
     Write-Host "  • Create venv: cd '$ProjectRoot' && poetry install"
   }
   if ($warnings -contains "GenAI Toolbox binary not found (Docker recommended)") {
-    Write-Host "  • Use Docker: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d"
+    Write-Host "  • Start Toolbox: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d"
   }
   if ($warnings -contains "No GCP authentication configured") {
-    Write-Host "  • Set up GCP: gcloud auth login && gcloud config set project YOUR_PROJECT_ID"
+    Write-Host "  • Configure GCP: gcloud auth application-default login"
   }
 }
 
 Write-Host "`n========================================"
-Write-Host "For more help, run with -Verbose flag"
-Write-Host "========================================`n"
+Write-Host ""
