@@ -7,7 +7,7 @@ services:
     container_name: orkhon-genai-toolbox-mcp
     command: 
       - "--tools-file"
-      - "/config/tools.yaml"
+      - "/config/${DNB_ENVIRONMENT:-prod}"
       - "--port"
       - "5000"
       - "--ui"
