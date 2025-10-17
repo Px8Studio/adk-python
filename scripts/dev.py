@@ -111,6 +111,37 @@ def env_with_venv_path(base: Optional[dict] = None) -> dict:
         env["VIRTUAL_ENV"] = str(VENV_DIR)
     return env
 
+# NEW: Resolve ADK CLI invocation reliably on Windows and POSIX
+def resolve_adk_invocation() -> List[str]:
+    """
+    Returns the base command to invoke the ADK CLI:
+      1) Prefer venv-local executable (adk.exe/cmd/bat or adk).
+      2) Then locate via PATH (with VENV_BIN precedence).
+      3) Finally, fallback to python -m google.adk.cli.cli.
+    """
+    candidates: List[Path] = []
+    if platform.system() == "Windows":
+        candidates = [
+            VENV_BIN / "adk.exe",
+            VENV_BIN / "adk.cmd",
+            VENV_BIN / "adk.bat",
+            VENV_BIN / "adk",
+        ]
+    else:
+        candidates = [VENV_BIN / "adk"]
+
+    for c in candidates:
+        if c.exists():
+            return [str(c)]
+
+    found = which("adk", extra_paths=[VENV_BIN])
+    if found:
+        return [found]
+
+    # Fallback: module invocation
+    return [str(sys.executable), "-m", "google.adk.cli.cli"]
+
+
 # NEW: Ensure google-adk is importable (install into .venv if missing)
 def ensure_adk_installed() -> bool:
     try:
@@ -317,8 +348,15 @@ def start_web_server(force_kill_port: bool = False) -> int:
             return 1
 
     env = env_with_venv_path()
-    cmd = [
-        "adk",
+
+    # Use robust ADK CLI resolution
+    adk_base = resolve_adk_invocation()
+    if len(adk_base) == 1:
+        print_info(f"Using ADK CLI: {adk_base[0]}")
+    else:
+        print_info(f"Using ADK via module: {' '.join(adk_base)}")
+
+    cmd = adk_base + [
         "web",
         "--reload_agents",
         "--host=0.0.0.0",
