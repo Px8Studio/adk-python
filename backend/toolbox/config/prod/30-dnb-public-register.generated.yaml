@@ -208,9 +208,7 @@ toolsets:
   dnb_public_register_tools:
   - dnb_public_register_api_publicregister_organizations
   - dnb_public_register_api_publicregister_organizations_historicalrecord
-  - dnb_public_register_api_publicregister_organizations
-  - dnb_public_register_api_publicregister_organizations_historicalrecord
-  - dnb_public_register_api_publicregister_publications
+
   - dnb_public_register_api_publicregister_publications_historicalrecord
   - dnb_public_register_api_publicregister_publications_search
   - dnb_public_register_api_publicregister_registerarticles
