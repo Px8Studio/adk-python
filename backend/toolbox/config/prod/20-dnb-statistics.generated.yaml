@@ -1,14 +1,14 @@
 sources:
-  statistics-api:
+  statistics_api:
     kind: http
     baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_PROD}
     timeout: 30s
 tools:
-  getexchangeratesoftheeuroandgoldpriceday:
+  dnb_statistics_exchange_rates_of_the_euro_and_gold_price_day:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /exchange-rates-of-the-euro-and-gold-price-day
     description: Exchange rates of the euro and gold price (Day)
@@ -38,9 +38,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getmarketinterestratesday:
+  dnb_statistics_market_interest_rates_day:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /market-interest-rates-day
     description: Market interest rates (Day)
@@ -70,9 +70,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getmarketinterestratesmonth:
+  dnb_statistics_market_interest_rates_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /market-interest-rates-month
     description: Market interest rates (Month)
@@ -102,9 +102,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getthe25largestinvestmentsinindividuallistedshares:
+  dnb_statistics_the_25_largest_investments_in_individual_listed_shares:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /the-25-largest-investments-in-individual-listed-shares
     description: The ‘25 largest’ investments in individual listed shares
@@ -134,9 +134,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchhouseholdsavingsmonth:
+  dnb_statistics_dutch_household_savings_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-household-savings-month
     description: Dutch household savings (Month)
@@ -166,9 +166,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getmfihouseholddepositsandloansinterestratesmonth:
+  dnb_statistics_mfi_household_deposits_and_loans_interest_rates_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /mfi-household-deposits-and-loans-interest-rates-month
     description: MFI household deposits and loans, interest rates (Month)
@@ -198,9 +198,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getstatutoryinterestratehalfyear:
+  dnb_statistics_statutory_interest_rate_half_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /statutory-interest-rate-half-year
     description: Statutory interest rate (Half-year)
@@ -230,9 +230,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getexchangeratesoftheeuroandgoldpricemonth:
+  dnb_statistics_exchange_rates_of_the_euro_and_gold_price_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /exchange-rates-of-the-euro-and-gold-price-month
     description: Exchange rates of the euro and gold price (Month)
@@ -262,9 +262,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getbalancesheetofdenederlandschebankmonthnonbreakadjusted:
+  dnb_statistics_balance_sheet_of_de_nederlandsche_bank_month_non_break_adjusted:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /balance-sheet-of-de-nederlandsche-bank-month-non-break-adjusted
     description: Balance sheet of De Nederlandsche Bank (Month, non-break adjusted)
@@ -294,9 +294,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getindividualpensionfunddataquarter:
+  dnb_statistics_individual_pension_fund_data_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /individual-pension-fund-data-quarter
     description: Individual pension fund data (Quarter)
@@ -326,9 +326,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getkeyindicatorsmonetarystatisticsmonth:
+  dnb_statistics_key_indicators_monetary_statistics_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /key-indicators-monetary-statistics-month
     description: Key indicators monetary statistics (Month)
@@ -358,9 +358,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getholdingofbondsbytypeofsustainabilitycharacteristicbysector:
+  dnb_statistics_holding_of_bonds_by_type_of_sustainability_characteristic_by_sector:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /holding-of-bonds-by-type-of-sustainability-characteristic-by-sector
     description: Holding of bonds by type of sustainability characteristic by sector
@@ -390,9 +390,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getholdingofgreenbondswithexternalassurancebysector:
+  dnb_statistics_holding_of_green_bonds_with_external_assurance_by_sector:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /holding-of-green-bonds-with-external-assurance-by-sector
     description: 'Holding of green bonds with external assurance by sector '
@@ -422,9 +422,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getissuanceofbondsbytypeofsustainabilitycharacteristicbysector:
+  dnb_statistics_issuance_of_bonds_by_type_of_sustainability_characteristic_by_sector:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /issuance-of-bonds-by-type-of-sustainability-characteristic-by-sector
     description: Issuance of bonds by type of sustainability characteristic by sector
@@ -454,9 +454,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getissuanceofgreenbondswithexternalassurancebysector:
+  dnb_statistics_issuance_of_green_bonds_with_external_assurance_by_sector:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /issuance-of-green-bonds-with-external-assurance-by-sector
     description: Issuance of green bonds with external assurance by sector
@@ -486,9 +486,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinvestmentsbydutchhouseholdsinsecuritiesbyinstrumentcategory:
+  dnb_statistics_investments_by_dutch_households_in_securities_by_instrument_category:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /investments-by-dutch-households-in-securities-by-instrument-category
     description: Investments by Dutch households in securities by instrument category
@@ -518,9 +518,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinvestmentsbydutchhouseholdsinindividualaexshares:
+  dnb_statistics_investments_by_dutch_households_in_individual_aex_shares:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /investments-by-dutch-households-in-individual-aex-shares
     description: Investments by Dutch households in individual AEX shares
@@ -550,9 +550,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getthe25largestinvestmentsbydutchhouseholdsinindividualinvestmentfunds:
+  dnb_statistics_the_25_largest_investments_by_dutch_households_in_individual_investment_funds:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /the-25-largest-investments-by-dutch-households-in-individual-investment-funds
     description: The ‘25 largest’ investments by Dutch households in individual investment
@@ -583,9 +583,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getexchangeratesoftheeuroandgoldpricequarter:
+  dnb_statistics_exchange_rates_of_the_euro_and_gold_price_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /exchange-rates-of-the-euro-and-gold-price-quarter
     description: Exchange rates of the euro and gold price (Quarter)
@@ -615,9 +615,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getexchangeratesoftheeuroandgoldpriceyearendofperiod:
+  dnb_statistics_exchange_rates_of_the_euro_and_gold_price_year_end_of_period:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /exchange-rates-of-the-euro-and-gold-price-year-end-of-period
     description: Exchange rates of the euro and gold price (Year, end-of-period)
@@ -647,9 +647,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getexchangeratesoftheeuroandgoldpriceyearaverage:
+  dnb_statistics_exchange_rates_of_the_euro_and_gold_price_year_average:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /exchange-rates-of-the-euro-and-gold-price-year-average
     description: Exchange rates of the euro and gold price (Year, average)
@@ -679,9 +679,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpremiumsclaimsandcostsbylineofbusinessofnonlifeinsurerssolvencyiiyear:
+  dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_non_life_insurers_solvency_ii_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /premiums-claims-and-costs-by-line-of-business-of-non-life-insurers-solvency-ii-year
     description: Premiums, claims and costs by line of business of non-life insurers,
@@ -712,9 +712,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpremiumsclaimsandcostsbylineofbusinessoflifeinsurerssolvencyiiyear:
+  dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_life_insurers_solvency_ii_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /premiums-claims-and-costs-by-line-of-business-of-life-insurers-solvency-ii-year
     description: Premiums, claims and costs by line of business of life insurers,
@@ -745,9 +745,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpremiumsclaimsandcostsbylineofbusinessoflifeinsurerssolvencyiiquarter:
+  dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_life_insurers_solvency_ii_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /premiums-claims-and-costs-by-line-of-business-of-life-insurers-solvency-ii-quarter
     description: Premiums, claims and costs by line of business of life insurers,
@@ -778,9 +778,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpremiumsclaimsandcostsbylineofbusinessofnonlifeinsurerssolvencyiiquarter:
+  dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_non_life_insurers_solvency_ii_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /premiums-claims-and-costs-by-line-of-business-of-non-life-insurers-solvency-ii-quarter
     description: Premiums, claims and costs by line of business of non-life insurers,
@@ -811,9 +811,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  geteuropeancentralbankinterestrates:
+  dnb_statistics_european_central_bank_interest_rates:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /european-central-bank-interest-rates
     description: European Central Bank interest rates
@@ -843,9 +843,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getfinancialdataofindividualbankshalfyear:
+  dnb_statistics_financial_data_of_individual_banks_half_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /financial-data-of-individual-banks-half-year
     description: Financial data of individual banks (Half-year)
@@ -875,9 +875,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnominalirtsforpensionfundszerocoupon:
+  dnb_statistics_nominal_irts_for_pension_funds_zero_coupon:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /nominal-irts-for-pension-funds-zero-coupon
     description: Nominal IRTS for pension funds (zero coupon)
@@ -907,9 +907,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getbalancesheetofdutchbasedmfisnotincludingdnbmonth:
+  dnb_statistics_balance_sheet_of_dutch_based_mfis_not_including_dnb_month:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /balance-sheet-of-dutch-based-mfis-not-including-dnb-month
     description: Balance sheet of Dutch-based MFIs (not including DNB) (Month)
@@ -939,9 +939,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getsecuritiesandderivativestradersbalancesheet:
+  dnb_statistics_securities_and_derivatives_traders_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /securities-and-derivatives-traders-balance-sheet
     description: Securities and Derivatives Traders balance sheet
@@ -971,9 +971,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getfinancecompaniesbalancesheet:
+  dnb_statistics_finance_companies_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /finance-companies-balance-sheet
     description: Finance Companies balance sheet
@@ -1003,9 +1003,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getspecialisedfinancialinstitutionsbalancesheet:
+  dnb_statistics_specialised_financial_institutions_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /specialised-financial-institutions-balance-sheet
     description: Specialised Financial Institutions balance sheet
@@ -1035,9 +1035,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getfinancialauxiliariesbalancesheet:
+  dnb_statistics_financial_auxiliaries_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /financial-auxiliaries-balance-sheet
     description: Financial Auxiliaries balance sheet
@@ -1067,9 +1067,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getheadofficesoffinancialauxiliariesbalancesheet:
+  dnb_statistics_head_offices_of_financial_auxiliaries_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /head-offices-of-financial-auxiliaries-balance-sheet
     description: Head Offices of Financial Auxiliaries balance sheet
@@ -1099,9 +1099,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getotherfinancialauxiliariesbalancesheet:
+  dnb_statistics_other_financial_auxiliaries_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /other-financial-auxiliaries-balance-sheet
     description: Other Financial Auxiliaries balance sheet
@@ -1131,9 +1131,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getbalancesheetofotherfinancialintermediariesbygeographyquarter:
+  dnb_statistics_balance_sheet_of_other_financial_intermediaries_by_geography_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /balance-sheet-of-other-financial-intermediaries-by-geography-quarter
     description: Balance sheet of Other Financial Intermediaries, by geography (Quarter)
@@ -1163,9 +1163,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getfinancialauxiliariesbalancesheetbygeographyquarter:
+  dnb_statistics_financial_auxiliaries_balance_sheet_by_geography_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /financial-auxiliaries-balance-sheet-by-geography-quarter
     description: Financial Auxiliaries balance sheet, by geography (Quarter)
@@ -1195,9 +1195,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getloansbytypeandsecuritisationtypequarter:
+  dnb_statistics_loans_by_type_and_securitisation_type_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /loans-by-type-and-securitisation-type-quarter
     description: Loans by type and securitisation type (Quarter)
@@ -1227,9 +1227,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getotherfinancialintermediariesbalancesheet:
+  dnb_statistics_other_financial_intermediaries_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /other-financial-intermediaries-balance-sheet
     description: Other Financial Intermediaries balance sheet
@@ -1259,9 +1259,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getsecuritisationvehiclesbalancesheet:
+  dnb_statistics_securitisation_vehicles_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /securitisation-vehicles-balance-sheet
     description: Securitisation Vehicles balance sheet
@@ -1291,9 +1291,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getbalanceofpaymentsquarter:
+  dnb_statistics_balance_of_payments_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /balance-of-payments-quarter
     description: Balance of payments (Quarter)
@@ -1323,9 +1323,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getbalanceofpaymentsyear:
+  dnb_statistics_balance_of_payments_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /balance-of-payments-year
     description: Balance of payments (Year)
@@ -1355,9 +1355,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinfrastructureofdomesticretailpaymentsunits:
+  dnb_statistics_infrastructure_of_domestic_retail_payments_units:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /infrastructure-of-domestic-retail-payments-units
     description: Infrastructure of domestic retail payments (units)
@@ -1387,9 +1387,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getgeographicaldistributionofinwardandoutwardfdiincome:
+  dnb_statistics_geographical_distribution_of_inward_and_outward_fdi_income:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /geographical-distribution-of-inward-and-outward-fdi-income
     description: Geographical distribution of inward and outward FDI income
@@ -1419,9 +1419,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getresidentialmortgageloansprovidedtohouseholdsbysector:
+  dnb_statistics_residential_mortgage_loans_provided_to_households_by_sector:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /residential-mortgage-loans-provided-to-households-by-sector
     description: Residential mortgage loans provided to households by sector
@@ -1451,9 +1451,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpensionfundsbalancesheet:
+  dnb_statistics_pension_funds_balance_sheet:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /pension-funds-balance-sheet
     description: Pension funds balance sheet
@@ -1483,9 +1483,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnumberandvalueofretailpaymenttransactions:
+  dnb_statistics_number_and_value_of_retail_payment_transactions:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /number-and-value-of-retail-payment-transactions
     description: Number and value of retail payment transactions
@@ -1515,9 +1515,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchgovernmentpaperholdings:
+  dnb_statistics_dutch_government_paper_holdings:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-government-paper-holdings
     description: Dutch government paper holdings
@@ -1547,9 +1547,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinsurancecorporationsbalancesheetquarter:
+  dnb_statistics_insurance_corporations_balance_sheet_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /insurance-corporations-balance-sheet-quarter
     description: Insurance corporations balance sheet (Quarter)
@@ -1579,9 +1579,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getsummarybalancesheetofinsurancecorporationsbytypequarter:
+  dnb_statistics_summary_balance_sheet_of_insurance_corporations_by_type_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /summary-balance-sheet-of-insurance-corporations-by-type-quarter
     description: Summary balance sheet of insurance corporations by type (Quarter)
@@ -1611,9 +1611,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinsurancecorporationassetsandliabilitiesbydomesticcountersectorquarter:
+  dnb_statistics_insurance_corporation_assets_and_liabilities_by_domestic_countersector_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /insurance-corporation-assets-and-liabilities-by-domestic-countersector-quarter
     description: Insurance corporation assets and liabilities by domestic countersector
@@ -1644,9 +1644,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinsurancecorporationassetsandliabilitiesbygeographyquarter:
+  dnb_statistics_insurance_corporation_assets_and_liabilities_by_geography_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /insurance-corporation-assets-and-liabilities-by-geography-quarter
     description: Insurance corporation assets and liabilities by geography (Quarter)
@@ -1676,9 +1676,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getsummarybalancesheetofpensionfundsbytypequarter:
+  dnb_statistics_summary_balance_sheet_of_pension_funds_by_type_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /summary-balance-sheet-of-pension-funds-by-type-quarter
     description: Summary balance sheet of pension funds by type (Quarter)
@@ -1708,9 +1708,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpensionfundsassetsandliabilitiesbydomesticcountersectorquarter:
+  dnb_statistics_pension_funds_assets_and_liabilities_by_domestic_countersector_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /pension-funds-assets-and-liabilities-by-domestic-countersector-quarter
     description: Pension funds assets and liabilities by domestic countersector (Quarter)
@@ -1740,9 +1740,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpensionfundsassetsandliabilitiesbygeographicalareaquarter:
+  dnb_statistics_pension_funds_assets_and_liabilities_by_geographical_area_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /pension-funds-assets-and-liabilities-by-geographical-area-quarter
     description: Pension funds assets and liabilities by geographical area (Quarter)
@@ -1772,9 +1772,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchsecuritiesholdingsbysectoroftheholderbytypeofsecurity:
+  dnb_statistics_dutch_securities_holdings_by_sector_of_the_holder_by_type_of_security:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-securities-holdings-by-sector-of-the-holder-by-type-of-security
     description: Dutch securities holdings by sector of the holder, by type of security
@@ -1804,9 +1804,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchsecuritiesholdingsbysectoroftheholderbygeography:
+  dnb_statistics_dutch_securities_holdings_by_sector_of_the_holder_by_geography:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-securities-holdings-by-sector-of-the-holder-by-geography
     description: Dutch securities holdings by sector of the holder, by geography
@@ -1836,9 +1836,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchdebtsecuritiesholdingsbysectoroftheholder:
+  dnb_statistics_dutch_debt_securities_holdings_by_sector_of_the_holder:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-debt-securities-holdings-by-sector-of-the-holder
     description: Dutch debt securities holdings by sector of the holder
@@ -1868,9 +1868,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchlistedsharesholdingsbysectoroftheholder:
+  dnb_statistics_dutch_listed_shares_holdings_by_sector_of_the_holder:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-listed-shares-holdings-by-sector-of-the-holder
     description: Dutch listed shares holdings by sector of the holder
@@ -1900,9 +1900,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getdutchfundunitholdingsbysectoroftheholder:
+  dnb_statistics_dutch_fund_unit_holdings_by_sector_of_the_holder:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /dutch-fund-unit-holdings-by-sector-of-the-holder
     description: Dutch fund unit holdings by sector of the holder
@@ -1932,9 +1932,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnetexternalassetsquarter:
+  dnb_statistics_net_external_assets_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /net-external-assets-quarter
     description: Net external assets (Quarter)
@@ -1964,9 +1964,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnetexternalassetsyear:
+  dnb_statistics_net_external_assets_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /net-external-assets-year
     description: Net external assets (Year)
@@ -1996,9 +1996,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getmacroeconomicscoreboardquarter:
+  dnb_statistics_macroeconomic_scoreboard_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /macroeconomic-scoreboard-quarter
     description: Macroeconomic scoreboard (Quarter)
@@ -2028,9 +2028,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getmacroeconomicscoreboardyear:
+  dnb_statistics_macroeconomic_scoreboard_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /macroeconomic-scoreboard-year
     description: Macroeconomic scoreboard (Year)
@@ -2060,9 +2060,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnetdepositsininvestmentfundsbysectoroftheholderquarter:
+  dnb_statistics_net_deposits_in_investment_funds_by_sector_of_the_holder_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /net-deposits-in-investment-funds-by-sector-of-the-holder-quarter
     description: Net deposits in investment funds by sector of the holder (Quarter)
@@ -2092,9 +2092,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinsurerscashflowstatementquarter:
+  dnb_statistics_insurers_cash_flow_statement_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /insurers-cash-flow-statement-quarter
     description: Insurers cash flow statement (Quarter)
@@ -2124,9 +2124,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpensionfundscashflowstatementquarter:
+  dnb_statistics_pension_funds_cash_flow_statement_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /pension-funds-cash-flow-statement-quarter
     description: Pension funds cash flow statement (Quarter)
@@ -2156,9 +2156,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getpensionfundsbalancesheetincludinglookthroughparticipationindutchinvestmen:
+  dnb_statistics_pension_funds_balance_sheet_including_look_through_participation_in_dutch_investment_funds_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /pension-funds-balance-sheet-including-look-through-participation-in-dutch-investment-funds-quarter
     description: Pension funds’ balance sheet including look through participation
@@ -2189,9 +2189,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getresidentialmortgagesprovidedbydutchinstitutionalinvestorstodutchhousehold:
+  dnb_statistics_residential_mortgages_provided_by_dutch_institutional_investors_to_dutch_households_quarter:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /residential-mortgages-provided-by-dutch-institutional-investors-to-dutch-households-quarter
     description: Residential mortgages provided by Dutch institutional investors to
@@ -2222,9 +2222,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getnumberandvalueofpaymenttransactionshalfyear:
+  dnb_statistics_number_and_value_of_payment_transactions_half_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /number-and-value-of-payment-transactions-half-year
     description: Number and value of payment transactions (Half-year)
@@ -2254,9 +2254,9 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
-  getinfrastructuredomesticpaymentsinunitshalfyear:
+  dnb_statistics_infrastructure_domestic_payments_in_units_half_year:
     kind: http
-    source: statistics-api
+    source: statistics_api
     method: GET
     path: /infrastructure-domestic-payments-in-units-half-year
     description: Infrastructure domestic payments in units (Half-year)
@@ -2286,3 +2286,76 @@ tools:
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
       required: false
+toolsets:
+  dnb_statistics_tools:
+  - dnb_statistics_exchange_rates_of_the_euro_and_gold_price_day
+  - dnb_statistics_market_interest_rates_day
+  - dnb_statistics_market_interest_rates_month
+  - dnb_statistics_the_25_largest_investments_in_individual_listed_shares
+  - dnb_statistics_dutch_household_savings_month
+  - dnb_statistics_mfi_household_deposits_and_loans_interest_rates_month
+  - dnb_statistics_statutory_interest_rate_half_year
+  - dnb_statistics_exchange_rates_of_the_euro_and_gold_price_month
+  - dnb_statistics_balance_sheet_of_de_nederlandsche_bank_month_non_break_adjusted
+  - dnb_statistics_individual_pension_fund_data_quarter
+  - dnb_statistics_key_indicators_monetary_statistics_month
+  - dnb_statistics_holding_of_bonds_by_type_of_sustainability_characteristic_by_sector
+  - dnb_statistics_holding_of_green_bonds_with_external_assurance_by_sector
+  - dnb_statistics_issuance_of_bonds_by_type_of_sustainability_characteristic_by_sector
+  - dnb_statistics_issuance_of_green_bonds_with_external_assurance_by_sector
+  - dnb_statistics_investments_by_dutch_households_in_securities_by_instrument_category
+  - dnb_statistics_investments_by_dutch_households_in_individual_aex_shares
+  - dnb_statistics_the_25_largest_investments_by_dutch_households_in_individual_investment_funds
+  - dnb_statistics_exchange_rates_of_the_euro_and_gold_price_quarter
+  - dnb_statistics_exchange_rates_of_the_euro_and_gold_price_year_end_of_period
+  - dnb_statistics_exchange_rates_of_the_euro_and_gold_price_year_average
+  - dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_non_life_insurers_solvency_ii_year
+  - dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_life_insurers_solvency_ii_year
+  - dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_life_insurers_solvency_ii_quarter
+  - dnb_statistics_premiums_claims_and_costs_by_line_of_business_of_non_life_insurers_solvency_ii_quarter
+  - dnb_statistics_european_central_bank_interest_rates
+  - dnb_statistics_financial_data_of_individual_banks_half_year
+  - dnb_statistics_nominal_irts_for_pension_funds_zero_coupon
+  - dnb_statistics_balance_sheet_of_dutch_based_mfis_not_including_dnb_month
+  - dnb_statistics_securities_and_derivatives_traders_balance_sheet
+  - dnb_statistics_finance_companies_balance_sheet
+  - dnb_statistics_specialised_financial_institutions_balance_sheet
+  - dnb_statistics_financial_auxiliaries_balance_sheet
+  - dnb_statistics_head_offices_of_financial_auxiliaries_balance_sheet
+  - dnb_statistics_other_financial_auxiliaries_balance_sheet
+  - dnb_statistics_balance_sheet_of_other_financial_intermediaries_by_geography_quarter
+  - dnb_statistics_financial_auxiliaries_balance_sheet_by_geography_quarter
+  - dnb_statistics_loans_by_type_and_securitisation_type_quarter
+  - dnb_statistics_other_financial_intermediaries_balance_sheet
+  - dnb_statistics_securitisation_vehicles_balance_sheet
+  - dnb_statistics_balance_of_payments_quarter
+  - dnb_statistics_balance_of_payments_year
+  - dnb_statistics_infrastructure_of_domestic_retail_payments_units
+  - dnb_statistics_geographical_distribution_of_inward_and_outward_fdi_income
+  - dnb_statistics_residential_mortgage_loans_provided_to_households_by_sector
+  - dnb_statistics_pension_funds_balance_sheet
+  - dnb_statistics_number_and_value_of_retail_payment_transactions
+  - dnb_statistics_dutch_government_paper_holdings
+  - dnb_statistics_insurance_corporations_balance_sheet_quarter
+  - dnb_statistics_summary_balance_sheet_of_insurance_corporations_by_type_quarter
+  - dnb_statistics_insurance_corporation_assets_and_liabilities_by_domestic_countersector_quarter
+  - dnb_statistics_insurance_corporation_assets_and_liabilities_by_geography_quarter
+  - dnb_statistics_summary_balance_sheet_of_pension_funds_by_type_quarter
+  - dnb_statistics_pension_funds_assets_and_liabilities_by_domestic_countersector_quarter
+  - dnb_statistics_pension_funds_assets_and_liabilities_by_geographical_area_quarter
+  - dnb_statistics_dutch_securities_holdings_by_sector_of_the_holder_by_type_of_security
+  - dnb_statistics_dutch_securities_holdings_by_sector_of_the_holder_by_geography
+  - dnb_statistics_dutch_debt_securities_holdings_by_sector_of_the_holder
+  - dnb_statistics_dutch_listed_shares_holdings_by_sector_of_the_holder
+  - dnb_statistics_dutch_fund_unit_holdings_by_sector_of_the_holder
+  - dnb_statistics_net_external_assets_quarter
+  - dnb_statistics_net_external_assets_year
+  - dnb_statistics_macroeconomic_scoreboard_quarter
+  - dnb_statistics_macroeconomic_scoreboard_year
+  - dnb_statistics_net_deposits_in_investment_funds_by_sector_of_the_holder_quarter
+  - dnb_statistics_insurers_cash_flow_statement_quarter
+  - dnb_statistics_pension_funds_cash_flow_statement_quarter
+  - dnb_statistics_pension_funds_balance_sheet_including_look_through_participation_in_dutch_investment_funds_quarter
+  - dnb_statistics_residential_mortgages_provided_by_dutch_institutional_investors_to_dutch_households_quarter
+  - dnb_statistics_number_and_value_of_payment_transactions_half_year
+  - dnb_statistics_infrastructure_domestic_payments_in_units_half_year

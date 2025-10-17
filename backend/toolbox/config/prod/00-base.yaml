@@ -15,8 +15,15 @@
 
 # Shared toolsets (optional - define groups that span multiple APIs)
 # Format: toolset_name is a list of tool IDs
+#
+# NOTE: Individual API toolsets are auto-generated in their respective files:
+#   - dnb-echo-tools (in 10-dnb-echo.generated.yaml)
+#   - dnb-statistics-tools (in 20-dnb-statistics.generated.yaml)  
+#   - dnb-public-register-tools (in 30-dnb-public-register.generated.yaml)
+#
+# You can define cross-API toolsets here if needed, for example:
 # toolsets:
-#   all-dnb-tools:
-#     - dnb-echo-helloworld
-#     - dnb-statistics-get-metadata
-#     - dnb-statistics-query-data
+#   dnb-essentials:
+#     - retrieve-resource  # from echo
+#     - getexchangeratesoftheeuroandgoldpriceday  # from statistics
+#     - get-api-publicregister-registers  # from public-register

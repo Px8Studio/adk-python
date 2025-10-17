@@ -7,23 +7,24 @@ from langchain_google_vertexai import ChatVertexAI
 from langgraph.prebuilt import create_react_agent
 
 async def main():
-    # Connect to your GenAI Toolbox MCP server
+    # Connect to MCP server
     client = ToolboxClient("http://localhost:5000")
     
-    # Load your DNB tools
-    tools = await client.aload_toolset("dnb-tools")
+    # Load ALL available tools from the toolbox
+    tools = await client.aload_toolset()
     
     print(f"Loaded {len(tools)} tools from GenAI Toolbox")
+    print(f"Available tools: {[t.name for t in tools[:5]]}...")
     
     # Create LLM
     llm = ChatVertexAI(model="gemini-2.5-flash")
     
-    # Create agent with tools
+    # Create agent with LLM + tools
     agent = create_react_agent(llm, tools)
     
-    # Run agent
+    # Try a real statistics query
     response = await agent.ainvoke({
-        "messages": [("user", "Test the DNB API connection using the echo tool")]
+        "messages": [("user", "Get the latest exchange rates of the euro and gold price")]
     })
     
     print("\nAgent Response:")
