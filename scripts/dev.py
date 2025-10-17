@@ -315,6 +315,13 @@ def start_web_server(force_kill_port: bool = False) -> int:
 # ---------- CLI ----------
 
 def main(argv: Optional[List[str]] = None) -> int:
+    # Accept being called without args; default to quick-start
+    if argv is None:
+        argv = sys.argv[1:]
+    if not argv:
+        print_info("No command provided. Defaulting to 'quick-start'. Use -h for help.")
+        argv = ["quick-start"]
+
     parser = argparse.ArgumentParser(description="Orkhon Dev CLI (terminal-agnostic).")
     sub = parser.add_subparsers(dest="command", required=True)
 
