@@ -103,27 +103,48 @@ if (Test-Path $VenvPath) {
   $issues += "Virtual environment not created"
 }
 
-# [2/4] Check port 5000 availability
-Write-Host "`n[2/4] Checking port 5000 availability..." -ForegroundColor Cyan
+# [2/4] Check GenAI Toolbox
+Write-Host "`n[2/4] Checking GenAI Toolbox..." -ForegroundColor Cyan
+$toolboxRunning = $false
 try {
-  $tcp = New-Object System.Net.Sockets.TcpClient
-  try {
-    $tcp.Connect("localhost", 5000)
-    $tcp.Close()
-    
-    # Port is in use, check if it's toolbox
-    try {
-      $null = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
-      Write-Host "   ✓ GenAI Toolbox is already running" -ForegroundColor Green
-    } catch {
-      Write-Host "   ⚠ Another process is using port 5000" -ForegroundColor Yellow
-      $warnings += "Port 5000 occupied by non-toolbox process"
-    }
-  } catch {
-    Write-Host "   ✓ Port 5000 is available" -ForegroundColor Green
-  }
+  $response = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
+  Write-Host "   ✓ GenAI Toolbox is running" -ForegroundColor Green
+  $toolboxRunning = $true
 } catch {
-  Write-Host "   ✓ Port 5000 is available" -ForegroundColor Green
+  Write-Host "   ✗ GenAI Toolbox not responding on port 5000" -ForegroundColor Yellow
+  Write-Host "   Attempting to start GenAI Toolbox..." -ForegroundColor Cyan
+  
+  # Try to start toolbox using Docker
+  $toolboxDir = Join-Path $ProjectRoot "backend\toolbox"
+  if (Test-Path $toolboxDir) {
+    Push-Location $toolboxDir
+    try {
+      docker-compose -f docker-compose.dev.yml up -d 2>&1 | Out-Null
+      
+      # Wait for toolbox to start
+      $maxWait = 30
+      $waited = 0
+      while ($waited -lt $maxWait) {
+        try {
+          $null = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 1 -ErrorAction Stop
+          Write-Host "   ✓ GenAI Toolbox started successfully" -ForegroundColor Green
+          $toolboxRunning = $true
+          break
+        } catch {
+          Start-Sleep -Seconds 2
+          $waited += 2
+        }
+      }
+      
+      if (-not $toolboxRunning) {
+        Write-Host "   ⚠ GenAI Toolbox may still be starting..." -ForegroundColor Yellow
+      }
+    } catch {
+      Write-Host "   ✗ Failed to start GenAI Toolbox: $($_.Exception.Message)" -ForegroundColor Red
+    } finally {
+      Pop-Location
+    }
+  }
 }
 
 # [3/4] Check Docker
@@ -246,21 +267,25 @@ Write-Host '╚═════════════════════�
 Write-Host ''
 Write-Host 'Starting ADK API Server...' -ForegroundColor Yellow
 Write-Host ''
-.\.venv\Scripts\Activate.ps1
-adk api_server --allow_origins=http://localhost:4200 --host=0.0.0.0 --port=8000 backend\adk\agents
+$webUiScript = @"
+# ADK Web UI Startup Script
+`$ProjectRoot = "$ProjectRoot"
+`$VenvPython = "$VenvPython"
+
+Write-Host '╔════════════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
+Write-Host '║               ADK Web UI (Keep this window open)              ║' -ForegroundColor Cyan
+Write-Host '╚════════════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
+Write-Host ''
+Write-Host 'Starting ADK Web UI...' -ForegroundColor Yellow
+Write-Host ''
+Set-Location "`$ProjectRoot\backend\adk"
+& `$VenvPython -m google.adk.cli.cli_tools_click web --port 8080
 "@
 
-$apiServerScriptPath = "backend\adk\.start-api-server.ps1"
-$apiServerScript | Out-File -FilePath $apiServerScriptPath -Encoding UTF8
+$webUiScriptPath = "backend\adk\.start-web-ui.ps1"
+$webUiScript | Out-File -FilePath $webUiScriptPath -Encoding UTF8
 
-Start-Process powershell -ArgumentList "-NoExit", "-File", $apiServerScriptPath
-
-Write-Host "   ✓ API Server starting in new window" -ForegroundColor Green
-Write-Host "   (Wait for 'ADK API Server started' message)" -ForegroundColor Gray
-Write-Host ""
-
-# Wait a moment for API server to start
-Start-Sleep -Seconds 5
+Start-Process powershell -ArgumentList "-NoExit", "-File", $webUiScriptPath
 
 # Step 3: Start ADK Web UI
 Write-Host "Step 3/3: Starting ADK Web UI..." -ForegroundColor Cyan
