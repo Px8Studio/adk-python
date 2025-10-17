@@ -13,8 +13,10 @@
 #   30-dnb-public-register.generated.yaml
 # ============================================================================
 
-# Shared toolsets (optional - can define groups that span multiple APIs)
-toolsets:
-  all-dnb-tools:
-    description: All DNB API tools combined
-    # Tools will be listed after they are loaded from other files
+# Shared toolsets (optional - define groups that span multiple APIs)
+# Format: toolset_name is a list of tool IDs
+# toolsets:
+#   all-dnb-tools:
+#     - dnb-echo-helloworld
+#     - dnb-statistics-get-metadata
+#     - dnb-statistics-query-data
