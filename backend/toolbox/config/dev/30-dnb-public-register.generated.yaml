@@ -1,14 +1,14 @@
 sources:
-  public-register-api:
+  public_register_api:
     kind: http
     baseUrl: https://api.dnb.nl/publicdata/v1
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
     timeout: 30s
 tools:
-  get-api-publicregister-registercode-organizations:
+  get_api_publicregister_registercode_organizations:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.registerCode}}/Organizations
     description: Retrieve latest relation numbers for register.
@@ -28,9 +28,9 @@ tools:
       type: string
       description: The register code.
       required: true
-  get-api-publicregister-registercode-organizations-historicalrecord-date:
+  get_api_publicregister_registercode_organizations_historicalreco:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
     description: Retrieve historical relation numbers for register.
@@ -54,9 +54,9 @@ tools:
       type: string
       description: The date of when the publication was published.
       required: true
-  get-api-publicregister-languagecode-registercode-organizations:
+  get_api_publicregister_languagecode_registercode_organizations:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations
     description: Retrieve latest organizations for relation numbers.
@@ -75,9 +75,9 @@ tools:
       type: string
       description: The register code.
       required: true
-  get-api-publicregister-languagecode-registercode-organizations-historicalrec:
+  get_api_publicregister_languagecode_registercode_organizations_h:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
     description: Retrieve historical organizations for relation numbers.
@@ -100,9 +100,9 @@ tools:
       type: string
       description: The date of when the publication was published.
       required: true
-  get-api-publicregister-languagecode-publications-registercode:
+  get_api_publicregister_languagecode_publications_registercode:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}
     description: Retrieve latest publication.
@@ -126,9 +126,9 @@ tools:
       type: string
       description: The publication in the specified register.
       required: true
-  get-api-publicregister-languagecode-publications-registercode-historicalreco:
+  get_api_publicregister_languagecode_publications_registercode_hi:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}/historicalrecord/{{.date}}
     description: Retrieve historical publication.
@@ -156,9 +156,9 @@ tools:
       type: string
       description: The date of when the publication was published.
       required: true
-  get-api-publicregister-languagecode-publications-search-registercode-registe:
+  get_api_publicregister_languagecode_publications_search_register:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/search
     description: Search publications.
@@ -191,9 +191,9 @@ tools:
       type: string
       description: The publication in the specified language.
       required: true
-  get-api-publicregister-languagecode-registercode-registerarticles:
+  get_api_publicregister_languagecode_registercode_registerarticle:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/RegisterArticles
     description: Retrieve latest act articles.
@@ -206,30 +206,15 @@ tools:
       type: string
       description: 'Parameter: registerCode'
       required: true
-  get-api-publicregister-registers:
+  get_api_publicregister_registers:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/Registers
     description: Retrieve all registers.
-  get-api-publicregister-languagecode-registercode-registrations-actarticlenam:
+  get_api_publicregister_languagecode_registercode_registrations_a:
     kind: http
-    source: public-register-api
-    method: GET
-    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
-    description: Retrieve latest act article names.
-    pathParams:
-    - name: languageCode
-      type: string
-      description: The language code.
-      required: true
-    - name: registerCode
-      type: string
-      description: The register code.
-      required: true
-  get-api-publicregister-languagecode-registercode-registrations-actarticlenam-1:
-    kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames/historicalrecord/{{.date}}
     description: Retrieve historical act article names.
@@ -246,23 +231,23 @@ tools:
       type: string
       description: The date of when the publication was published.
       required: true
-  get-api-publicregister-supportedlanguages:
+  get_api_publicregister_supportedlanguages:
     kind: http
-    source: public-register-api
+    source: public_register_api
     method: GET
     path: /api/publicregister/SupportedLanguages
     description: Retrieve languages.
 toolsets:
-  dnb-public-register-tools:
-  - get-api-publicregister-registercode-organizations
-  - get-api-publicregister-registercode-organizations-historicalrecord-date
-  - get-api-publicregister-languagecode-registercode-organizations
-  - get-api-publicregister-languagecode-registercode-organizations-historicalrec
-  - get-api-publicregister-languagecode-publications-registercode
-  - get-api-publicregister-languagecode-publications-registercode-historicalreco
-  - get-api-publicregister-languagecode-publications-search-registercode-registe
-  - get-api-publicregister-languagecode-registercode-registerarticles
-  - get-api-publicregister-registers
-  - get-api-publicregister-languagecode-registercode-registrations-actarticlenam
-  - get-api-publicregister-languagecode-registercode-registrations-actarticlenam-1
-  - get-api-publicregister-supportedlanguages
+  dnb_public_register_tools:
+  - get_api_publicregister_registercode_organizations
+  - get_api_publicregister_registercode_organizations_historicalreco
+  - get_api_publicregister_languagecode_registercode_organizations
+  - get_api_publicregister_languagecode_registercode_organizations_h
+  - get_api_publicregister_languagecode_publications_registercode
+  - get_api_publicregister_languagecode_publications_registercode_hi
+  - get_api_publicregister_languagecode_publications_search_register
+  - get_api_publicregister_languagecode_registercode_registerarticle
+  - get_api_publicregister_registers
+  - get_api_publicregister_languagecode_registercode_registrations_a
+  - get_api_publicregister_languagecode_registercode_registrations_a
+  - get_api_publicregister_supportedlanguages

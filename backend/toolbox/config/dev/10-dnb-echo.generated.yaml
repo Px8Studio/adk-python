@@ -1,17 +1,17 @@
 sources:
-  echo-api:
+  echo_api:
     kind: http
     baseUrl: https://api.dnb.nl/echo-api
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
     timeout: 30s
 tools:
-  retrieve-resource:
+  retrieve_resource:
     kind: http
-    source: echo-api
+    source: echo_api
     method: GET
     path: /helloworld
     description: Retrieve 'Hello World'
 toolsets:
-  dnb-echo-tools:
-  - retrieve-resource
+  dnb_echo_tools:
+  - retrieve_resource
