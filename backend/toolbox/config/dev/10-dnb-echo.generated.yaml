@@ -5,7 +5,6 @@ sources:
     headers:
       Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
     timeout: 30s
-
 tools:
   retrieve-resource:
     kind: http
