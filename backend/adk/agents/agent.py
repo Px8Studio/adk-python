@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""DNB Agent package for accessing DNB APIs via GenAI Toolbox."""
+"""Compatibility shim for the legacy umbrella DNB agent.
+
+This module forwards to the new orchestrator located at
+``backend/adk/agents/dnb_agent/agent.py`` so any existing imports of
+``backend.adk.agents.agent`` continue to work.
+"""
 
 from __future__ import annotations
 
-from typing import Annotated
-from pydantic.json_schema import SkipJsonSchema
-from mcp.client.session import ClientSession
+from dnb_agent.agent import root_agent  # type: ignore
 
-# Public field safe alias (excluded from JSON Schema)
-MCPClientSession = Annotated[ClientSession, SkipJsonSchema(True)]
+# Backward compatibility alias used by some samples/tools
+agent = root_agent
