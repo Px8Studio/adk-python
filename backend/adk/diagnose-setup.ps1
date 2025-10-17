@@ -14,7 +14,8 @@ Write-Host "========================================`n"
 
 # [1/7] Check Poetry
 Write-Host "[1/7] Checking Poetry installation..." -ForegroundColor Cyan
-try {
+$poetryCmd = Get-Command poetry -ErrorAction SilentlyContinue
+if ($poetryCmd) {
   $poetryVersion = & poetry --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ Poetry installed: $poetryVersion" -ForegroundColor Green
@@ -22,7 +23,7 @@ try {
     Write-Host "   ✗ Poetry command failed" -ForegroundColor Red
     $issues += "Poetry not installed"
   }
-} catch {
+} else {
   Write-Host "   ✗ Poetry not found in PATH" -ForegroundColor Red
   $issues += "Poetry not installed"
 }
@@ -36,16 +37,11 @@ if (Test-Path $venvPath) {
   Write-Host "   ✓ Virtual environment exists at: $venvPath" -ForegroundColor Green
 
   if (Test-Path $venvPython) {
-    try {
-      $pyVersion = & $venvPython --version 2>&1
-      if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ✓ Python executable found: $pyVersion" -ForegroundColor Green
-      } else {
-        Write-Host "   ✗ Python executable not working" -ForegroundColor Red
-        $issues += "Python in venv not working"
-      }
-    } catch {
-      Write-Host "   ✗ Failed to check Python version" -ForegroundColor Red
+    $pyVersion = & $venvPython --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "   ✓ Python executable found: $pyVersion" -ForegroundColor Green
+    } else {
+      Write-Host "   ✗ Python executable not working" -ForegroundColor Red
       $issues += "Python in venv not working"
     }
   } else {
@@ -59,36 +55,33 @@ if (Test-Path $venvPath) {
 
 # [3/7] Check Docker
 Write-Host "`n[3/7] Checking Docker..." -ForegroundColor Cyan
-try {
+$dockerCmd = Get-Command docker -ErrorAction SilentlyContinue
+if ($dockerCmd) {
   $dockerVersion = & docker --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ Docker installed: $dockerVersion" -ForegroundColor Green
 
     # Check if Docker is running
-    try {
-      $null = & docker ps 2>&1
-      if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ✓ Docker daemon is running" -ForegroundColor Green
-      } else {
-        Write-Host "   ⚠ Docker installed but daemon not running" -ForegroundColor Yellow
-        $warnings += "Docker daemon not running"
-      }
-    } catch {
-      Write-Host "   ⚠ Docker installed but daemon not accessible" -ForegroundColor Yellow
-      $warnings += "Docker daemon not accessible"
+    $null = & docker ps 2>&1
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "   ✓ Docker daemon is running" -ForegroundColor Green
+    } else {
+      Write-Host "   ⚠ Docker installed but daemon not running" -ForegroundColor Yellow
+      $warnings += "Docker daemon not running"
     }
   } else {
     Write-Host "   ✗ Docker command failed" -ForegroundColor Red
     $issues += "Docker not installed"
   }
-} catch {
+} else {
   Write-Host "   ✗ Docker not found in PATH" -ForegroundColor Red
   $issues += "Docker not installed"
 }
 
 # [4/7] Check Node.js and npm
 Write-Host "`n[4/7] Checking Node.js and npm..." -ForegroundColor Cyan
-try {
+$nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+if ($nodeCmd) {
   $nodeVersion = & node --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ Node.js installed: $nodeVersion" -ForegroundColor Green
@@ -96,12 +89,13 @@ try {
     Write-Host "   ✗ Node.js command failed" -ForegroundColor Red
     $warnings += "Node.js not working properly"
   }
-} catch {
+} else {
   Write-Host "   ⚠ Node.js not found (required for ADK Web UI)" -ForegroundColor Yellow
   $warnings += "Node.js not installed"
 }
 
-try {
+$npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+if ($npmCmd) {
   $npmVersion = & npm --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ npm installed: $npmVersion" -ForegroundColor Green
@@ -109,7 +103,7 @@ try {
     Write-Host "   ✗ npm command failed" -ForegroundColor Red
     $warnings += "npm not working properly"
   }
-} catch {
+} else {
   Write-Host "   ⚠ npm not found" -ForegroundColor Yellow
   $warnings += "npm not installed"
 }
@@ -129,13 +123,15 @@ if ($env:GOOGLE_APPLICATION_CREDENTIALS) {
   }
 }
 
-try {
-  $activeAccounts = & gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>&1
+$gcloudCmd = Get-Command gcloud -ErrorAction SilentlyContinue
+if ($gcloudCmd) {
+  # Avoid nested quotes; let PowerShell pass as separate args.
+  $activeAccounts = & gcloud auth list --filter=status:ACTIVE --format=value(account) 2>&1
   if ($LASTEXITCODE -eq 0 -and $activeAccounts) {
     Write-Host "   ✓ gcloud authenticated as: $activeAccounts" -ForegroundColor Green
     $gcpConfigured = $true
   }
-} catch {
+} else {
   # gcloud not installed or not in PATH
 }
 
@@ -148,15 +144,20 @@ if (-not $gcpConfigured) {
 Write-Host "`n[6/7] Checking GenAI Toolbox..." -ForegroundColor Cyan
 
 # Check for Docker container first (recommended approach)
-try {
-  $toolboxContainer = & docker ps --filter "name=genai-toolbox" --format "{{.Names}}" 2>&1
+if ($dockerCmd) {
+  $dockerArgs = @(
+    "ps",
+    "--filter", "name=genai-toolbox",
+    "--format", "{{.Names}}"
+  )
+  $toolboxContainer = & docker @dockerArgs 2>&1
   if ($LASTEXITCODE -eq 0 -and $toolboxContainer) {
     Write-Host "   ✓ GenAI Toolbox container running: $toolboxContainer" -ForegroundColor Green
   } else {
     Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
     Write-Host "   ℹ Start with: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
   }
-} catch {
+} else {
   Write-Host "   ⚠ Could not check Docker containers" -ForegroundColor Yellow
 }
 
