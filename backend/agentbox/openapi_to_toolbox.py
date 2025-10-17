@@ -1,15 +1,38 @@
 #!/usr/bin/env python3
 """
-OpenAPI to GenAI Toolbox Converter Agent
+OpenAPI to GenAI Toolbox Converter
 
-Converts OpenAPI 3.0 specifications to GenAI Toolbox HTTP tool YAML format.
-Provides validation against existing manual configurations and diff reporting.
+A generic, reusable converter that transforms OpenAPI 3.0 specifications into 
+GenAI Toolbox HTTP tool YAML format.
+
+Features:
+- Path-based tool naming (converts endpoint paths to tool names)
+- Optional configurable tool prefixes for organizational branding
+- Automatic parameter extraction and type mapping
+- Request body template generation
+- Environment-specific configuration (dev/prod)
+- Validation against GenAI Toolbox requirements
 
 Usage:
-    python openapi_to_toolbox_agent.py convert --api echo
-    python openapi_to_toolbox_agent.py convert --all
-    python openapi_to_toolbox_agent.py validate --api echo
-    python openapi_to_toolbox_agent.py diff --api echo
+    python openapi_to_toolbox.py convert --api echo
+    python openapi_to_toolbox.py convert --all
+    python openapi_to_toolbox.py validate --api echo
+    python openapi_to_toolbox.py diff --api echo
+    python openapi_to_toolbox.py list
+
+Configuration:
+    Add APIs to the APIS dictionary with optional tool_prefix:
+    
+    APIS = {
+        "my-api": {
+            "spec": "openapi-spec.yaml",
+            "description": "My API",
+            "prefix": "10",
+            "tool_prefix": "myorg"  # Optional: adds organizational prefix
+        }
+    }
+
+See CONFIGURATION_GUIDE.md for detailed configuration options.
 """
 
 import argparse
@@ -383,9 +406,19 @@ class OpenAPIParser:
 class GenAIToolboxGenerator:
     """Generate GenAI Toolbox YAML configuration"""
     
-    def __init__(self, api_id: str, parser: OpenAPIParser):
+    def __init__(self, api_id: str, parser: OpenAPIParser, tool_prefix: Optional[str] = None):
+        """
+        Initialize the generator
+        
+        Args:
+            api_id: API identifier (e.g., 'echo', 'statistics')
+            parser: OpenAPI parser instance
+            tool_prefix: Optional prefix for tool names (e.g., 'dnb' -> 'dnb_echo_helloworld')
+                        If None, only uses api_id (e.g., 'echo_helloworld')
+        """
         self.api_id = api_id
         self.parser = parser
+        self.tool_prefix = tool_prefix
     
     def generate_source_id(self) -> str:
         """Generate source ID using underscores (GenAI Toolbox convention)"""
@@ -398,18 +431,24 @@ class GenAIToolboxGenerator:
         - Use the URL path directly as the tool name
         - Replace hyphens with underscores
         - Remove path parameters (e.g., {registerCode})
-        - Always prefix with dnb_{api_name}_
+        - Optionally prefix with {tool_prefix}_{api_name}_ (configurable)
         
         Following GenAI Toolbox naming conventions:
         - Tool names should be valid Python identifiers
         - Must start with letter or underscore
         - Can contain a-z, A-Z, 0-9, underscores, dots
         
-        Examples:
+        Examples (with tool_prefix='dnb'):
         - /summary-balance-sheet-of-insurance-corporations-by-type-quarter
           → dnb_statistics_summary_balance_sheet_of_insurance_corporations_by_type_quarter
         - /api/publicregister/{registerCode}/Organizations
           → dnb_public_register_api_publicregister_organizations
+        
+        Examples (without tool_prefix):
+        - /summary-balance-sheet-of-insurance-corporations-by-type-quarter
+          → statistics_summary_balance_sheet_of_insurance_corporations_by_type_quarter
+        - /api/publicregister/{registerCode}/Organizations
+          → public_register_api_publicregister_organizations
         """
         # Extract clean path name:
         # 1. Remove leading/trailing slashes
@@ -428,10 +467,15 @@ class GenAIToolboxGenerator:
         # Replace hyphens with underscores
         clean_path = clean_path.replace('-', '_')
         
-        # Build tool ID with consistent dnb_{api_name}_ prefix
+        # Build tool ID with optional prefix
         # Convert api_id (like "public-register") to underscore format
         api_prefix = self.api_id.replace('-', '_')
-        tool_id = f"dnb_{api_prefix}_{clean_path}".lower()
+        
+        # Apply tool_prefix if configured
+        if self.tool_prefix:
+            tool_id = f"{self.tool_prefix}_{api_prefix}_{clean_path}".lower()
+        else:
+            tool_id = f"{api_prefix}_{clean_path}".lower()
         
         # Ensure valid identifier (remove any remaining invalid characters)
         tool_id = re.sub(r'[^a-z0-9_.]', '_', tool_id)
@@ -484,7 +528,14 @@ class GenAIToolboxGenerator:
     def generate_toolset(self, tools: List[ToolDefinition]) -> Dict[str, List[str]]:
         """Generate toolset definition for this API"""
         # Use underscores for toolset names (GenAI Toolbox convention)
-        toolset_name = f"dnb_{self.api_id.replace('-', '_')}_tools"
+        api_name = self.api_id.replace('-', '_')
+        
+        # Apply tool_prefix if configured
+        if self.tool_prefix:
+            toolset_name = f"{self.tool_prefix}_{api_name}_tools"
+        else:
+            toolset_name = f"{api_name}_tools"
+        
         tool_ids = [tool.id for tool in tools]
         return {toolset_name: tool_ids}
     
@@ -770,17 +821,20 @@ APIS = {
     "echo": {
         "spec": "openapi3-echo-api.yaml",
         "description": "DNB Echo API - Test endpoint for API connectivity",
-        "prefix": "10"
+        "prefix": "10",
+        "tool_prefix": "dnb"  # Optional: prefix for tool names (e.g., dnb_echo_helloworld)
     },
     "statistics": {
         "spec": "openapi3_statisticsdatav2024100101.yaml",
         "description": "DNB Statistics API - Dutch banking statistics data",
-        "prefix": "20"
+        "prefix": "20",
+        "tool_prefix": "dnb"  # Optional: prefix for tool names
     },
     "public-register": {
         "spec": "openapi3_publicdatav1.yaml",
         "description": "DNB Public Register API - Licensed financial institutions",
-        "prefix": "30"
+        "prefix": "30",
+        "tool_prefix": "dnb"  # Optional: prefix for tool names
     }
 }
 
@@ -918,13 +972,18 @@ def convert_api(api_name: str, output_file: Optional[Path] = None,
     print(f"📄 Spec: {spec_file.name}")
     print(f"📝 Description: {config['description']}")
     
+    # Get optional tool prefix from configuration
+    tool_prefix = config.get('tool_prefix')
+    if tool_prefix:
+        print(f"🏷️  Tool Prefix: {tool_prefix}_")
+    
     try:
         # Parse OpenAPI spec
         parser = OpenAPIParser(spec_file)
         print(f"✅ Parsed OpenAPI spec: {parser.get_title()} v{parser.get_version()}")
         
-        # Generate GenAI Toolbox config
-        generator = GenAIToolboxGenerator(api_name, parser)
+        # Generate GenAI Toolbox config with optional tool prefix
+        generator = GenAIToolboxGenerator(api_name, parser, tool_prefix=tool_prefix)
         toolbox_config = generator.generate_config()
         
         print(f"✅ Generated {len(toolbox_config['sources'])} source(s)")
