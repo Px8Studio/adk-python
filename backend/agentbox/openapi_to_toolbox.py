@@ -20,6 +20,7 @@ import yaml
 import json
 from dataclasses import dataclass, asdict
 from enum import Enum
+import re
 
 
 # Base paths
@@ -258,6 +259,10 @@ class OpenAPIParser:
                     operations.append((path, method, path_item[method]))
         
         return operations
+    
+    def extract_path_params_from_path(self, path: str) -> List[str]:
+        """Extract parameter names from path template like /users/{userId}"""
+        return re.findall(r'\{([^}]+)\}', path)
 
 
 class GenAIToolboxGenerator:
