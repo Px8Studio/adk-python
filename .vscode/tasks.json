@@ -397,6 +397,65 @@
       }
     },
     // ============================================================
+    // ============================================================
+    // OpenAPI Conversion
+    // ============================================================
+    {
+      "label": "OpenAPI: Convert All APIs to Toolbox Format",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "openapi_to_toolbox.py",
+        "convert",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/agentbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "OpenAPI: Convert Single API to Toolbox Format",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "openapi_to_toolbox.py",
+        "convert",
+        "--spec",
+        "${input:openApiSpec}",
+        "--output",
+        "${input:outputFile}",
+        "--source",
+        "${input:sourceName}",
+        "--name",
+        "${input:apiName}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/agentbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    // ============================================================
     // Quick Actions
     // ============================================================
     {
@@ -412,6 +471,46 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "🔄 Convert & Restart: Convert APIs → Restart Server → Open UI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "OpenAPI: Convert All APIs to Toolbox Format",
+        "MCP: Restart Dev Server",
+        "MCP: Open Toolbox Web UI"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "openApiSpec",
+      "type": "promptString",
+      "description": "Path to OpenAPI spec file (relative to backend/agentbox)",
+      "default": "../apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml"
+    },
+    {
+      "id": "outputFile",
+      "type": "promptString",
+      "description": "Output YAML file path (relative to backend/agentbox)",
+      "default": "../toolbox/config/dev/20-dnb-statistics.generated.yaml"
+    },
+    {
+      "id": "sourceName",
+      "type": "promptString",
+      "description": "Source name for the API",
+      "default": "dnb-api-statistics"
+    },
+    {
+      "id": "apiName",
+      "type": "promptString",
+      "description": "Human-readable API name",
+      "default": "DNB Statistics API"
     }
   ]
 }
