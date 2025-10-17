@@ -136,43 +136,34 @@ try {
     $gcpConfigured = $true
   }
 } catch {
-  Write-Host "   ⊘ gcloud CLI not found" -ForegroundColor Yellow
+  # gcloud not installed or not in PATH
 }
 
 if (-not $gcpConfigured) {
-  Write-Host "   ⚠ No Google Cloud authentication found" -ForegroundColor Yellow
+  Write-Host "   ⚠ No GCP authentication configured" -ForegroundColor Yellow
   $warnings += "No GCP authentication configured"
 }
 
 # [6/7] Check GenAI Toolbox
 Write-Host "`n[6/7] Checking GenAI Toolbox..." -ForegroundColor Cyan
 
-# Check if running via Docker
+# Check for Docker container first (recommended approach)
 try {
-  $dockerPs = & docker ps --filter "name=genai-toolbox" --format "{{.Names}}" 2>&1
-  if ($LASTEXITCODE -eq 0 -and $dockerPs) {
-    Write-Host "   ✓ GenAI Toolbox Docker container found: $dockerPs" -ForegroundColor Green
-    
-    # Check if container is running
-    try {
-      $response = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
-      Write-Host "   ✓ GenAI Toolbox is responding on port 5000" -ForegroundColor Green
-    } catch {
-      Write-Host "   ⚠ Container exists but not responding on port 5000" -ForegroundColor Yellow
-      $warnings += "GenAI Toolbox container not responding"
-    }
+  $toolboxContainer = & docker ps --filter "name=genai-toolbox" --format "{{.Names}}" 2>&1
+  if ($LASTEXITCODE -eq 0 -and $toolboxContainer) {
+    Write-Host "   ✓ GenAI Toolbox container running: $toolboxContainer" -ForegroundColor Green
   } else {
-    Write-Host "   ⊘ GenAI Toolbox Docker container not running" -ForegroundColor Yellow
-    $warnings += "GenAI Toolbox container not running"
+    Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
+    Write-Host "   ℹ Start with: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
   }
 } catch {
-  Write-Host "   ⊘ Could not check Docker containers" -ForegroundColor Yellow
+  Write-Host "   ⚠ Could not check Docker containers" -ForegroundColor Yellow
 }
 
-# Check for binary
-$toolboxBinary = Join-Path (Split-Path -Parent $ProjectRoot) "genai-toolbox\genai-toolbox.exe"
+# Check for binary as fallback
+$toolboxBinary = Join-Path $ProjectRoot "..\genai-toolbox\genai-toolbox.exe"
 if (Test-Path $toolboxBinary) {
-  Write-Host "   ✓ GenAI Toolbox binary found at: $toolboxBinary" -ForegroundColor Green
+  Write-Host "   ✓ GenAI Toolbox binary found: $toolboxBinary" -ForegroundColor Green
 } else {
   Write-Host "   ⚠ GenAI Toolbox binary not found (Docker recommended)" -ForegroundColor Yellow
   $warnings += "GenAI Toolbox binary not found (Docker recommended)"

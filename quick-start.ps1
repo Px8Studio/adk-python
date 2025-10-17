@@ -46,9 +46,24 @@ Write-Host ""
 if (-not $SkipDiagnostics) {
   Write-Step "Step 1/4: Running system diagnostics..."
   try {
-    Set-Location $ProjectRoot
-    & "$ProjectRoot\backend\adk\diagnose-setup.ps1"
-    Write-Success "Diagnostics completed"
+    $diagScript = "$ProjectRoot\backend\adk\diagnose-setup.ps1"
+    if (Test-Path $diagScript) {
+      Set-Location $ProjectRoot
+      # Run in a separate process to isolate parse errors
+      $result = Start-Process -FilePath "powershell.exe" `
+        -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $diagScript `
+        -Wait -PassThru -NoNewWindow
+      
+      if ($result.ExitCode -eq 0) {
+        Write-Success "Diagnostics completed successfully"
+      } else {
+        Write-Error "Diagnostics exited with code: $($result.ExitCode)"
+        Write-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
+      }
+    } else {
+      Write-Error "Diagnostics script not found: $diagScript"
+      Write-Info "Skipping diagnostics..."
+    }
   } catch {
     Write-Error "Diagnostics failed: $($_.Exception.Message)"
     Write-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
