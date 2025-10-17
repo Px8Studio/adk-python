@@ -323,8 +323,8 @@ class OpenAPIParser:
             template = "{\n" + ",\n".join(template_props) + "\n  }"
             return template, body_params
         
-        elif schema_type == 'array':
-            # Handle array request bodies
+        # Handle array request bodies
+        if schema_type == 'array':
             return "{{json .body}}", [ToolParameter(
                 name='body',
                 param_type='body',
@@ -333,15 +333,14 @@ class OpenAPIParser:
                 description='Array request body'
             )]
         
-        else:
-            # Handle primitive types (string, integer, etc.)
-            return "{{.body}}", [ToolParameter(
-                name='body',
-                param_type='body',
-                data_type=schema_type,
-                required=True,
-                description='Request body'
-            )]
+        # Handle primitive types (string, integer, etc.)
+        return "{{.body}}", [ToolParameter(
+            name='body',
+            param_type='body',
+            data_type=schema_type,
+            required=True,
+            description='Request body'
+        )]
     
     def extract_parameters(self, operation: Dict) -> Tuple[List[ToolParameter], Optional[str]]:
         """Extract parameters from an operation
@@ -548,6 +547,20 @@ class GenAIToolboxGenerator:
         sources_dict = {source.id: source.to_toolbox_format()}
         tools_dict = {tool.id: tool.to_toolbox_format() for tool in tools}
         toolsets_dict = self.generate_toolset(tools)
+        
+        # Validate for duplicates within this config
+        tool_ids = list(tools_dict.keys())
+        duplicate_tools = [tid for tid in tool_ids if tool_ids.count(tid) > 1]
+        if duplicate_tools:
+            print(f"⚠️  WARNING: Duplicate tool IDs found: {set(duplicate_tools)}")
+        
+        toolset_tools = [tid for tool_list in toolsets_dict.values() for tid in tool_list]
+        duplicate_toolset_refs = [tid for tid in toolset_tools if toolset_tools.count(tid) > 1]
+        if duplicate_toolset_refs:
+            print(f"⚠️  WARNING: Duplicate tool references in toolsets: {set(duplicate_toolset_refs)}")
+            # Deduplicate toolset references
+            for toolset_name, tool_list in toolsets_dict.items():
+                toolsets_dict[toolset_name] = list(dict.fromkeys(tool_list))
         
         return {
             "sources": sources_dict,
