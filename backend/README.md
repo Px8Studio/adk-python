@@ -157,6 +157,30 @@ Ran terminal command: Start-Process http://localhost:5000
 
 ---
 
+## Your Development Workflow:
+┌─────────────────────────────────────────────────┐
+│ 1. Configure Tools                              │
+│    → Edit tools.yaml                            │
+│    → Use MCP Toolbox UI (localhost:5000/ui)    │
+│      to verify tools work                       │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ 2. Build Your Agent                             │
+│    → Create root_agent.py                       │
+│    → Connect to Toolbox via ToolboxClient       │
+│    → Load toolsets into agent                   │
+└─────────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────────┐
+│ 3. Test Your Agent                              │
+│    → Run: adk web                               │
+│    → Use ADK Web UI (localhost:4200)           │
+│      for full agent debugging                   │
+└─────────────────────────────────────────────────┘
+
+---
+
 ## ┌─────────────────────────────────────────────────────────────────────┐
 ## │                   YOUR WORKING SETUP                                │
 ## └─────────────────────────────────────────────────────────────────────┘
