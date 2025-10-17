@@ -153,8 +153,8 @@ try {
   if ($LASTEXITCODE -eq 0 -and $toolboxContainer) {
     Write-Host "   ✓ GenAI Toolbox container running: $toolboxContainer" -ForegroundColor Green
   } else {
-    Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
-    Write-Host "   ℹ Start with: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
+  Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
+  Write-Host "   ℹ Start with: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
   }
 } catch {
   Write-Host "   ⚠ Could not check Docker containers" -ForegroundColor Yellow
@@ -173,8 +173,8 @@ if (Test-Path $toolboxBinary) {
 Write-Host "`n[7/7] Checking project structure..." -ForegroundColor Cyan
 
 $requiredPaths = @(
-  @{Path = "pyproject.toml"; Type = "Poetry configuration"}
-  @{Path = "backend\adk\agents"; Type = "ADK agents directory"}
+  @{Path = "pyproject.toml"; Type = "Poetry configuration"},
+  @{Path = "backend\adk\agents"; Type = "ADK agents directory"},
   @{Path = "backend\toolbox"; Type = "Toolbox configuration"}
 )
 
@@ -196,8 +196,8 @@ Write-Host "========================================`n"
 if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
   Write-Host "✓ All checks passed! Your environment is ready." -ForegroundColor Green
   Write-Host "`nNext steps:" -ForegroundColor Cyan
-  Write-Host "  1. Start GenAI Toolbox: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d"
-  Write-Host "  2. Run ADK Web: cd backend\adk && .\start-adk-web.ps1"
+  Write-Host "  1. Start GenAI Toolbox: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d"
+  Write-Host "  2. Run ADK Web: cd backend\adk; .\start-adk-web.ps1"
 } else {
   if ($issues.Count -gt 0) {
     Write-Host "⚠ ISSUES FOUND ($($issues.Count)):" -ForegroundColor Red
@@ -220,10 +220,10 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
     Write-Host "  • Install Poetry: (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -"
   }
   if ($issues -contains "Virtual environment not created") {
-    Write-Host "  • Create venv: cd '$ProjectRoot' && poetry install"
+    Write-Host "  • Create venv: cd '$ProjectRoot'; poetry install"
   }
   if ($warnings -contains "GenAI Toolbox binary not found (Docker recommended)") {
-    Write-Host "  • Start Toolbox: cd backend\toolbox && docker-compose -f docker-compose.dev.yml up -d"
+    Write-Host "  • Start Toolbox: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d"
   }
   if ($warnings -contains "No GCP authentication configured") {
     Write-Host "  • Configure GCP: gcloud auth application-default login"
