@@ -22,7 +22,8 @@ from google.adk import Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 
 # Create agent with Toolbox tools using ADK's native integration
-agent = Agent(
+# ADK Web expects the variable to be named 'root_agent'
+root_agent = Agent(
   name="dnb_agent",
   model="gemini-2.0-flash",
   instruction="""You are a helpful assistant that can access DNB (De Nederlandsche Bank) APIs.
@@ -46,3 +47,6 @@ Always be clear about data sources and limitations.""",
     )
   ]
 )
+
+# For backward compatibility
+agent = root_agent
