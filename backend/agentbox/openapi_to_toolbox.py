@@ -439,6 +439,12 @@ class GenAIToolboxGenerator:
         
         return tools
     
+    def generate_toolset(self, tools: List[ToolDefinition]) -> Dict[str, List[str]]:
+        """Generate toolset definition for this API"""
+        toolset_name = f"dnb-{self.api_id}-tools"
+        tool_ids = [tool.id for tool in tools]
+        return {toolset_name: tool_ids}
+    
     def generate_config(self) -> Dict[str, Any]:
         """Generate complete GenAI Toolbox configuration in dictionary format"""
         source = self.generate_source()
@@ -447,10 +453,12 @@ class GenAIToolboxGenerator:
         # Convert to dictionary format (not list)
         sources_dict = {source.id: source.to_toolbox_format()}
         tools_dict = {tool.id: tool.to_toolbox_format() for tool in tools}
+        toolsets_dict = self.generate_toolset(tools)
         
         return {
             "sources": sources_dict,
-            "tools": tools_dict
+            "tools": tools_dict,
+            "toolsets": toolsets_dict
         }
 
 
@@ -764,6 +772,8 @@ def validate_generated_config(config: Dict[str, Any]) -> List[str]:
     if not tools:
         errors.append("Configuration has no tools defined")
     
+    tool_ids_set = set(tools.keys())
+    
     for tool_id, tool in tools.items():
         # Check required fields
         required_fields = ['kind', 'source', 'method', 'path', 'description']
@@ -809,6 +819,18 @@ def validate_generated_config(config: Dict[str, Any]) -> List[str]:
                     errors.append(f"Tool '{tool_id}': {param_type} parameter missing 'name'")
                 if 'type' not in param:
                     errors.append(f"Tool '{tool_id}': {param_type} parameter '{param.get('name', '?')}' missing 'type'")
+    
+    # Check toolsets
+    toolsets = config.get('toolsets', {})
+    if toolsets:
+        for toolset_id, tool_list in toolsets.items():
+            if not isinstance(tool_list, list):
+                errors.append(f"Toolset '{toolset_id}': must be a list of tool IDs")
+            else:
+                # Verify all tools exist
+                for tool_ref in tool_list:
+                    if tool_ref not in tool_ids_set:
+                        errors.append(f"Toolset '{toolset_id}': references non-existent tool '{tool_ref}'")
     
     return errors
 
@@ -864,6 +886,11 @@ def convert_api(api_name: str, output_file: Optional[Path] = None,
         
         print(f"✅ Generated {len(toolbox_config['sources'])} source(s)")
         print(f"✅ Generated {len(toolbox_config['tools'])} tool(s)")
+        print(f"✅ Generated {len(toolbox_config.get('toolsets', {}))} toolset(s)")
+        
+        # Print toolset info
+        for toolset_name, tool_list in toolbox_config.get('toolsets', {}).items():
+            print(f"   📦 {toolset_name}: {len(tool_list)} tools")
         
         # Validate configuration
         validation_errors = validate_generated_config(toolbox_config)
