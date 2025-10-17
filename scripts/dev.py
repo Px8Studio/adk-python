@@ -14,6 +14,13 @@ import time
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
+# Added: importlib helpers to detect and report ADK presence/version
+import importlib.util
+try:
+    from importlib import metadata as importlib_metadata  # Python 3.8+
+except Exception:
+    importlib_metadata = None
+
 # ---------- Paths and constants ----------
 
 SCRIPT_PATH = Path(__file__).resolve()
@@ -104,6 +111,23 @@ def env_with_venv_path(base: Optional[dict] = None) -> dict:
         env["VIRTUAL_ENV"] = str(VENV_DIR)
     return env
 
+# NEW: Ensure google-adk is importable (install into .venv if missing)
+def ensure_adk_installed() -> bool:
+    try:
+        import google.adk  # noqa: F401
+        return True
+    except Exception:
+        pass
+
+    print_info("google-adk not found in .venv. Attempting installation...")
+    code, out, err = run([str(sys.executable), "-m", "pip", "install", "google-adk>=1.16,<2"])
+    if code == 0:
+        print_ok("Installed google-adk into .venv.")
+        return True
+    print_err(f"Failed to install google-adk: {(err or out).strip()}")
+    print_info("Tip: activate .venv and run: pip install 'google-adk>=1.16,<2'")
+    return False
+
 
 def print_info(msg: str) -> None:
     print(f"[i] {msg}")
@@ -168,14 +192,21 @@ def diagnose() -> bool:
     else:
         print_ok(f"Virtualenv found: {VENV_BIN}")
 
-    # adk in venv
-    env = env_with_venv_path()
-    code, out, _ = run(["adk", "--version"], env=env)
-    if code != 0:
-        print_err("ADK CLI not found in virtualenv. Install ADK in .venv.")
-        ok = False
+    # ADK presence (prefer import over CLI)
+    if ensure_adk_installed():
+        version_str = None
+        try:
+            if importlib_metadata:
+                version_str = importlib_metadata.version("google-adk")
+        except Exception:
+            version_str = None
+        if version_str:
+            print_ok(f"ADK installed: google-adk {version_str}")
+        else:
+            print_ok("ADK installed (version unknown).")
     else:
-        print_ok(f"ADK CLI: {out.strip()}")
+        print_err("ADK not installed in .venv.")
+        ok = False
 
     # agents dir
     if not AGENTS_DIR.exists():
@@ -373,11 +404,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         ok = toolbox_start_or_restart(restart=args.restart_toolbox, wait_seconds=args.wait)
         if not ok:
             print_info("Continuing to web even if Toolbox not yet healthy.")
-        # Quick venv/adk recheck before web
-        env = env_with_venv_path()
-        code, _, _ = run(["adk", "--version"], env=env)
-        if code != 0:
-            print_err("ADK CLI not found in .venv. Aborting.")
+        # Ensure ADK is present before attempting to start web
+        if not ensure_adk_installed():
+            print_err("ADK not available in .venv. Aborting.")
             return 1
         return start_web_server(force_kill_port=args.force_kill_port)
 
