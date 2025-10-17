@@ -176,7 +176,7 @@ def print_compose_status(tail: int = 120) -> None:
         print_err("docker compose not available.")
         return
     base = dc + ["-f", str(TOOLBOX_COMPOSE)]
-    base = dc + ["-f", str(TOOLBOX_COMPOSE)]
+
     print_info("docker compose ps:")
     _, out, err = run(base + ["ps"])
     print(out or err)
