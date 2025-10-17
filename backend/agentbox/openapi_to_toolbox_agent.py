@@ -28,9 +28,13 @@ DNB_DIR = SCRIPT_DIR.parent / "apis" / "dnb"
 SPECS_DIR = DNB_DIR / "specs"
 GENERATED_DIR = DNB_DIR / "generated"
 TOOLBOX_DIR = DNB_DIR.parent.parent / "toolbox" / "config"
+TOOLBOX_DEV_DIR = TOOLBOX_DIR / "dev"
+TOOLBOX_PROD_DIR = TOOLBOX_DIR / "prod"
 
-# Ensure generated directory exists
+# Ensure directories exist
 GENERATED_DIR.mkdir(exist_ok=True)
+TOOLBOX_DEV_DIR.mkdir(exist_ok=True)
+TOOLBOX_PROD_DIR.mkdir(exist_ok=True)
 
 
 class AuthType(Enum):
@@ -65,34 +69,58 @@ class ToolDefinition:
     def to_toolbox_format(self) -> Dict[str, Any]:
         """Convert to GenAI Toolbox YAML format (dictionary format)"""
         tool = {
-            "kind": "http",  # Changed from source_id to kind
-            "source": self.source_id,  # Changed from source_id to source
+            "kind": "http",
+            "source": self.source_id,
             "method": self.method,
             "path": self.path,
             "description": self.description
         }
         
-        # Group parameters by type
+        # Map parameters to GenAI Toolbox format
+        # Toolbox uses specific field names: queryParams, pathParams, headers, body
         if self.parameters:
-            params_by_type = {}
-            for param in self.parameters:
-                if param.param_type not in params_by_type:
-                    params_by_type[param.param_type] = []
-                
-                param_def = {
-                    "name": param.name,
-                    "type": param.data_type,
-                    "required": param.required
-                }
-                if param.description:
-                    param_def["description"] = param.description
-                if param.default is not None:
-                    param_def["default"] = param.default
-                
-                params_by_type[param.param_type].append(param_def)
+            # Group by parameter type
+            query_params = [p for p in self.parameters if p.param_type == "query"]
+            path_params = [p for p in self.parameters if p.param_type == "path"]
+            header_params = [p for p in self.parameters if p.param_type == "header"]
+            body_params = [p for p in self.parameters if p.param_type == "body"]
             
-            if params_by_type:
-                tool["parameters"] = params_by_type
+            # Add query parameters
+            if query_params:
+                tool["queryParams"] = [
+                    {
+                        "name": p.name,
+                        "type": p.data_type,
+                        "description": p.description or "",  # Always include description
+                        "required": p.required,
+                        **({"default": p.default} if p.default is not None else {})
+                    }
+                    for p in query_params
+                ]
+            
+            # Add path parameters
+            if path_params:
+                tool["pathParams"] = [
+                    {
+                        "name": p.name,
+                        "type": p.data_type,
+                        "description": p.description or "",  # Always include description
+                        "required": p.required
+                    }
+                    for p in path_params
+                ]
+            
+            # Add header parameters
+            if header_params:
+                tool["headers"] = [
+                    {
+                        "name": p.name,
+                        "type": p.data_type,
+                        "description": p.description or "",  # Always include description
+                        "required": p.required
+                    }
+                    for p in header_params
+                ]
         
         return tool
 
@@ -565,25 +593,48 @@ class ConfigComparator:
         return "\n".join(lines)
 
 
-# API configurations
+# API configurations with file prefixes for ordering
 APIS = {
     "echo": {
         "spec": "openapi3-echo-api.yaml",
-        "description": "DNB Echo API - Test endpoint for API connectivity"
+        "description": "DNB Echo API - Test endpoint for API connectivity",
+        "prefix": "10"
     },
     "statistics": {
         "spec": "openapi3_statisticsdatav2024100101.yaml",
-        "description": "DNB Statistics API - Dutch banking statistics data"
+        "description": "DNB Statistics API - Dutch banking statistics data",
+        "prefix": "20"
     },
     "public-register": {
         "spec": "openapi3_publicdatav1.yaml",
-        "description": "DNB Public Register API - Licensed financial institutions"
+        "description": "DNB Public Register API - Licensed financial institutions",
+        "prefix": "30"
     }
 }
 
 
-def convert_api(api_name: str, output_file: Optional[Path] = None) -> bool:
-    """Convert OpenAPI spec to GenAI Toolbox format"""
+def write_config_with_env_var(config: Dict[str, Any], output_file: Path, env_var: str) -> None:
+    """Write config to file, replacing DNB_SUBSCRIPTION_KEY with environment-specific variable"""
+    # Convert config to YAML string
+    yaml_content = yaml.dump(config, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    
+    # Replace generic variable with environment-specific one
+    yaml_content = yaml_content.replace('${DNB_SUBSCRIPTION_KEY}', f'${{{env_var}}}')
+    
+    # Write to file
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(yaml_content)
+
+
+def convert_api(api_name: str, output_file: Optional[Path] = None, 
+                write_to_toolbox: bool = True) -> bool:
+    """Convert OpenAPI spec to GenAI Toolbox format
+    
+    Args:
+        api_name: Name of the API to convert
+        output_file: Optional custom output file (overrides write_to_toolbox)
+        write_to_toolbox: If True, writes to config/dev and config/prod folders
+    """
     if api_name not in APIS:
         print(f"❌ Unknown API: {api_name}")
         print(f"   Available: {', '.join(APIS.keys())}")
@@ -614,15 +665,38 @@ def convert_api(api_name: str, output_file: Optional[Path] = None) -> bool:
         print(f"✅ Generated {len(toolbox_config['sources'])} source(s)")
         print(f"✅ Generated {len(toolbox_config['tools'])} tool(s)")
         
-        # Output file
-        if output_file is None:
-            output_file = GENERATED_DIR / f"tools.{api_name}.generated.yaml"
+        # Determine output strategy
+        if output_file is not None:
+            # Custom output file
+            write_config_with_env_var(toolbox_config, output_file, 'DNB_SUBSCRIPTION_KEY')
+            print(f"\n✅ Configuration saved to: {output_file}")
+        elif write_to_toolbox:
+            # Write to both dev and prod folders with proper naming and env vars
+            prefix = config["prefix"]
+            base_filename = f"{prefix}-dnb-{api_name}.generated.yaml"
+            
+            # Write to dev folder with DEV env var
+            dev_file = TOOLBOX_DEV_DIR / base_filename
+            write_config_with_env_var(toolbox_config, dev_file, 'DNB_SUBSCRIPTION_KEY_DEV')
+            print(f"\n✅ Dev config saved to: {dev_file}")
+            
+            # Write to prod folder with PROD env var
+            prod_file = TOOLBOX_PROD_DIR / base_filename
+            write_config_with_env_var(toolbox_config, prod_file, 'DNB_SUBSCRIPTION_KEY_PROD')
+            print(f"✅ Prod config saved to: {prod_file}")
+            
+            # Also write to generated folder for reference (generic var)
+            generated_file = GENERATED_DIR / f"tools.{api_name}.generated.yaml"
+            with open(generated_file, 'w', encoding='utf-8') as f:
+                yaml.dump(toolbox_config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            print(f"✅ Reference copy saved to: {generated_file}")
+        else:
+            # Legacy: write to generated folder only
+            generated_file = GENERATED_DIR / f"tools.{api_name}.generated.yaml"
+            with open(generated_file, 'w', encoding='utf-8') as f:
+                yaml.dump(toolbox_config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+            print(f"\n✅ Configuration saved to: {generated_file}")
         
-        # Write YAML
-        with open(output_file, 'w', encoding='utf-8') as f:
-            yaml.dump(toolbox_config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-        
-        print(f"\n✅ Generated configuration saved to: {output_file}")
         print(f"{'='*80}\n")
         
         return True
