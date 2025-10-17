@@ -37,9 +37,9 @@ function Write-Info {
 
 # Header
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "║         Orkhon ADK Web - Quick Start Script           ║" -ForegroundColor Cyan
-Write-Host "╚════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "========================================================" -ForegroundColor Cyan
+Write-Host "       Orkhon ADK Web - Quick Start Script             " -ForegroundColor Cyan
+Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Step 1: Run Diagnostics
@@ -54,7 +54,7 @@ if (-not $SkipDiagnostics) {
     Write-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
   }
 } else {
-  Write-Step "Step 1/4: Skipping diagnostics (--SkipDiagnostics flag)"
+  Write-Step "Step 1/4: Skipping diagnostics (-SkipDiagnostics flag)"
 }
 
 # Step 2: Start GenAI Toolbox
@@ -164,12 +164,12 @@ try {
   Write-Success "Port 8000 is available"
   Write-Info "Activating virtual environment and starting ADK Web..."
   Write-Host ""
-  Write-Host "╔════════════════════════════════════════════════════════╗" -ForegroundColor Green
-  Write-Host "║              ADK Web Server Starting...                ║" -ForegroundColor Green
-  Write-Host "║                                                        ║" -ForegroundColor Green
-  Write-Host "║  Access the web UI at: http://localhost:8000          ║" -ForegroundColor Green
-  Write-Host "║  Press CTRL+C to stop the server                      ║" -ForegroundColor Green
-  Write-Host "╚════════════════════════════════════════════════════════╝" -ForegroundColor Green
+  Write-Host "========================================================" -ForegroundColor Green
+  Write-Host "            ADK Web Server Starting...                  " -ForegroundColor Green
+  Write-Host "                                                        " -ForegroundColor Green
+  Write-Host "  Access the web UI at: http://localhost:8000          " -ForegroundColor Green
+  Write-Host "  Press CTRL+C to stop the server                      " -ForegroundColor Green
+  Write-Host "========================================================" -ForegroundColor Green
   Write-Host ""
   
   # Activate venv and start server
@@ -185,9 +185,9 @@ try {
 
 # If we get here, the server was stopped
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
-Write-Host "║              ADK Web Server Stopped                    ║" -ForegroundColor Yellow
-Write-Host "╚════════════════════════════════════════════════════════╝" -ForegroundColor Yellow
+Write-Host "========================================================" -ForegroundColor Yellow
+Write-Host "            ADK Web Server Stopped                      " -ForegroundColor Yellow
+Write-Host "========================================================" -ForegroundColor Yellow
 Write-Host ""
 Write-Info "GenAI Toolbox is still running in Docker"
 Write-Info "To stop it: cd backend\toolbox && docker-compose -f docker-compose.dev.yml down"

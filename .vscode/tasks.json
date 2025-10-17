@@ -2,6 +2,104 @@
   "version": "2.0.0",
   "tasks": [
     // ============================================================
+    // Quick Start - Full Stack
+    // ============================================================
+    {
+      "label": "🚀 Quick Start: Full Orkhon Stack",
+      "type": "shell",
+      "command": "${workspaceFolder}/quick-start.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "ADK: Start Web Server Only",
+      "type": "shell",
+      "command": ".venv/Scripts/Activate.ps1; adk web --reload_agents --host=0.0.0.0 --port=8000 backend/adk/agents",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": true,
+      "group": "build"
+    },
+    {
+      "label": "🌐 Open: ADK Web UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:8000'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🌐 Open: Toolbox UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:5000/ui/'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🌐 Open: Jaeger Tracing UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:16686'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 Diagnostics: Check System Status",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/adk/diagnose-setup.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "group": "test"
+    },
+    // ============================================================
     // Server Management - Development
     // ============================================================
     {
