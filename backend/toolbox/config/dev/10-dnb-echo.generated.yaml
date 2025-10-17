@@ -12,3 +12,6 @@ tools:
     method: GET
     path: /helloworld
     description: Retrieve 'Hello World'
+toolsets:
+  dnb-echo-tools:
+  - retrieve-resource

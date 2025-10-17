@@ -252,3 +252,17 @@ tools:
     method: GET
     path: /api/publicregister/SupportedLanguages
     description: Retrieve languages.
+toolsets:
+  dnb-public-register-tools:
+  - get-api-publicregister-registercode-organizations
+  - get-api-publicregister-registercode-organizations-historicalrecord-date
+  - get-api-publicregister-languagecode-registercode-organizations
+  - get-api-publicregister-languagecode-registercode-organizations-historicalrec
+  - get-api-publicregister-languagecode-publications-registercode
+  - get-api-publicregister-languagecode-publications-registercode-historicalreco
+  - get-api-publicregister-languagecode-publications-search-registercode-registe
+  - get-api-publicregister-languagecode-registercode-registerarticles
+  - get-api-publicregister-registers
+  - get-api-publicregister-languagecode-registercode-registrations-actarticlenam
+  - get-api-publicregister-languagecode-registercode-registrations-actarticlenam-1
+  - get-api-publicregister-supportedlanguages
