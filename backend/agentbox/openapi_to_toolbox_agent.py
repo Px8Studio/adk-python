@@ -63,10 +63,10 @@ class ToolDefinition:
     parameters: List[ToolParameter]
     
     def to_toolbox_format(self) -> Dict[str, Any]:
-        """Convert to GenAI Toolbox YAML format"""
+        """Convert to GenAI Toolbox YAML format (dictionary format)"""
         tool = {
-            "id": self.id,
-            "source_id": self.source_id,
+            "kind": "http",  # Changed from source_id to kind
+            "source": self.source_id,  # Changed from source_id to source
             "method": self.method,
             "path": self.path,
             "description": self.description
@@ -107,15 +107,12 @@ class SourceDefinition:
     timeout: int = 30
     
     def to_toolbox_format(self) -> Dict[str, Any]:
-        """Convert to GenAI Toolbox YAML format"""
+        """Convert to GenAI Toolbox YAML format (dictionary format)"""
         return {
-            "id": self.id,
-            "type": self.type,
-            "config": {
-                "base_url": self.base_url,
-                "headers": self.headers,
-                "timeout": self.timeout
-            }
+            "kind": "http",  # Changed from "type" to "kind"
+            "baseUrl": self.base_url,  # Changed from "base_url" to "baseUrl"
+            "headers": self.headers,
+            "timeout": f"{self.timeout}s"  # Add 's' suffix for timeout
         }
 
 
@@ -294,13 +291,17 @@ class GenAIToolboxGenerator:
         return tools
     
     def generate_config(self) -> Dict[str, Any]:
-        """Generate complete GenAI Toolbox configuration"""
+        """Generate complete GenAI Toolbox configuration in dictionary format"""
         source = self.generate_source()
         tools = self.generate_tools()
         
+        # Convert to dictionary format (not list)
+        sources_dict = {source.id: source.to_toolbox_format()}
+        tools_dict = {tool.id: tool.to_toolbox_format() for tool in tools}
+        
         return {
-            "sources": [source.to_toolbox_format()],
-            "tools": [tool.to_toolbox_format() for tool in tools]
+            "sources": sources_dict,
+            "tools": tools_dict
         }
 
 
