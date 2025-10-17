@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import yaml
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from enum import Enum
 import re
 
@@ -778,7 +778,6 @@ def validate_generated_config(config: Dict[str, Any]) -> List[str]:
                 errors.append(f"Tool '{tool_id}': path contains template variables but no pathParams defined")
             else:
                 # Verify all path params are defined
-                import re
                 path_vars = set(re.findall(r'\{\{\.([^}]+)\}\}', path))
                 defined_params = set(p['name'] for p in tool.get('pathParams', []))
                 missing = path_vars - defined_params
