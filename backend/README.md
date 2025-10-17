@@ -154,3 +154,19 @@ Ran terminal command: Start-Process http://localhost:5000
 - ✅ Understanding request flow through multiple services
 
 **Both are valuable** - they serve different purposes in your development and operations workflow! 🚀
+
+---
+
+## ┌─────────────────────────────────────────────────────────────────────┐
+## │                   YOUR WORKING SETUP                                │
+## └─────────────────────────────────────────────────────────────────────┘
+
+1. OpenAPI Specs (Source)
+    ↓ [openapi_to_toolbox.py]
+Generated YAML (84+ tools)
+    ↓ [Docker Container]
+MCP Server :5000
+    ↓ [ToolboxClient]
+LangGraph Agent (Gemini)
+    ↓ [Tool Calls]
+Real DNB APIs ✅
