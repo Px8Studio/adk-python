@@ -1,196 +1,307 @@
-Great question! Let me explain what you're seeing at `http://localhost:16686`.
+# Orkhon Backend
 
-## 🔍 What is Jaeger UI?
-
-**Jaeger** is an **open-source distributed tracing system** that's running in your Docker stack. It's NOT a web UI for your DNB APIs - it's an **observability/monitoring tool** that shows you what's happening inside your GenAI Toolbox. 
-
-Read [](file:///c%3A/Users/rjjaf/_Projects/orkhon/backend/toolbox/docker-compose.dev.yml#48-48), lines 48 to 70
+> **AI Agent Infrastructure for DNB APIs**  
+> Build intelligent agents with LangGraph + GenAI Toolbox + DNB APIs
 
 ---
 
-## 📊 Jaeger UI - The Observability Dashboard
+## 📋 Overview
 
-### **What It Does:**
-Jaeger **traces every request** that flows through your GenAI Toolbox and visualizes:
-- ⏱️ **How long each API call takes** (performance monitoring)
-- 🔗 **The complete request journey** (from your agent → toolbox → DNB API)
-- ❌ **Errors and failures** in real-time
-- 📈 **Service dependencies** and bottlenecks
-
-### **Where It Comes From:**
-```yaml
-# In your docker-compose.dev.yml
-jaeger:
-  image: jaegertracing/all-in-one:latest  # ← Official Jaeger container
-  ports:
-    - "16686:16686"  # ← UI port (what you see in browser)
-    - "4318:4318"    # ← OTLP collector (receives traces from toolbox)
-```
-
-Your **GenAI Toolbox sends telemetry data** to Jaeger: 
-
-Read [](file:///c%3A/Users/rjjaf/_Projects/orkhon/backend/toolbox/docker-compose.dev.yml#10-10), lines 10 to 45
-
----
-
-## 🎯 How It Works
+The Orkhon backend provides a complete infrastructure for building AI agents that interact with De Nederlandsche Bank (DNB) APIs. It consists of four main components:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ Your Agent (Python/Go)                                      │
-│ client.invoke("dnb-echo-helloworld", {})                    │
-└────────────────┬────────────────────────────────────────────┘
-                 │ 1. HTTP Request
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ GenAI Toolbox :5000                                         │
-│ • Receives request                                          │
-│ • Sends TRACE to Jaeger (start: "tool invoke")             │
-│ • Calls DNB API                                             │
-│ • Sends TRACE to Jaeger (end: "tool invoke", duration)     │
-└────────────────┬────────────────────────────────────────────┘
-                 │ 2. Telemetry data (OpenTelemetry format)
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Jaeger :4318 (OTLP Collector)                               │
-│ • Stores traces in memory                                   │
-└────────────────┬────────────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Jaeger UI :16686 (What you see in browser)                  │
-│ • Visualizes traces                                         │
-│ • Shows request timeline                                    │
-│ • Displays errors and latency                               │
-└─────────────────────────────────────────────────────────────┘
+backend/
+├── adk/           # Agent Development Kit - LangGraph agents
+├── agentbox/      # OpenAPI → Toolbox conversion utilities
+├── apis/          # DNB API specifications and generated code
+└── toolbox/       # GenAI Toolbox MCP server (Docker-based)
 ```
 
 ---
 
-## 🖥️ Using Jaeger UI
-
-### **1. View Recent Requests**
-Go to: http://localhost:16686/search
-
-**You'll see:**
-- **Service dropdown** → Select `orkhon-genai-toolbox-mcp` (or whatever `${OTEL_SERVICE_NAME}` is set to)
-- **Operation dropdown** → Shows all traced operations:
-  - `toolbox/server/tool/invoke` (when you call a tool)
-  - `toolbox/server/toolset/get` (when you list tools)
-  - `toolbox/server/tool/get` (when you inspect a tool)
-- **Traces** → Click to see the full request journey
-
-### **2. What You Can See:** 
-
-Ran terminal command: curl.exe -X POST http://localhost:5000/api/tool/dnb-echo-helloworld/invoke -H "Content-Type: application/json" -d "{}"
-
-Now if you refresh Jaeger and click "Find Traces", you'll see:
+## 🏗️ Architecture
 
 ```
-Trace Timeline:
-├─ toolbox/server/tool/invoke (200ms total)
-   ├─ HTTP call to DNB API (150ms)
-   ├─ JSON parsing (5ms)
-   └─ Response formatting (2ms)
+┌──────────────────────────────────────────────────────────────┐
+│                    AI Agent Layer (ADK)                      │
+│  • LangGraph agents (simple_dnb_agent.py)                   │
+│  • Google Gemini LLM integration                             │
+│  • Agent Development Kit (ADK) Web UI                        │
+└────────────────────┬─────────────────────────────────────────┘
+                     │ ToolboxClient
+                     ▼
+┌──────────────────────────────────────────────────────────────┐
+│              Tool Orchestration Layer (Toolbox)              │
+│  • GenAI Toolbox MCP Server :5000                           │
+│  • 84+ DNB API tools from OpenAPI specs                     │
+│  • Tool validation and schema management                     │
+│  • OpenTelemetry + Jaeger tracing :16686                    │
+└────────────────────┬─────────────────────────────────────────┘
+                     │ HTTP/REST
+                     ▼
+┌──────────────────────────────────────────────────────────────┐
+│                External API Layer (DNB APIs)                 │
+│  • Statistics API (v2024100101)                             │
+│  • Public Register API (v1)                                  │
+│  • Echo API (testing/validation)                             │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🆚 Jaeger vs GenAI Toolbox Web UI
+## 🚀 Quick Start
 
-| **Jaeger UI** (`:16686`) | **GenAI Toolbox UI** (`:5000`) |
-|---|---|
-| **Purpose:** Performance monitoring & debugging | **Purpose:** Browse and test tools |
-| Shows request traces, timings, errors | Shows tool schemas, parameters, invoke UI |
-| From: `jaegertracing/all-in-one` container | From: GenAI Toolbox built-in server |
-| **For DevOps/Monitoring** | **For Development/Testing** |
+### Prerequisites
 
----
+- **Docker Desktop** (for toolbox services)
+- **Python 3.11+** with `uv` package manager
+- **DNB API Key** (set in environment: `DNB_SUBSCRIPTION_KEY_DEV`)
 
-## 🔍 Does GenAI Toolbox Have Its Own UI?
+### 1. Start the GenAI Toolbox
 
-**YES!** Let's check: 
+```powershell
+# Navigate to toolbox directory
+cd backend/toolbox
 
-Ran terminal command: Start-Process http://localhost:5000
+# Start all services (GenAI Toolbox + Jaeger + PostgreSQL)
+docker-compose -f docker-compose.dev.yml up -d
 
-**GenAI Toolbox has a built-in web UI** that lets you:
-- 📚 **Browse all your tools** (dnb-echo-helloworld, dnb-get-metadata, etc.)
-- 📝 **See tool parameters and descriptions**
-- 🧪 **Test tools directly** from the browser
-- 📦 **View toolsets**
+# Verify services are running
+docker ps --filter name=orkhon-toolbox
+```
 
----
+**Services Available:**
+- 🌐 **GenAI Toolbox UI:** http://localhost:5000/ui/
+- 📊 **Jaeger Tracing UI:** http://localhost:16686
+- 🗄️ **PostgreSQL:** localhost:5432 (for persistent storage)
 
-## 📊 Summary
+### 2. Run a Simple Agent
 
-| **URL** | **What It Is** | **Purpose** |
-|---|---|---|
-| `http://localhost:5000/ui/` | **GenAI Toolbox Web UI** | Browse & test your DNB API tools |
-| `http://localhost:5000/ui/tools` | **Tools Browser** | View and test individual tools |
-| `http://localhost:5000/ui/toolsets` | **Toolsets Browser** | View toolset configurations |
-| `http://localhost:5000/api/toolset/` | **REST API** | Programmatic access for agents |
-| `http://localhost:16686` | **Jaeger Tracing UI** | Monitor performance & debug issues |
+```powershell
+# Navigate to ADK directory
+cd backend/adk
 
-### **Think of it like:**
-- **GenAI Toolbox (`:5000`)** = Your API gateway + admin panel
-- **Jaeger (`:16686`)** = Your security camera system showing all activity
+# Run the DNB agent
+python simple_dnb_agent.py
+```
 
 ---
 
-## 🎓 When to Use Each
+## 📁 Component Details
 
-### **Use GenAI Toolbox UI (`:5000/ui/`)** when:
-- ✅ Testing if your tools work
-- ✅ Checking tool parameters
-- ✅ Debugging tool configuration
-- ✅ Showing stakeholders what APIs are available
+### 🤖 `/adk` - Agent Development Kit
 
-**Note:** The web UI requires the `--ui` flag to be enabled in the Docker Compose configuration, which is now set by default.
+Contains LangGraph-based AI agents that use the GenAI Toolbox.
 
-### **Use Jaeger (`:16686`)** when:
-- ✅ Investigating slow requests ("Why did this take 10 seconds?")
-- ✅ Debugging errors ("Where did this fail?")
-- ✅ Monitoring production health
-- ✅ Understanding request flow through multiple services
+**Key Files:**
+- `simple_dnb_agent.py` - Example agent using DNB tools
+- `simple_agent.ipynb` - Jupyter notebook for interactive development
+- `scripts/` - Helper scripts for agent development
 
-**Both are valuable** - they serve different purposes in your development and operations workflow! 🚀
+**Learn More:** See [Agent Development Guide](adk/README.md)
 
 ---
 
-## Your Development Workflow:
-┌─────────────────────────────────────────────────┐
-│ 1. Configure Tools                              │
-│    → Edit tools.yaml                            │
-│    → Use MCP Toolbox UI (localhost:5000/ui)    │
-│      to verify tools work                       │
-└─────────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────────┐
-│ 2. Build Your Agent                             │
-│    → Create root_agent.py                       │
-│    → Connect to Toolbox via ToolboxClient       │
-│    → Load toolsets into agent                   │
-└─────────────────────────────────────────────────┘
-                    ↓
-┌─────────────────────────────────────────────────┐
-│ 3. Test Your Agent                              │
-│    → Run: adk web                               │
-│    → Use ADK Web UI (localhost:4200)           │
-│      for full agent debugging                   │
-└─────────────────────────────────────────────────┘
+### 🔧 `/agentbox` - OpenAPI Conversion Tools
+
+Utilities to convert OpenAPI specifications into GenAI Toolbox tool definitions.
+
+**Key Features:**
+- Converts OpenAPI 3.x specs → `tools.yaml` format
+- Generates 84+ tools from DNB API specifications
+- Validates tool schemas and parameters
+
+**Usage:**
+```powershell
+cd backend/agentbox
+python openapi_to_toolbox.py convert --all
+```
+
+**Output:** Generated tools are placed in `backend/toolbox/config/dev/` and `backend/toolbox/config/prod/`
+
+**Learn More:** See [OpenAPI Conversion Guide](agentbox/README.md)
 
 ---
 
-## ┌─────────────────────────────────────────────────────────────────────┐
-## │                   YOUR WORKING SETUP                                │
-## └─────────────────────────────────────────────────────────────────────┘
+### 🌐 `/apis/dnb` - DNB API Integration
 
-1. OpenAPI Specs (Source)
-    ↓ [openapi_to_toolbox.py]
-Generated YAML (84+ tools)
-    ↓ [Docker Container]
-MCP Server :5000
-    ↓ [ToolboxClient]
-LangGraph Agent (Gemini)
-    ↓ [Tool Calls]
-Real DNB APIs ✅
+DNB (De Nederlandsche Bank) API specifications, documentation, and generated clients.
+
+**Structure:**
+```
+apis/dnb/
+├── specs/              # OpenAPI 3.x specifications
+│   ├── openapi3_statisticsdatav2024100101.yaml
+│   ├── openapi3_publicdatav1.yaml
+│   └── openapi3_echoapi.yaml
+├── generated/          # Auto-generated Python clients
+├── docs/               # API documentation
+├── scripts/            # Code generation scripts
+└── tests/              # API integration tests
+```
+
+**Quick Start:**
+- 📖 [DNB API Services Overview](apis/dnb/DNB%20API%20Services.MD)
+- 🚀 [Quick Start Guide](apis/dnb/QUICKSTART.md)
+
+---
+
+### 🐳 `/toolbox` - GenAI Toolbox MCP Server
+
+Docker-based Model Context Protocol (MCP) server that exposes DNB APIs as tools for AI agents.
+
+**Key Components:**
+- **GenAI Toolbox** - Go-based MCP server from [Google Cloud GenAI Toolbox](https://github.com/GoogleCloudPlatform/genai-toolbox)
+- **Jaeger** - Distributed tracing for observability
+- **PostgreSQL** - Tool metadata and configuration storage
+
+**Configuration:**
+```
+toolbox/config/
+├── tools.dev.yaml      # Development tool definitions
+├── tools.prod.yaml     # Production tool definitions
+├── dev/                # Generated DNB tool configs (dev)
+└── prod/               # Generated DNB tool configs (prod)
+```
+
+**Management Tasks:**
+
+Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
+- `MCP: Start Dev Server` - Start all services
+- `MCP: Stop Dev Server` - Stop all services
+- `MCP: View Dev Logs (Live)` - Monitor logs in real-time
+- `MCP: Open Toolbox Web UI` - Open http://localhost:5000/ui/
+- `MCP: Open Jaeger Tracing UI` - Open http://localhost:16686
+
+**Learn More:**
+- 📖 [Toolbox Configuration Guide](toolbox/config/QUICK_ANSWER.md)
+- 📊 [Jaeger Tracing Documentation](toolbox/docs/Jaeger%20UI.md)
+
+---
+
+## 🔄 Development Workflow
+
+### Typical Development Flow:
+
+```
+1. Update OpenAPI Specs
+   └─> apis/dnb/specs/*.yaml
+
+2. Generate Tool Definitions
+   └─> Run: python agentbox/openapi_to_toolbox.py convert --all
+   └─> Output: toolbox/config/dev/*.yaml
+
+3. Restart Toolbox
+   └─> Run: docker-compose -f toolbox/docker-compose.dev.yml restart
+
+4. Test Tools in Toolbox UI
+   └─> Open: http://localhost:5000/ui/
+
+5. Build/Update Agent
+   └─> Edit: adk/simple_dnb_agent.py
+   └─> Run: python adk/simple_dnb_agent.py
+
+6. Monitor with Jaeger
+   └─> Open: http://localhost:16686
+   └─> View traces and performance metrics
+```
+
+### Quick Restart Flow (VS Code Task):
+
+Run task: **"🔄 Convert & Restart: Convert APIs → Restart Server → Open UI"**
+
+This executes:
+1. OpenAPI → Toolbox conversion
+2. Restarts GenAI Toolbox server
+3. Opens Web UI for testing
+
+---
+
+## 🌐 Service Endpoints
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **GenAI Toolbox UI** | http://localhost:5000/ui/ | Browse and test tools |
+| **Toolbox API** | http://localhost:5000/api/ | Programmatic tool access |
+| **Jaeger UI** | http://localhost:16686 | Distributed tracing & monitoring |
+| **PostgreSQL** | localhost:5432 | Tool metadata storage |
+
+---
+
+## 📚 Documentation
+
+### Component Documentation:
+- **[ADK - Agent Development](adk/README.md)** - Build LangGraph agents
+- **[AgentBox - OpenAPI Conversion](agentbox/README.md)** - Convert APIs to tools
+- **[DNB APIs - Integration Guide](apis/dnb/DNB%20API%20Services.MD)** - DNB API documentation
+- **[Toolbox - Configuration](toolbox/config/QUICK_ANSWER.md)** - Tool configuration guide
+
+### Monitoring & Observability:
+- **[Jaeger Tracing Guide](toolbox/docs/Jaeger%20UI.md)** - Understand distributed tracing
+
+---
+
+## 🛠️ Troubleshooting
+
+### Common Issues:
+
+**1. Docker services won't start:**
+```powershell
+# Check Docker Desktop is running
+docker --version
+
+# View service logs
+cd backend/toolbox
+docker-compose -f docker-compose.dev.yml logs
+```
+
+**2. Tools not appearing in Toolbox:**
+```powershell
+# Validate tool configuration
+cd backend/toolbox
+python validate_config.py
+
+# Restart with fresh build
+docker-compose -f docker-compose.dev.yml up -d --build
+```
+
+**3. DNB API authentication errors:**
+```powershell
+# Verify API key is set
+echo $env:DNB_SUBSCRIPTION_KEY_DEV
+
+# Test direct API access
+curl -H "Ocp-Apim-Subscription-Key: $env:DNB_SUBSCRIPTION_KEY_DEV" `
+     https://api.dnb.nl/echo-api/helloworld
+```
+
+**4. Agent can't connect to Toolbox:**
+- Ensure Toolbox is running: http://localhost:5000/api/toolset/
+- Check `ToolboxClient` configuration in your agent
+- Review Jaeger traces for connection errors
+
+---
+
+## 🤝 Contributing
+
+When contributing to the backend:
+
+1. **API Changes:** Update OpenAPI specs in `apis/dnb/specs/`
+2. **Tool Definitions:** Regenerate with `openapi_to_toolbox.py`
+3. **Agent Code:** Follow LangGraph patterns in `adk/`
+4. **Documentation:** Update relevant README files
+
+---
+
+## 📄 License
+
+See [LICENSE](../LICENSE) in project root.
+
+---
+
+## 🔗 Related Projects
+
+- **[GenAI Toolbox](https://github.com/GoogleCloudPlatform/genai-toolbox)** - Upstream MCP server
+- **[LangGraph](https://github.com/langchain-ai/langgraph)** - Agent framework
+- **[OpenTelemetry](https://opentelemetry.io/)** - Observability standards
+- **[Jaeger](https://www.jaegertracing.io/)** - Distributed tracing platform
