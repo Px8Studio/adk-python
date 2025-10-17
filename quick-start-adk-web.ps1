@@ -2,11 +2,38 @@
 # Quick Start ADK Web - Simple launcher from Orkhon root
 # Usage: .\quick-start-adk-web.ps1
 
+#requires -Version 5.1
+
+[CmdletBinding()]
 param(
     [switch]$Help
 )
 
-if ($Help) {
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
+
+#region Constants
+$script:PROJECT_ROOT = Get-Location
+$script:VENV_PATH = Join-Path $PROJECT_ROOT ".venv"
+$script:VENV_PYTHON = Join-Path $VENV_PATH "Scripts\python.exe"
+$script:TOOLBOX_DIR = Join-Path $PROJECT_ROOT "backend\toolbox"
+$script:ADK_DIR = Join-Path $PROJECT_ROOT "backend\adk"
+
+$script:PORTS = @{
+    Toolbox = 5000
+    ApiServer = 8000
+    WebUI = 4200
+    Jaeger = 16686
+}
+
+$script:TIMEOUTS = @{
+    ToolboxStartup = 30
+    ApiServerStartup = 10
+}
+#endregion
+
+#region Helper Functions
+function Show-Help {
     Write-Host @"
 
 ╔════════════════════════════════════════════════════════════════╗
@@ -14,336 +41,367 @@ if ($Help) {
 ╚════════════════════════════════════════════════════════════════╝
 
 USAGE:
-  .\quick-start-adk-web.ps1          Start all services
-  .\quick-start-adk-web.ps1 -Help    Show this help
+    .\quick-start-adk-web.ps1          Start all services
+    .\quick-start-adk-web.ps1 -Help    Show this help
 
 WHAT IT DOES:
-  1. Starts GenAI Toolbox (Docker)
-  2. Starts ADK API Server (Python FastAPI)
-  3. Starts ADK Web UI (Angular)
-  4. Opens browser to http://localhost:4200
+    1. Starts GenAI Toolbox (Docker)
+    2. Starts ADK API Server (Python FastAPI)
+    3. Starts ADK Web UI (Angular)
+    4. Opens browser to http://localhost:4200
 
 SERVICES:
-  • Toolbox:    http://localhost:5000
-  • API Server: http://localhost:8000  
-  • Web UI:     http://localhost:4200
-  • Jaeger:     http://localhost:16686
+    • Toolbox:    http://localhost:$($PORTS.Toolbox)
+    • API Server: http://localhost:$($PORTS.ApiServer)
+    • Web UI:     http://localhost:$($PORTS.WebUI)
+    • Jaeger:     http://localhost:$($PORTS.Jaeger)
 
 TO STOP:
-  .\backend\adk\stop-adk-web.ps1
-  OR press Ctrl+C in all terminal windows
+    .\backend\adk\stop-adk-web.ps1
+    OR press Ctrl+C in all terminal windows
 
 TROUBLESHOOTING:
-  .\backend\adk\diagnose-setup.ps1
+    .\backend\adk\diagnose-setup.ps1
 
 MORE INFO:
-  See ADK_WEB_MANAGEMENT.md for detailed guide
+    See ADK_WEB_MANAGEMENT.md for detailed guide
 
 "@
-    exit 0
 }
 
-$ErrorActionPreference = "Stop"
-
-Write-Host @"
+function Show-Header {
+    param([string]$Message)
+    Write-Host @"
 
 ╔════════════════════════════════════════════════════════════════╗
-║                    🚀 ADK Web Quick Start                      ║
+║  $($Message.PadRight(60))  ║
 ╚════════════════════════════════════════════════════════════════╝
 
 "@ -ForegroundColor Cyan
-
-# Initialize tracking
-$issues = @()
-$warnings = @()
-$ProjectRoot = Get-Location
-
-# Check if we're in the right directory
-if (-not (Test-Path "backend\adk\agents")) {
-    Write-Host "❌ Error: Must run from Orkhon project root" -ForegroundColor Red
-    Write-Host "   Current directory: $(Get-Location)" -ForegroundColor Yellow
-    Write-Host "   Expected: C:\Users\rjjaf\_Projects\orkhon" -ForegroundColor Yellow
-    exit 1
 }
 
-Write-Host "📍 Running from: $(Get-Location)" -ForegroundColor Green
-Write-Host ""
+function Test-ProjectRoot {
+    if (-not (Test-Path (Join-Path $PROJECT_ROOT "backend\adk\agents"))) {
+        Write-Host "❌ Error: Must run from Orkhon project root" -ForegroundColor Red
+        Write-Host "   Current directory: $PROJECT_ROOT" -ForegroundColor Yellow
+        Write-Host "   Expected structure: backend\adk\agents" -ForegroundColor Yellow
+        return $false
+    }
+    Write-Host "📍 Running from: $PROJECT_ROOT" -ForegroundColor Green
+    Write-Host ""
+    return $true
+}
 
-# Pre-flight checks
-Write-Host "Running pre-flight checks..." -ForegroundColor Cyan
-Write-Host ""
-
-# [1/4] Check virtual environment
-Write-Host "[1/4] Checking Poetry virtual environment..." -ForegroundColor Cyan
-$VenvPath = Join-Path $ProjectRoot ".venv"
-$VenvPython = Join-Path $VenvPath "Scripts\python.exe"
-
-if (Test-Path $VenvPath) {
-  Write-Host "   ✓ Virtual environment found: $VenvPath" -ForegroundColor Green
-  
-  if (Test-Path $VenvPython) {
+function Test-VirtualEnvironment {
+    Write-Host "[1/4] Checking Poetry virtual environment..." -ForegroundColor Cyan
+    
+    if (-not (Test-Path $VENV_PATH)) {
+        Write-Host "   ✗ Virtual environment not found at: $VENV_PATH" -ForegroundColor Red
+        Write-Host "     Run 'poetry install' in: $PROJECT_ROOT" -ForegroundColor Yellow
+        return $false
+    }
+    Write-Host "   ✓ Virtual environment found: $VENV_PATH" -ForegroundColor Green
+    
+    if (-not (Test-Path $VENV_PYTHON)) {
+        Write-Host "   ✗ Python executable not found in venv" -ForegroundColor Red
+        return $false
+    }
     Write-Host "   ✓ Python executable found" -ForegroundColor Green
     
     try {
-      $pyVersion = & $VenvPython --version 2>&1
-      if ($LASTEXITCODE -eq 0) {
-        Write-Host "   ✓ Python version: $pyVersion" -ForegroundColor Green
-      }
-    } catch {
-      Write-Host "   ✗ Python in venv not working" -ForegroundColor Red
-      $issues += "Virtual environment Python not functional"
-    }
-  } else {
-    Write-Host "   ✗ Python executable not found in venv" -ForegroundColor Red
-    $issues += "Virtual environment incomplete"
-  }
-} else {
-  Write-Host "   ✗ Virtual environment not found at: $VenvPath" -ForegroundColor Red
-  Write-Host "     Run 'poetry install' in: $ProjectRoot" -ForegroundColor Yellow
-  $issues += "Virtual environment not created"
-}
-
-# [2/4] Check GenAI Toolbox
-Write-Host "`n[2/4] Checking GenAI Toolbox..." -ForegroundColor Cyan
-$toolboxRunning = $false
-try {
-  $response = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 2 -ErrorAction Stop
-  Write-Host "   ✓ GenAI Toolbox is running" -ForegroundColor Green
-  $toolboxRunning = $true
-} catch {
-  Write-Host "   ✗ GenAI Toolbox not responding on port 5000" -ForegroundColor Yellow
-  Write-Host "   Attempting to start GenAI Toolbox..." -ForegroundColor Cyan
-  
-  # Try to start toolbox using Docker
-  $toolboxDir = Join-Path $ProjectRoot "backend\toolbox"
-  if (Test-Path $toolboxDir) {
-    Push-Location $toolboxDir
-    try {
-      docker-compose -f docker-compose.dev.yml up -d 2>&1 | Out-Null
-      
-      # Wait for toolbox to start
-      $maxWait = 30
-      $waited = 0
-      while ($waited -lt $maxWait) {
-        try {
-          $null = Invoke-RestMethod -Uri "http://localhost:5000/health" -TimeoutSec 1 -ErrorAction Stop
-          Write-Host "   ✓ GenAI Toolbox started successfully" -ForegroundColor Green
-          $toolboxRunning = $true
-          break
-        } catch {
-          Start-Sleep -Seconds 2
-          $waited += 2
+        $pyVersion = & $VENV_PYTHON --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   ✓ Python version: $pyVersion" -ForegroundColor Green
+            return $true
         }
-      }
-      
-      if (-not $toolboxRunning) {
-        Write-Host "   ⚠ GenAI Toolbox may still be starting..." -ForegroundColor Yellow
-      }
     } catch {
-      Write-Host "   ✗ Failed to start GenAI Toolbox: $($_.Exception.Message)" -ForegroundColor Red
-    } finally {
-      Pop-Location
+        Write-Host "   ✗ Python in venv not working: $($_.Exception.Message)" -ForegroundColor Red
+        return $false
     }
-  }
+    
+    return $false
 }
 
-# [3/4] Check Docker
-Write-Host "`n[3/4] Checking Docker..." -ForegroundColor Cyan
-try {
-  $null = docker --version 2>&1
-  if ($LASTEXITCODE -eq 0) {
-    Write-Host "   ✓ Docker is available" -ForegroundColor Green
-  } else {
-    Write-Host "   ✗ Docker command failed" -ForegroundColor Red
-    $issues += "Docker not working properly"
-  }
-} catch {
-  Write-Host "   ✗ Docker not found" -ForegroundColor Red
-  $issues += "Docker not installed"
-}
-
-# [4/4] Check project structure
-Write-Host "`n[4/4] Checking project structure..." -ForegroundColor Cyan
-
-$requiredPaths = @(
-  @{Path="pyproject.toml"; Type="Poetry config"},
-  @{Path="backend\adk"; Type="ADK backend"},
-  @{Path="backend\toolbox"; Type="Toolbox config"}
-)
-
-foreach ($item in $requiredPaths) {
-  $fullPath = Join-Path $ProjectRoot $item.Path
-  if (Test-Path $fullPath) {
-    Write-Host "   ✓ $($item.Type) found" -ForegroundColor Green
-  } else {
-    Write-Host "   ✗ $($item.Type) missing: $($item.Path)" -ForegroundColor Red
-    $issues += "$($item.Type) not found"
-  }
-}
-
-Write-Host ""
-
-# Check for blocking issues
-if ($issues.Count -gt 0) {
-  Write-Host "❌ Cannot start: Found $($issues.Count) issue(s)" -ForegroundColor Red
-  foreach ($issue in $issues) {
-    Write-Host "   • $issue" -ForegroundColor Red
-  }
-  Write-Host "`nRun diagnostics for more info:" -ForegroundColor Yellow
-  Write-Host "   .\backend\adk\diagnose-setup.ps1" -ForegroundColor Cyan
-  exit 1
-}
-
-# Show warnings but continue
-if ($warnings.Count -gt 0) {
-  Write-Host "⚠ Found $($warnings.Count) warning(s):" -ForegroundColor Yellow
-  foreach ($warning in $warnings) {
-    Write-Host "   • $warning" -ForegroundColor Yellow
-  }
-  Write-Host ""
-}
-
-Write-Host "✓ All pre-flight checks passed!" -ForegroundColor Green
-Write-Host ""
-
-# Step 1: Start Toolbox
-Write-Host "Step 1/3: Starting GenAI Toolbox..." -ForegroundColor Cyan
-Write-Host "         (This may take 20-30 seconds)" -ForegroundColor Gray
-Write-Host ""
-
-$toolboxDir = "backend\toolbox"
-Set-Location $toolboxDir
-
-try {
-    $null = docker-compose -f docker-compose.dev.yml up -d 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "Docker compose failed"
-    }
-} catch {
-    Write-Host "❌ Failed to start Toolbox" -ForegroundColor Red
-    Write-Host "   Run: docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Yellow
-    Set-Location ..\..
-    exit 1
-}
-
-Set-Location ..\..
-
-# Wait for Toolbox to be ready
-Write-Host "   Waiting for Toolbox to be ready..." -ForegroundColor Gray
-$attempts = 0
-$maxAttempts = 30
-$ready = $false
-
-while ($attempts -lt $maxAttempts -and -not $ready) {
-    $attempts++
-    Start-Sleep -Seconds 1
+function Test-ServiceHealth {
+    param(
+        [string]$Url,
+        [int]$TimeoutSeconds = 2
+    )
+    
     try {
-        $null = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 1 -ErrorAction Stop
-        $ready = $true
+        $null = Invoke-RestMethod -Uri $Url -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+        return $true
     } catch {
-        Write-Host "." -NoNewline -ForegroundColor Gray
+        return $false
     }
 }
 
-if ($ready) {
+function Start-ToolboxService {
+    Write-Host "`n[2/4] Checking GenAI Toolbox..." -ForegroundColor Cyan
+    
+    $healthUrl = "http://localhost:$($PORTS.Toolbox)/health"
+    
+    if (Test-ServiceHealth -Url $healthUrl) {
+        Write-Host "   ✓ GenAI Toolbox is already running" -ForegroundColor Green
+        return $true
+    }
+    
+    Write-Host "   ✗ GenAI Toolbox not responding" -ForegroundColor Yellow
+    Write-Host "   Attempting to start GenAI Toolbox..." -ForegroundColor Cyan
+    
+    if (-not (Test-Path $TOOLBOX_DIR)) {
+        Write-Host "   ✗ Toolbox directory not found: $TOOLBOX_DIR" -ForegroundColor Red
+        return $false
+    }
+    
+    Push-Location $TOOLBOX_DIR
+    try {
+        $null = docker-compose -f docker-compose.dev.yml up -d 2>&1
+        
+        # Wait for service to become healthy
+        $maxWait = $TIMEOUTS.ToolboxStartup
+        $waited = 0
+        while ($waited -lt $maxWait) {
+            if (Test-ServiceHealth -Url $healthUrl -TimeoutSeconds 1) {
+                Write-Host "   ✓ GenAI Toolbox started successfully" -ForegroundColor Green
+                return $true
+            }
+            Start-Sleep -Seconds 2
+            $waited += 2
+        }
+        
+        Write-Host "   ⚠ GenAI Toolbox may still be starting..." -ForegroundColor Yellow
+        return $true
+    } catch {
+        Write-Host "   ✗ Failed to start GenAI Toolbox: $($_.Exception.Message)" -ForegroundColor Red
+        return $false
+    } finally {
+        Pop-Location
+    }
+}
+
+function Test-Docker {
+    Write-Host "`n[3/4] Checking Docker..." -ForegroundColor Cyan
+    
+    try {
+        $null = docker --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "   ✓ Docker is available" -ForegroundColor Green
+            return $true
+        }
+    } catch {
+        Write-Host "   ✗ Docker not found" -ForegroundColor Red
+        return $false
+    }
+    
+    Write-Host "   ✗ Docker command failed" -ForegroundColor Red
+    return $false
+}
+
+function Test-ProjectStructure {
+    Write-Host "`n[4/4] Checking project structure..." -ForegroundColor Cyan
+    
+    $requiredPaths = @(
+        @{Path = "pyproject.toml"; Type = "Poetry config"}
+        @{Path = "backend\adk"; Type = "ADK backend"}
+        @{Path = "backend\toolbox"; Type = "Toolbox config"}
+    )
+    
+    $allFound = $true
+    foreach ($item in $requiredPaths) {
+        $fullPath = Join-Path $PROJECT_ROOT $item.Path
+        if (Test-Path $fullPath) {
+            Write-Host "   ✓ $($item.Type) found" -ForegroundColor Green
+        } else {
+            Write-Host "   ✗ $($item.Type) missing: $($item.Path)" -ForegroundColor Red
+            $allFound = $false
+        }
+    }
+    
+    return $allFound
+}
+
+function Invoke-PreflightChecks {
+    Write-Host "Running pre-flight checks..." -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "   ✓ Toolbox ready!" -ForegroundColor Green
-} else {
+    
+    $checks = @(
+        @{Name = "Virtual Environment"; Test = { Test-VirtualEnvironment }}
+        @{Name = "Toolbox Service"; Test = { Start-ToolboxService }}
+        @{Name = "Docker"; Test = { Test-Docker }}
+        @{Name = "Project Structure"; Test = { Test-ProjectStructure }}
+    )
+    
+    $failed = @()
+    foreach ($check in $checks) {
+        if (-not (& $check.Test)) {
+            $failed += $check.Name
+        }
+    }
+    
+    Write-Host ""
+    
+    if ($failed.Count -gt 0) {
+        Write-Host "❌ Cannot start: Found $($failed.Count) issue(s)" -ForegroundColor Red
+        foreach ($issue in $failed) {
+            Write-Host "   • $issue" -ForegroundColor Red
+        }
+        Write-Host "`nRun diagnostics for more info:" -ForegroundColor Yellow
+        Write-Host "   .\backend\adk\diagnose-setup.ps1" -ForegroundColor Cyan
+        return $false
+    }
+    
+    Write-Host "✓ All pre-flight checks passed!" -ForegroundColor Green
+    Write-Host ""
+    return $true
+}
+
+function Wait-ForToolboxReady {
+    Write-Host "   Waiting for Toolbox to be ready..." -ForegroundColor Gray
+    
+    $healthUrl = "http://localhost:$($PORTS.Toolbox)/health"
+    $maxAttempts = $TIMEOUTS.ToolboxStartup
+    
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        if (Test-ServiceHealth -Url $healthUrl -TimeoutSeconds 1) {
+            Write-Host ""
+            Write-Host "   ✓ Toolbox ready!" -ForegroundColor Green
+            return $true
+        }
+        Write-Host "." -NoNewline -ForegroundColor Gray
+        Start-Sleep -Seconds 1
+    }
+    
     Write-Host ""
     Write-Host "   ⚠ Toolbox may still be starting..." -ForegroundColor Yellow
+    return $false
 }
-Write-Host ""
 
-# Step 2: Start ADK API Server
-Write-Host "Step 2/3: Starting ADK API Server..." -ForegroundColor Cyan
-Write-Host "         (Opening in new window)" -ForegroundColor Gray
-Write-Host ""
-
-$apiServerScript = @"
-cd C:\Users\rjjaf\_Projects\orkhon
+function Start-ApiServer {
+    Write-Host "Step 2/3: Starting ADK API Server..." -ForegroundColor Cyan
+    Write-Host "         (Opening in new window)" -ForegroundColor Gray
+    Write-Host ""
+    
+    $apiServerScript = @"
+Set-Location '$PROJECT_ROOT'
 Write-Host '╔════════════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
 Write-Host '║              ADK API Server (Keep this window open)           ║' -ForegroundColor Cyan
 Write-Host '╚════════════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
 Write-Host ''
 Write-Host 'Starting ADK API Server...' -ForegroundColor Yellow
 Write-Host ''
-$webUiScript = @"
-# ADK Web UI Startup Script
-`$ProjectRoot = "$ProjectRoot"
-`$VenvPython = "$VenvPython"
+Set-Location '$ADK_DIR'
+& '$VENV_PYTHON' -m google.adk.cli.cli_tools_click web --port $($PORTS.ApiServer)
+"@
+    
+    $scriptPath = Join-Path $ADK_DIR ".start-api-server.ps1"
+    $apiServerScript | Out-File -FilePath $scriptPath -Encoding UTF8
+    
+    Start-Process powershell -ArgumentList "-NoExit", "-File", $scriptPath
+    
+    Write-Host "   ✓ API Server starting in new window" -ForegroundColor Green
+    Write-Host ""
+}
 
+function Start-WebUI {
+    Write-Host "Step 3/3: Starting ADK Web UI..." -ForegroundColor Cyan
+    Write-Host "         (Opening in new window)" -ForegroundColor Gray
+    Write-Host ""
+    
+    $webUiScript = @"
+Set-Location 'C:\Users\rjjaf\_Projects\adk-web'
 Write-Host '╔════════════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
 Write-Host '║               ADK Web UI (Keep this window open)              ║' -ForegroundColor Cyan
 Write-Host '╚════════════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
 Write-Host ''
 Write-Host 'Starting ADK Web UI...' -ForegroundColor Yellow
 Write-Host ''
-Set-Location "`$ProjectRoot\backend\adk"
-& `$VenvPython -m google.adk.cli.cli_tools_click web --port 8080
+npm run serve -- --backend=http://localhost:$($PORTS.ApiServer)
 "@
+    
+    $scriptPath = Join-Path $ADK_DIR ".start-web-ui.ps1"
+    $webUiScript | Out-File -FilePath $scriptPath -Encoding UTF8
+    
+    Start-Process powershell -ArgumentList "-NoExit", "-File", $scriptPath
+    
+    Write-Host "   ✓ Web UI starting in new window" -ForegroundColor Green
+    Write-Host "   (Wait for Angular compilation to complete)" -ForegroundColor Gray
+    Write-Host ""
+}
 
-$webUiScriptPath = "backend\adk\.start-web-ui.ps1"
-$webUiScript | Out-File -FilePath $webUiScriptPath -Encoding UTF8
-
-Start-Process powershell -ArgumentList "-NoExit", "-File", $webUiScriptPath
-
-# Step 3: Start ADK Web UI
-Write-Host "Step 3/3: Starting ADK Web UI..." -ForegroundColor Cyan
-Write-Host "         (Opening in new window)" -ForegroundColor Gray
-Write-Host ""
-
-$webUiScript = @"
-cd C:\Users\rjjaf\_Projects\adk-web
-Write-Host '╔════════════════════════════════════════════════════════════════╗' -ForegroundColor Cyan
-Write-Host '║               ADK Web UI (Keep this window open)              ║' -ForegroundColor Cyan
-Write-Host '╚════════════════════════════════════════════════════════════════╝' -ForegroundColor Cyan
-Write-Host ''
-Write-Host 'Starting ADK Web UI...' -ForegroundColor Yellow
-Write-Host ''
-npm run serve -- --backend=http://localhost:8000
-"@
-
-$webUiScriptPath = "backend\adk\.start-web-ui.ps1"
-$webUiScript | Out-File -FilePath $webUiScriptPath -Encoding UTF8
-
-Start-Process powershell -ArgumentList "-NoExit", "-File", $webUiScriptPath
-
-Write-Host "   ✓ Web UI starting in new window" -ForegroundColor Green
-Write-Host "   (Wait for Angular compilation to complete)" -ForegroundColor Gray
-Write-Host ""
-
-# Final instructions
-Write-Host @"
+function Show-CompletionMessage {
+    Write-Host @"
 ╔════════════════════════════════════════════════════════════════╗
 ║                      ✅ Services Starting!                      ║
 ╚════════════════════════════════════════════════════════════════╝
 
 "@ -ForegroundColor Green
+    
+    Write-Host "Two new windows opened:" -ForegroundColor Cyan
+    Write-Host "  1. ADK API Server (Python FastAPI)" -ForegroundColor White
+    Write-Host "  2. ADK Web UI (Angular)" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "Wait 30-60 seconds for compilation, then visit:" -ForegroundColor Yellow
+    Write-Host "  👉 http://localhost:$($PORTS.WebUI)" -ForegroundColor Cyan -BackgroundColor Black
+    Write-Host ""
+    
+    Write-Host "Other Services:" -ForegroundColor Cyan
+    Write-Host "  • Toolbox UI:  http://localhost:$($PORTS.Toolbox)/ui/" -ForegroundColor White
+    Write-Host "  • API Docs:    http://localhost:$($PORTS.ApiServer)/docs" -ForegroundColor White
+    Write-Host "  • Jaeger:      http://localhost:$($PORTS.Jaeger)" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "To stop all services:" -ForegroundColor Cyan
+    Write-Host "  .\backend\adk\stop-adk-web.ps1" -ForegroundColor Yellow
+    Write-Host ""
+}
+#endregion
 
-Write-Host "Two new windows opened:" -ForegroundColor Cyan
-Write-Host "  1. ADK API Server (Python FastAPI)" -ForegroundColor White
-Write-Host "  2. ADK Web UI (Angular)" -ForegroundColor White
-Write-Host ""
+#region Main Execution
+function Main {
+    if ($Help) {
+        Show-Help
+        return
+    }
+    
+    Show-Header "🚀 ADK Web Quick Start"
+    
+    if (-not (Test-ProjectRoot)) {
+        exit 1
+    }
+    
+    if (-not (Invoke-PreflightChecks)) {
+        exit 1
+    }
+    
+    # Step 1: Ensure Toolbox is running
+    Write-Host "Step 1/3: Starting GenAI Toolbox..." -ForegroundColor Cyan
+    Write-Host "         (This may take 20-30 seconds)" -ForegroundColor Gray
+    Write-Host ""
+    
+    Wait-ForToolboxReady | Out-Null
+    Write-Host ""
+    
+    # Step 2: Start API Server
+    Start-ApiServer
+    
+    # Step 3: Start Web UI
+    Start-WebUI
+    
+    # Show completion message
+    Show-CompletionMessage
+    
+    # Wait and open browser
+    Start-Sleep -Seconds 10
+    Write-Host "Opening browser..." -ForegroundColor Gray
+    Start-Process "http://localhost:$($PORTS.WebUI)"
+    
+    Write-Host ""
+    Write-Host "✨ Happy agent building!" -ForegroundColor Green
+    Write-Host ""
+}
 
-Write-Host "Wait 30-60 seconds for compilation, then visit:" -ForegroundColor Yellow
-Write-Host "  👉 http://localhost:4200" -ForegroundColor Cyan -BackgroundColor Black
-Write-Host ""
-
-Write-Host "Other Services:" -ForegroundColor Cyan
-Write-Host "  • Toolbox UI:  http://localhost:5000/ui/" -ForegroundColor White
-Write-Host "  • API Docs:    http://localhost:8000/docs" -ForegroundColor White
-Write-Host "  • Jaeger:      http://localhost:16686" -ForegroundColor White
-Write-Host ""
-
-Write-Host "To stop all services:" -ForegroundColor Cyan
-Write-Host "  .\backend\adk\stop-adk-web.ps1" -ForegroundColor Yellow
-Write-Host ""
-
-# Wait a bit then open browser
-Start-Sleep -Seconds 10
-Write-Host "Opening browser..." -ForegroundColor Gray
-Start-Process "http://localhost:4200"
-
-Write-Host ""
-Write-Host "✨ Happy agent building!" -ForegroundColor Green
-Write-Host ""
+# Entry point
+Main
+#endregion
