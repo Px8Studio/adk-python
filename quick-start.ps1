@@ -44,19 +44,44 @@ function Test-Endpoint200 {
   } catch { return $false }
 }
 
+# Helper: Safely join base URL and relative path (avoid Join-Path for HTTP)
+function Join-HttpUrl {
+  param(
+    [Parameter(Mandatory=$true)][string]$Base,
+    [Parameter(Mandatory=$true)][string]$Relative
+  )
+  if (-not $Base.EndsWith('/')) { $Base = "$Base/" }
+  $rel = $Relative.TrimStart('/')
+  $baseUri = [System.Uri]$Base
+  $fullUri = [System.Uri]::new($baseUri, $rel)
+  return $fullUri.AbsoluteUri
+}
+
+# Replace/define readiness probe to avoid filesystem path APIs on URLs
 function Test-ToolboxReady {
-  param([string]$BaseUrl)
-  $candidates = @(
-    (Join-Path $BaseUrl 'health'),     # Some builds may expose this
-    (Join-Path $BaseUrl 'api/toolset/'), # API index is definitive when ready
-    (Join-Path $BaseUrl 'ui/')           # UI served by toolbox binary
+  param(
+    [Parameter(Mandatory=$true)][string]$BaseUrl
   )
 
-  foreach ($u in $candidates) {
-    if (Test-Endpoint200 -Url $u -TimeoutSec 2) {
-      return @{ Ready = $true; Url = $u }
+  $probes = @(
+    "health",
+    "api/toolsets",   # preferred (plural)
+    "api/toolset/",   # legacy path (singular)
+    "ui/"
+  )
+
+  foreach ($rel in $probes) {
+    try {
+      $url = Join-HttpUrl -Base $BaseUrl -Relative $rel
+      $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 3
+      if ($resp -and $resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
+        return @{ Ready = $true; Url = $url }
+      }
+    } catch {
+      # Ignore and try next endpoint
     }
   }
+
   return @{ Ready = $false; Url = $null }
 }
 
