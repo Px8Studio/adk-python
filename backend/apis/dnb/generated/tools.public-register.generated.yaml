@@ -10,7 +10,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{registerCode}/Organizations
+    path: /api/publicregister/{{.registerCode}}/Organizations
     description: Retrieve latest relation numbers for register.
     queryParams:
     - name: page
@@ -32,7 +32,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{registerCode}/Organizations/historicalrecord/{date}
+    path: /api/publicregister/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
     description: Retrieve historical relation numbers for register.
     queryParams:
     - name: page
@@ -58,7 +58,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/{registerCode}/Organizations
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations
     description: Retrieve latest organizations for relation numbers.
     queryParams:
     - name: relationNumbers
@@ -79,7 +79,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/{registerCode}/Organizations/historicalrecord/{date}
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
     description: Retrieve historical organizations for relation numbers.
     queryParams:
     - name: relationNumbers
@@ -104,7 +104,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/Publications/{registerCode}
+    path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}
     description: Retrieve latest publication.
     queryParams:
     - name: page
@@ -130,7 +130,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/Publications/{registerCode}/historicalrecord/{date}
+    path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}/historicalrecord/{{.date}}
     description: Retrieve historical publication.
     queryParams:
     - name: page
@@ -160,7 +160,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/Publications/search
+    path: /api/publicregister/{{.languageCode}}/Publications/search
     description: Search publications.
     queryParams:
     - name: RegisterCode
@@ -195,7 +195,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/{registerCode}/RegisterArticles
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/RegisterArticles
     description: Retrieve latest act articles.
     pathParams:
     - name: languageCode
@@ -216,7 +216,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/{registerCode}/Registrations/ActArticleNames
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
     description: Retrieve latest act article names.
     pathParams:
     - name: languageCode
@@ -231,7 +231,7 @@ tools:
     kind: http
     source: public-register-api
     method: GET
-    path: /api/publicregister/{languageCode}/{registerCode}/Registrations/ActArticleNames/historicalrecord/{date}
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames/historicalrecord/{{.date}}
     description: Retrieve historical act article names.
     pathParams:
     - name: languageCode
