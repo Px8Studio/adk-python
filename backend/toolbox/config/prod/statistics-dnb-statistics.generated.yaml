@@ -3,7 +3,7 @@ sources:
     kind: http
     baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
     headers:
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY}
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_PROD}
     timeout: 30s
 tools:
   getexchangeratesoftheeuroandgoldpriceday:
