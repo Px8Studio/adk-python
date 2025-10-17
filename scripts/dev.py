@@ -131,7 +131,7 @@ def diagnose() -> bool:
         print_ok("Python version OK")
 
     # Docker CLI
-    code, out, err = run(["docker", "--version"])
+    code, out, _ = run(["docker", "--version"])
     if code != 0:
         print_err("Docker not found. Install Docker Desktop/Engine.")
         ok = False
@@ -139,7 +139,7 @@ def diagnose() -> bool:
         print_ok(out.strip() or "Docker found")
 
     # Docker daemon usable
-    code, _, err = run(["docker", "ps"])
+    code, _, _ = run(["docker", "ps"])
     if code != 0:
         print_err("Docker daemon not reachable. Start Docker Desktop/Engine.")
         ok = False
@@ -307,7 +307,7 @@ def start_web_server(force_kill_port: bool = False) -> int:
         print_info("Stopping ADK Web (interrupt)...")
         try:
             proc.terminate()  # type: ignore
-        except Exception:
+        except (OSError, ProcessLookupError, PermissionError):
             pass
         return 0
 
