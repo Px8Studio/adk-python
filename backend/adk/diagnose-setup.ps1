@@ -131,8 +131,6 @@ if ($gcloudCmd) {
     Write-Host "   ✓ gcloud authenticated as: $activeAccounts" -ForegroundColor Green
     $gcpConfigured = $true
   }
-} else {
-  # gcloud not installed or not in PATH
 }
 
 if (-not $gcpConfigured) {
