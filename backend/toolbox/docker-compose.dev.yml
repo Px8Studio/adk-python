@@ -10,7 +10,7 @@ services:
     # Let the image's ENTRYPOINT run the binary; only pass flags here
     command:
       - --tools-file
-      - /config/tools.${DNB_ENVIRONMENT:-dev}.yaml
+      - /config/.${DNB_ENVIRONMENT:-dev}.yaml
       - --address
       - 0.0.0.0
       - --port
