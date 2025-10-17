@@ -45,7 +45,7 @@ OPENAPI_TO_TOOLBOX_TYPE_MAP = {
     'number': 'number',
     'string': 'string',
     'boolean': 'boolean',
-    'array': 'array',
+    'array': 'string',  # GenAI Toolbox doesn't support array type in parameters, use string
     'object': 'object',
 }
 
@@ -275,12 +275,17 @@ class OpenAPIParser:
                 prop_type = prop_schema.get('type', 'string')
                 mapped_type = map_openapi_type(prop_type)
                 
+                # Get description, use property name as fallback if empty
+                prop_desc = prop_schema.get('description', '').strip()
+                if not prop_desc:
+                    prop_desc = f"Property: {prop_name}"
+                
                 body_params.append(ToolParameter(
                     name=prop_name,
                     param_type='body',
                     data_type=mapped_type,
                     required=prop_name in required,
-                    description=prop_schema.get('description', '')
+                    description=prop_desc
                 ))
                 
                 # Generate template line based on type
@@ -329,12 +334,17 @@ class OpenAPIParser:
             param_in = param.get('in', 'query')
             param_schema = param.get('schema', {})
             
+            # Get description, use parameter name as fallback if empty
+            param_desc = param.get('description', '').strip()
+            if not param_desc:
+                param_desc = f"Parameter: {param.get('name', 'unknown')}"
+            
             parameters.append(ToolParameter(
                 name=param.get('name', ''),
                 param_type=param_in,
                 data_type=map_openapi_type(param_schema.get('type', 'string')),
                 required=param.get('required', False),
-                description=param.get('description', ''),
+                description=param_desc,
                 default=param_schema.get('default')
             ))
         
