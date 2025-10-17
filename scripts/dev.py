@@ -329,8 +329,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     tb = sub.add_parser("toolbox", help="Manage GenAI Toolbox.")
     tb_sub = tb.add_subparsers(dest="action", required=True)
-    tb_sub.add_parser("start", help="Start Toolbox (docker compose up -d).")
-    tb_sub.add_parser("restart", help="Restart Toolbox containers.")
+    tb_start = tb_sub.add_parser("start", help="Start Toolbox (docker compose up -d).")
+    tb_start.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
+    tb_restart = tb_sub.add_parser("restart", help="Restart Toolbox containers.")
+    tb_restart.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
     tb_sub.add_parser("down", help="Stop Toolbox (docker compose down).")
     tb_sub.add_parser("logs", help="Show Toolbox logs (snapshot).")
 
@@ -350,10 +352,10 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "toolbox":
         if args.action == "start":
-            ok = toolbox_start_or_restart(restart=False, wait_seconds=15)
+            ok = toolbox_start_or_restart(restart=False, wait_seconds=args.wait)
             return 0 if ok else 1
         if args.action == "restart":
-            ok = toolbox_start_or_restart(restart=True, wait_seconds=15)
+            ok = toolbox_start_or_restart(restart=True, wait_seconds=args.wait)
             return 0 if ok else 1
         if args.action == "down":
             return toolbox_down()

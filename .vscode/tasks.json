@@ -5,9 +5,15 @@
     // Quick Start - Full Stack
     // ============================================================
     {
-      "label": "🚀 Quick Start: Full Orkhon Stack",
+      "label": "🚀 Quick Start: Full Orkhon Stack (Cross-Platform)",
       "type": "shell",
-      "command": "${workspaceFolder}/quick-start.ps1",
+      "command": ".venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/scripts/dev.py",
+        "quick-start",
+        "--wait",
+        "30"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -26,9 +32,74 @@
       }
     },
     {
-      "label": "ADK: Start Web Server Only",
+      "label": "Toolbox: Start (Cross-Platform)",
       "type": "shell",
-      "command": ".venv/Scripts/Activate.ps1; adk web --reload_agents --host=0.0.0.0 --port=8000 backend/adk/agents",
+      "command": ".venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/scripts/dev.py",
+        "toolbox",
+        "start",
+        "--wait",
+        "30"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Toolbox: Logs (Cross-Platform)",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/scripts/dev.py",
+        "toolbox",
+        "logs"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
+      "type": "shell",
+      "command": "${workspaceFolder}/quick-start.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      }
+    },
+    {
+      "label": "ADK: Start Web Server Only (Cross-Platform)",
+      "type": "shell",
+      "command": ".venv/Scripts/python.exe",
+      "args": [
+        "${workspaceFolder}/scripts/dev.py",
+        "web"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
