@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 # Added: importlib helpers to detect and report ADK presence/version
-import importlib.util
 try:
     from importlib import metadata as importlib_metadata  # Python 3.8+
 except Exception:
@@ -29,7 +28,7 @@ TOOLBOX_COMPOSE = PROJECT_ROOT / "backend" / "toolbox" / "docker-compose.dev.yml
 AGENTS_DIR = PROJECT_ROOT / "backend" / "adk" / "agents"
 VENV_DIR = PROJECT_ROOT / ".venv"
 VENV_BIN = VENV_DIR / ("Scripts" if platform.system() == "Windows" else "bin")
-TOOLBOX_HEALTH_URL = "http://localhost:5000/health"
+TOOLBOX_HEALTH_URL = os.environ.get("TOOLBOX_HEALTH_URL", "http://localhost:5000/health")
 WEB_PORT = 8000
 
 # ---------- Helpers ----------
@@ -96,7 +95,7 @@ def wait_for_http_ok(url: str, timeout_seconds: int = 15, interval: float = 1.5)
             with urllib.request.urlopen(url, timeout=1.5) as resp:
                 if 200 <= resp.status < 300:
                     return True
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, socket.timeout):
             pass
         time.sleep(interval)
     return False
@@ -142,16 +141,37 @@ def resolve_adk_invocation() -> List[str]:
     return [str(sys.executable), "-m", "google.adk.cli.cli"]
 
 
+# NEW: Print compose ps and tail logs to aid debugging on health failures
+def print_compose_status(tail: int = 120) -> None:
+    dc = docker_compose_cmd()
+    if not dc:
+        print_err("docker compose not available.")
+        return
+    base = dc + ["-f", str(TOOLBOX_COMPOSE)]
+    base = dc + ["-f", str(TOOLBOX_COMPOSE)]
+    print_info("docker compose ps:")
+    _, out, err = run(base + ["ps"])
+    print(out or err)
+    print_info(f"docker compose logs --no-color --tail {tail}:")
+    _, out, err = run(base + ["logs", "--no-color", f"--tail={tail}"])
+    print(out or err)
+
 # NEW: Ensure google-adk is importable (install into .venv if missing)
 def ensure_adk_installed() -> bool:
     try:
-        import google.adk  # noqa: F401
+        import google.adk  # noqa: F401  # pylint: disable=import-outside-toplevel,unused-import
         return True
     except Exception:
         pass
-
     print_info("google-adk not found in .venv. Attempting installation...")
-    code, out, err = run([str(sys.executable), "-m", "pip", "install", "google-adk>=1.16,<2"])
+    # Use the venv's python if available, else fallback to current interpreter.
+    if platform.system() == "Windows":
+        venv_py = VENV_BIN / "python.exe"
+    else:
+        venv_py = VENV_BIN / "python"
+    python_exe = str(venv_py) if venv_py.exists() else str(sys.executable)
+
+    code, out, err = run([python_exe, "-m", "pip", "install", "--disable-pip-version-check", "google-adk>=1.16,<2"])
     if code == 0:
         print_ok("Installed google-adk into .venv.")
         return True
@@ -251,7 +271,7 @@ def diagnose() -> bool:
 
 # ---------- Toolbox control ----------
 
-def toolbox_start_or_restart(restart: bool, wait_seconds: int) -> bool:
+def toolbox_start_or_restart(restart: bool, wait_seconds: int, show_logs_on_fail: bool = False) -> bool:
     dc = docker_compose_cmd()
     if not dc:
         print_err("Cannot run toolbox: docker compose not available.")
@@ -277,6 +297,8 @@ def toolbox_start_or_restart(restart: bool, wait_seconds: int) -> bool:
 
     print_err("Toolbox health check failed within timeout.")
     print_info(f"Tip: {(' '.join(dc))} -f {TOOLBOX_COMPOSE} logs")
+    if show_logs_on_fail:
+        print_compose_status(tail=120)
     return False
 
 
@@ -347,6 +369,11 @@ def start_web_server(force_kill_port: bool = False) -> int:
             print_err(f"Port {WEB_PORT} still in use after kill attempt.")
             return 1
 
+    # Ensure ADK is present before attempting to start web (also for 'web' command).
+    if not ensure_adk_installed():
+        print_err("ADK not available in .venv. Aborting.")
+        return 1
+
     env = env_with_venv_path()
 
     # Use robust ADK CLI resolution
@@ -400,8 +427,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     tb_sub = tb.add_subparsers(dest="action", required=True)
     tb_start = tb_sub.add_parser("start", help="Start Toolbox (docker compose up -d).")
     tb_start.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
+    tb_start.add_argument("--show-logs-on-fail", action="store_true", help="On health timeout, show compose ps and recent logs.")
     tb_restart = tb_sub.add_parser("restart", help="Restart Toolbox containers.")
     tb_restart.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox health.")
+    tb_restart.add_argument("--show-logs-on-fail", action="store_true", help="On health timeout, show compose ps and recent logs.")
     tb_sub.add_parser("down", help="Stop Toolbox (docker compose down).")
     tb_sub.add_parser("logs", help="Show Toolbox logs (snapshot).")
 
@@ -413,6 +442,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     qs.add_argument("--restart-toolbox", action="store_true")
     qs.add_argument("--wait", type=int, default=15, help="Seconds to wait for Toolbox to become healthy.")
     qs.add_argument("--force-kill-port", action="store_true", help="Kill processes on port 8000 if needed.")
+    qs.add_argument("--show-logs-on-fail", action="store_true", help="On Toolbox health timeout, show compose ps and recent logs.")
 
     args = parser.parse_args(argv)
 
@@ -421,35 +451,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.command == "toolbox":
         if args.action == "start":
-            ok = toolbox_start_or_restart(restart=False, wait_seconds=args.wait)
+            ok = toolbox_start_or_restart(restart=False, wait_seconds=args.wait, show_logs_on_fail=args.show_logs_on_fail)
             return 0 if ok else 1
         if args.action == "restart":
-            ok = toolbox_start_or_restart(restart=True, wait_seconds=args.wait)
+            ok = toolbox_start_or_restart(restart=True, wait_seconds=args.wait, show_logs_on_fail=args.show_logs_on_fail)
             return 0 if ok else 1
-        if args.action == "down":
-            return toolbox_down()
-        if args.action == "logs":
-            return toolbox_logs()
-        return 1
-
-    if args.command == "web":
-        return start_web_server(force_kill_port=args.force_kill_port)
-
-    if args.command == "quick-start":
-        if not args.skip_diagnostics:
-            if not diagnose():
-                print_info("Continuing despite diagnostic issues (requested).")
-        ok = toolbox_start_or_restart(restart=args.restart_toolbox, wait_seconds=args.wait)
-        if not ok:
-            print_info("Continuing to web even if Toolbox not yet healthy.")
-        # Ensure ADK is present before attempting to start web
-        if not ensure_adk_installed():
-            print_err("ADK not available in .venv. Aborting.")
-            return 1
-        return start_web_server(force_kill_port=args.force_kill_port)
-
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
