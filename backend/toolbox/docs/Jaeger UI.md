@@ -1,10 +1,21 @@
-Great question! Let me explain what you're seeing at `http://localhost:16686`.
+# Jaeger UI - Distributed Tracing Guide
+
+> **Observability and Performance Monitoring for GenAI Toolbox**  
+> Understand request flows, debug issues, and optimize performance
+
+---
 
 ## 🔍 What is Jaeger UI?
 
-**Jaeger** is an **open-source distributed tracing system** that's running in your Docker stack. It's NOT a web UI for your DNB APIs - it's an **observability/monitoring tool** that shows you what's happening inside your GenAI Toolbox. 
+**Jaeger** is an **open-source distributed tracing system** that runs alongside your GenAI Toolbox. It provides real-time observability into every request flowing through your system.
 
-Read [](file:///c%3A/Users/rjjaf/_Projects/orkhon/backend/toolbox/docker-compose.dev.yml#48-48), lines 48 to 70
+**Access:** http://localhost:16686
+
+### Key Capabilities:
+- ⏱️ **Performance Monitoring** - Track request latency and bottlenecks
+- 🔗 **Request Journey Visualization** - See the complete flow from agent → toolbox → DNB API
+- ❌ **Error Detection** - Identify failures in real-time
+- 📈 **Service Dependencies** - Understand system architecture through traces
 
 ---
 
@@ -27,9 +38,10 @@ jaeger:
     - "4318:4318"    # ← OTLP collector (receives traces from toolbox)
 ```
 
-Your **GenAI Toolbox sends telemetry data** to Jaeger: 
-
-Read [](file:///c%3A/Users/rjjaf/_Projects/orkhon/backend/toolbox/docker-compose.dev.yml#10-10), lines 10 to 45
+**Configuration:**
+Your GenAI Toolbox is configured to send OpenTelemetry data to Jaeger via environment variables:
+- `OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318` - Collector endpoint
+- `OTEL_SERVICE_NAME=orkhon-genai-toolbox-mcp` - Service identifier in traces
 
 ---
 
