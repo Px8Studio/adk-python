@@ -169,9 +169,9 @@ try {
   Show-Info "Restarting existing container..."
       & docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
       if ($LASTEXITCODE -ne 0) { throw "Failed to restart container" }
-  Show-Ok "Container restarted"
+      Show-Ok "Container restarted"
     } else {
-  Show-Ok "GenAI Toolbox already running: $running"
+      Show-Ok "GenAI Toolbox already running: $running"
     }
   } else {
     Show-Info "Starting fresh container..."
@@ -260,8 +260,8 @@ try {
   }
   
   if ($portInUse) {
-  Show-Err "Port 8000 is already in use!"
-  Show-Info "Find what's using it: netstat -ano | findstr :8000"
+    Show-Err "Port 8000 is already in use!"
+    Show-Info "Find what's using it: netstat -ano | findstr :8000"
     $continue = Read-Host "`nTry to kill the process? (y/n)"
     if ($continue -eq "y") {
       $connections = netstat -ano | Select-String ":8000"
