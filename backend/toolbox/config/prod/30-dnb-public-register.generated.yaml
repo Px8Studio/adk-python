@@ -62,7 +62,7 @@ tools:
     description: Retrieve latest organizations for relation numbers.
     queryParams:
     - name: relationNumbers
-      type: array
+      type: string
       description: The relation numbers. Duplicates and empty values are ignored.
         Maximum of 25 relation numbers can be provided.
       required: false
@@ -83,7 +83,7 @@ tools:
     description: Retrieve historical organizations for relation numbers.
     queryParams:
     - name: relationNumbers
-      type: array
+      type: string
       description: The relation numbers. Duplicates and empty values are ignored.
         Maximum of 25 relation numbers can be provided.
       required: false
@@ -200,11 +200,11 @@ tools:
     pathParams:
     - name: languageCode
       type: string
-      description: ''
+      description: 'Parameter: languageCode'
       required: true
     - name: registerCode
       type: string
-      description: ''
+      description: 'Parameter: registerCode'
       required: true
   get-api-publicregister-registers:
     kind: http
