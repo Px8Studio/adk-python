@@ -108,7 +108,7 @@ if (-not $SkipDiagnostics) {
     }
 
     if ($diagScript) {
-  Show-Info "Found diagnostics script: $diagScript"
+      Show-Info "Found diagnostics script: $diagScript"
 
       # Always run diagnostics in a separate PowerShell process
       Set-Location $ProjectRoot
@@ -123,7 +123,7 @@ if (-not $SkipDiagnostics) {
       }
     } else {
       # Fallback: use cross-platform Python CLI (scripts/dev.py diagnose)
-  Show-Info "Diagnostics scripts not found. Falling back to Python CLI diagnose..."
+      Show-Info "Diagnostics scripts not found. Falling back to Python CLI diagnose..."
       $devCli = Join-Path $ProjectRoot "scripts/dev.py"
       $venvPy = Join-Path $ProjectRoot ".venv/Scripts/python.exe"
       # PowerShell 5.1 doesn't support the ternary operator, use if/else instead
