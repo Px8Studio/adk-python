@@ -6,7 +6,7 @@ services:
     image: genai-toolbox:latest
     container_name: orkhon-genai-toolbox-mcp
     command: 
-      - "--tools-file"
+      - "--tools-folder"
       - "/config/${DNB_ENVIRONMENT:-prod}"
       - "--port"
       - "5000"

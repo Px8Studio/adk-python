@@ -9,7 +9,7 @@ services:
     # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
     # Let the image's ENTRYPOINT run the binary; only pass flags here
     command:
-      - --tools-file
+      - --tools-folder
       - /config/${DNB_ENVIRONMENT:-dev}
       - --address
       - 0.0.0.0
