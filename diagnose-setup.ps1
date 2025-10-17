@@ -130,7 +130,13 @@ if ($gcloudCmd) {
   if ($LASTEXITCODE -eq 0 -and $activeAccounts) {
     Write-Host "   ✓ gcloud authenticated as: $activeAccounts" -ForegroundColor Green
     $gcpConfigured = $true
+  } else {
+    Write-Host "   ⚠ gcloud installed but not authenticated" -ForegroundColor Yellow
+    $warnings += "gcloud not authenticated"
   }
+} else {
+  Write-Host "   ⚠ gcloud not found (install Google Cloud SDK)" -ForegroundColor Yellow
+  $warnings += "gcloud not installed"
 }
 
 if (-not $gcpConfigured) {
@@ -173,6 +179,7 @@ Write-Host "`n[7/7] Checking project structure..." -ForegroundColor Cyan
 
 $requiredPaths = @(
   @{Path = "pyproject.toml"; Type = "Poetry configuration"},
+  @{Path = "backend\adk\adk-web"; Type = "ADK Web UI directory"},
   @{Path = "backend\adk\agents"; Type = "ADK agents directory"},
   @{Path = "backend\toolbox"; Type = "Toolbox configuration"}
 )
