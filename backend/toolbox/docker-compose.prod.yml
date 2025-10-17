@@ -6,10 +6,11 @@ services:
     image: genai-toolbox:latest
     container_name: orkhon-genai-toolbox-mcp
     command: 
-      - "--tools-file"
-      - "/config/tools.yaml"
+      - "--tools-folder"
+      - "/config/${DNB_ENVIRONMENT:-prod}"
       - "--port"
       - "5000"
+      - "--ui"
       - "--telemetry-otlp"
       - "${OTEL_EXPORTER_OTLP_ENDPOINT}"
       - "--telemetry-service-name"

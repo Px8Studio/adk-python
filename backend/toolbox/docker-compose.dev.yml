@@ -9,12 +9,13 @@ services:
     # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
     # Let the image's ENTRYPOINT run the binary; only pass flags here
     command:
-      - --tools-file
-      - /config/tools.${DNB_ENVIRONMENT:-dev}.yaml
+      - --tools-folder
+      - /config/${DNB_ENVIRONMENT:-dev}
       - --address
       - 0.0.0.0
       - --port
       - "5000"
+      - --ui
       - --telemetry-otlp
       # NOTE: endpoint must be host:port (no scheme). e.g., "jaeger:4318"
       # Use a dedicated var to avoid accidentally passing "http://..."

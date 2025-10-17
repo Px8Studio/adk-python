@@ -1,0 +1,2288 @@
+sources:
+  statistics-api:
+    kind: http
+    baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+    timeout: 30s
+tools:
+  getexchangeratesoftheeuroandgoldpriceday:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-day
+    description: Exchange rates of the euro and gold price (Day)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getmarketinterestratesday:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /market-interest-rates-day
+    description: Market interest rates (Day)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getmarketinterestratesmonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /market-interest-rates-month
+    description: Market interest rates (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getthe25largestinvestmentsinindividuallistedshares:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /the-25-largest-investments-in-individual-listed-shares
+    description: The ‘25 largest’ investments in individual listed shares
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchhouseholdsavingsmonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-household-savings-month
+    description: Dutch household savings (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getmfihouseholddepositsandloansinterestratesmonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /mfi-household-deposits-and-loans-interest-rates-month
+    description: MFI household deposits and loans, interest rates (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getstatutoryinterestratehalfyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /statutory-interest-rate-half-year
+    description: Statutory interest rate (Half-year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getexchangeratesoftheeuroandgoldpricemonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-month
+    description: Exchange rates of the euro and gold price (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getbalancesheetofdenederlandschebankmonthnonbreakadjusted:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /balance-sheet-of-de-nederlandsche-bank-month-non-break-adjusted
+    description: Balance sheet of De Nederlandsche Bank (Month, non-break adjusted)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getindividualpensionfunddataquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /individual-pension-fund-data-quarter
+    description: Individual pension fund data (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getkeyindicatorsmonetarystatisticsmonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /key-indicators-monetary-statistics-month
+    description: Key indicators monetary statistics (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getholdingofbondsbytypeofsustainabilitycharacteristicbysector:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /holding-of-bonds-by-type-of-sustainability-characteristic-by-sector
+    description: Holding of bonds by type of sustainability characteristic by sector
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getholdingofgreenbondswithexternalassurancebysector:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /holding-of-green-bonds-with-external-assurance-by-sector
+    description: 'Holding of green bonds with external assurance by sector '
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getissuanceofbondsbytypeofsustainabilitycharacteristicbysector:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /issuance-of-bonds-by-type-of-sustainability-characteristic-by-sector
+    description: Issuance of bonds by type of sustainability characteristic by sector
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getissuanceofgreenbondswithexternalassurancebysector:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /issuance-of-green-bonds-with-external-assurance-by-sector
+    description: Issuance of green bonds with external assurance by sector
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinvestmentsbydutchhouseholdsinsecuritiesbyinstrumentcategory:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /investments-by-dutch-households-in-securities-by-instrument-category
+    description: Investments by Dutch households in securities by instrument category
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinvestmentsbydutchhouseholdsinindividualaexshares:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /investments-by-dutch-households-in-individual-aex-shares
+    description: Investments by Dutch households in individual AEX shares
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getthe25largestinvestmentsbydutchhouseholdsinindividualinvestmentfunds:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /the-25-largest-investments-by-dutch-households-in-individual-investment-funds
+    description: The ‘25 largest’ investments by Dutch households in individual investment
+      funds
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getexchangeratesoftheeuroandgoldpricequarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-quarter
+    description: Exchange rates of the euro and gold price (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getexchangeratesoftheeuroandgoldpriceyearendofperiod:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-year-end-of-period
+    description: Exchange rates of the euro and gold price (Year, end-of-period)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getexchangeratesoftheeuroandgoldpriceyearaverage:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /exchange-rates-of-the-euro-and-gold-price-year-average
+    description: Exchange rates of the euro and gold price (Year, average)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpremiumsclaimsandcostsbylineofbusinessofnonlifeinsurerssolvencyiiyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /premiums-claims-and-costs-by-line-of-business-of-non-life-insurers-solvency-ii-year
+    description: Premiums, claims and costs by line of business of non-life insurers,
+      Solvency II (Year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpremiumsclaimsandcostsbylineofbusinessoflifeinsurerssolvencyiiyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /premiums-claims-and-costs-by-line-of-business-of-life-insurers-solvency-ii-year
+    description: Premiums, claims and costs by line of business of life insurers,
+      Solvency II (Year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpremiumsclaimsandcostsbylineofbusinessoflifeinsurerssolvencyiiquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /premiums-claims-and-costs-by-line-of-business-of-life-insurers-solvency-ii-quarter
+    description: Premiums, claims and costs by line of business of life insurers,
+      Solvency II (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpremiumsclaimsandcostsbylineofbusinessofnonlifeinsurerssolvencyiiquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /premiums-claims-and-costs-by-line-of-business-of-non-life-insurers-solvency-ii-quarter
+    description: Premiums, claims and costs by line of business of non-life insurers,
+      Solvency II (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  geteuropeancentralbankinterestrates:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /european-central-bank-interest-rates
+    description: European Central Bank interest rates
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getfinancialdataofindividualbankshalfyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /financial-data-of-individual-banks-half-year
+    description: Financial data of individual banks (Half-year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnominalirtsforpensionfundszerocoupon:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /nominal-irts-for-pension-funds-zero-coupon
+    description: Nominal IRTS for pension funds (zero coupon)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getbalancesheetofdutchbasedmfisnotincludingdnbmonth:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /balance-sheet-of-dutch-based-mfis-not-including-dnb-month
+    description: Balance sheet of Dutch-based MFIs (not including DNB) (Month)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getsecuritiesandderivativestradersbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /securities-and-derivatives-traders-balance-sheet
+    description: Securities and Derivatives Traders balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getfinancecompaniesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /finance-companies-balance-sheet
+    description: Finance Companies balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getspecialisedfinancialinstitutionsbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /specialised-financial-institutions-balance-sheet
+    description: Specialised Financial Institutions balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getfinancialauxiliariesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /financial-auxiliaries-balance-sheet
+    description: Financial Auxiliaries balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getheadofficesoffinancialauxiliariesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /head-offices-of-financial-auxiliaries-balance-sheet
+    description: Head Offices of Financial Auxiliaries balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getotherfinancialauxiliariesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /other-financial-auxiliaries-balance-sheet
+    description: Other Financial Auxiliaries balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getbalancesheetofotherfinancialintermediariesbygeographyquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /balance-sheet-of-other-financial-intermediaries-by-geography-quarter
+    description: Balance sheet of Other Financial Intermediaries, by geography (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getfinancialauxiliariesbalancesheetbygeographyquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /financial-auxiliaries-balance-sheet-by-geography-quarter
+    description: Financial Auxiliaries balance sheet, by geography (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getloansbytypeandsecuritisationtypequarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /loans-by-type-and-securitisation-type-quarter
+    description: Loans by type and securitisation type (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getotherfinancialintermediariesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /other-financial-intermediaries-balance-sheet
+    description: Other Financial Intermediaries balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getsecuritisationvehiclesbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /securitisation-vehicles-balance-sheet
+    description: Securitisation Vehicles balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getbalanceofpaymentsquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /balance-of-payments-quarter
+    description: Balance of payments (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getbalanceofpaymentsyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /balance-of-payments-year
+    description: Balance of payments (Year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinfrastructureofdomesticretailpaymentsunits:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /infrastructure-of-domestic-retail-payments-units
+    description: Infrastructure of domestic retail payments (units)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getgeographicaldistributionofinwardandoutwardfdiincome:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /geographical-distribution-of-inward-and-outward-fdi-income
+    description: Geographical distribution of inward and outward FDI income
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getresidentialmortgageloansprovidedtohouseholdsbysector:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /residential-mortgage-loans-provided-to-households-by-sector
+    description: Residential mortgage loans provided to households by sector
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpensionfundsbalancesheet:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /pension-funds-balance-sheet
+    description: Pension funds balance sheet
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnumberandvalueofretailpaymenttransactions:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /number-and-value-of-retail-payment-transactions
+    description: Number and value of retail payment transactions
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchgovernmentpaperholdings:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-government-paper-holdings
+    description: Dutch government paper holdings
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinsurancecorporationsbalancesheetquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /insurance-corporations-balance-sheet-quarter
+    description: Insurance corporations balance sheet (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getsummarybalancesheetofinsurancecorporationsbytypequarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /summary-balance-sheet-of-insurance-corporations-by-type-quarter
+    description: Summary balance sheet of insurance corporations by type (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinsurancecorporationassetsandliabilitiesbydomesticcountersectorquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /insurance-corporation-assets-and-liabilities-by-domestic-countersector-quarter
+    description: Insurance corporation assets and liabilities by domestic countersector
+      (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinsurancecorporationassetsandliabilitiesbygeographyquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /insurance-corporation-assets-and-liabilities-by-geography-quarter
+    description: Insurance corporation assets and liabilities by geography (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getsummarybalancesheetofpensionfundsbytypequarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /summary-balance-sheet-of-pension-funds-by-type-quarter
+    description: Summary balance sheet of pension funds by type (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpensionfundsassetsandliabilitiesbydomesticcountersectorquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /pension-funds-assets-and-liabilities-by-domestic-countersector-quarter
+    description: Pension funds assets and liabilities by domestic countersector (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpensionfundsassetsandliabilitiesbygeographicalareaquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /pension-funds-assets-and-liabilities-by-geographical-area-quarter
+    description: Pension funds assets and liabilities by geographical area (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchsecuritiesholdingsbysectoroftheholderbytypeofsecurity:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-securities-holdings-by-sector-of-the-holder-by-type-of-security
+    description: Dutch securities holdings by sector of the holder, by type of security
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchsecuritiesholdingsbysectoroftheholderbygeography:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-securities-holdings-by-sector-of-the-holder-by-geography
+    description: Dutch securities holdings by sector of the holder, by geography
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchdebtsecuritiesholdingsbysectoroftheholder:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-debt-securities-holdings-by-sector-of-the-holder
+    description: Dutch debt securities holdings by sector of the holder
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchlistedsharesholdingsbysectoroftheholder:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-listed-shares-holdings-by-sector-of-the-holder
+    description: Dutch listed shares holdings by sector of the holder
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getdutchfundunitholdingsbysectoroftheholder:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /dutch-fund-unit-holdings-by-sector-of-the-holder
+    description: Dutch fund unit holdings by sector of the holder
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnetexternalassetsquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /net-external-assets-quarter
+    description: Net external assets (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnetexternalassetsyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /net-external-assets-year
+    description: Net external assets (Year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getmacroeconomicscoreboardquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /macroeconomic-scoreboard-quarter
+    description: Macroeconomic scoreboard (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getmacroeconomicscoreboardyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /macroeconomic-scoreboard-year
+    description: Macroeconomic scoreboard (Year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnetdepositsininvestmentfundsbysectoroftheholderquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /net-deposits-in-investment-funds-by-sector-of-the-holder-quarter
+    description: Net deposits in investment funds by sector of the holder (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinsurerscashflowstatementquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /insurers-cash-flow-statement-quarter
+    description: Insurers cash flow statement (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpensionfundscashflowstatementquarter:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /pension-funds-cash-flow-statement-quarter
+    description: Pension funds cash flow statement (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getpensionfundsbalancesheetincludinglookthroughparticipationindutchinvestmen:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /pension-funds-balance-sheet-including-look-through-participation-in-dutch-investment-funds-quarter
+    description: Pension funds’ balance sheet including look through participation
+      in Dutch investment funds (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getresidentialmortgagesprovidedbydutchinstitutionalinvestorstodutchhousehold:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /residential-mortgages-provided-by-dutch-institutional-investors-to-dutch-households-quarter
+    description: Residential mortgages provided by Dutch institutional investors to
+      Dutch households (Quarter)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getnumberandvalueofpaymenttransactionshalfyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /number-and-value-of-payment-transactions-half-year
+    description: Number and value of payment transactions (Half-year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false
+  getinfrastructuredomesticpaymentsinunitshalfyear:
+    kind: http
+    source: statistics-api
+    method: GET
+    path: /infrastructure-domestic-payments-in-units-half-year
+    description: Infrastructure domestic payments in units (Half-year)
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. If the page size is 0, the requested page number
+        should be 1 or left empty. This wil yield all records.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The page size. If omitted, will default to 2000. A page size of
+        0 will yield all records. Please be aware that a page size of 0, or a another
+        large page size, might result in longer response times.
+      required: false
+    - name: sort
+      type: string
+      description: The default sort direction is ascending and may be omitted. A whitespace
+        is used to separate the field name and the sort direction. The only allowed
+        sort field name and sort directions are 'period desc' and 'period asc', no
+        other field names are allowed. If a sort direction is specified, it overrides
+        the direction specified in the 'sortDirection' parameter
+      required: false
+    - name: sortDirection
+      type: string
+      description: Specifies the default sort direction. If omitted, default to ascending
+        (asc). The value of sortDirection is overridden if the sort direction is already
+        specified in the 'sort' parameter.
+      required: false

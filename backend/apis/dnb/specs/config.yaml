@@ -1,0 +1,41 @@
+# Configuration for cnoe-io/openapi-mcp-codegen
+# Required for MCP server generation from OpenAPI specifications
+
+# Basic metadata
+version: "1.0.0"
+description: "DNB APIs - Dutch Central Bank API Services"
+author: "Px8Studio"
+email: "dev@px8studio.com"
+license: "Apache-2.0"
+
+# Authentication configuration
+# DNB uses API key authentication via Ocp-Apim-Subscription-Key header
+auth_type: "api_key"
+auth_header: "Ocp-Apim-Subscription-Key"
+
+# Environment variables that will be included in generated .env.example
+env_vars:
+  - name: "DNB_API_URL"
+    description: "Base URL for DNB API"
+    default: "https://api.dnb.nl"
+  
+  - name: "DNB_TOKEN"
+    description: "DNB API subscription key (Ocp-Apim-Subscription-Key)"
+    required: true
+
+# Python configuration
+python_version: "3.13"
+
+# Optional: LLM enhancement configuration
+# Uncomment to use LLM for docstring enhancement
+# llm_provider: "openai"  # Options: "openai", "anthropic", "google"
+# llm_model: "gpt-4"      # Model to use for enhancement
+
+# Optional: Poetry dependencies
+# Add any additional dependencies your MCP server might need
+# poetry_dependencies: |
+#   python = ">=3.13,<4.0"
+#   httpx = ">=0.24.0"
+#   python-dotenv = ">=1.0.0"
+#   pydantic = ">=2.0.0"
+#   mcp = ">=1.9.0"

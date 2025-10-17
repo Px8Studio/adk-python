@@ -1,0 +1,22 @@
+# ============================================================================
+# Base Configuration
+# GenAI Toolbox - Shared Settings
+# ============================================================================
+# This file is loaded first (00- prefix) and can contain:
+# - Shared authentication services
+# - Common toolsets
+# - Base configurations
+#
+# Individual API configurations are in separate numbered files:
+#   10-dnb-echo.generated.yaml
+#   20-dnb-statistics.generated.yaml  
+#   30-dnb-public-register.generated.yaml
+# ============================================================================
+
+# Shared toolsets (optional - define groups that span multiple APIs)
+# Format: toolset_name is a list of tool IDs
+# toolsets:
+#   all-dnb-tools:
+#     - dnb-echo-helloworld
+#     - dnb-statistics-get-metadata
+#     - dnb-statistics-query-data
