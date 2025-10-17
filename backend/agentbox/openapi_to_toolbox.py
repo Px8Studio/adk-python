@@ -392,44 +392,57 @@ class GenAIToolboxGenerator:
         return f"{self.api_id.replace('-', '_')}_api"
     
     def generate_tool_id(self, operation: Dict, method: str, path: str) -> str:
-        """Generate tool ID from operation
+        """Generate tool ID from operation path
+        
+        Strategy:
+        - Use the URL path directly as the tool name
+        - Replace hyphens with underscores
+        - Remove path parameters (e.g., {registerCode})
+        - Always prefix with dnb_{api_name}_
         
         Following GenAI Toolbox naming conventions:
-        - Use underscores (not hyphens) for tool names
         - Tool names should be valid Python identifiers
         - Must start with letter or underscore
         - Can contain a-z, A-Z, 0-9, underscores, dots
+        
+        Examples:
+        - /summary-balance-sheet-of-insurance-corporations-by-type-quarter
+          → dnb_statistics_summary_balance_sheet_of_insurance_corporations_by_type_quarter
+        - /api/publicregister/{registerCode}/Organizations
+          → dnb_public_register_api_publicregister_organizations
         """
-        # Try operationId first
-        if 'operationId' in operation:
-            op_id = operation['operationId']
-            # Clean up operationId - use underscores (GenAI Toolbox convention)
-            sanitized = op_id.replace('-', '_').lower()
-            
-            # Ensure starts with letter or underscore
-            if sanitized and sanitized[0].isdigit():
-                sanitized = f"tool_{sanitized}"
-            
-            # Remove any invalid characters (keep only alphanumeric, underscore, dot)
-            sanitized = re.sub(r'[^a-z0-9_.]', '_', sanitized)
-            
-            # Truncate to 64 characters (LLM requirement)
-            if len(sanitized) > 64:
-                sanitized = sanitized[:64]
-            
-            return sanitized
+        # Extract clean path name:
+        # 1. Remove leading/trailing slashes
+        # 2. Remove path parameters like {registerCode}
+        # 3. Replace remaining slashes with underscores
+        # 4. Replace hyphens with underscores
+        clean_path = path.strip('/')
         
-        # Fallback: use method + path
-        # Remove leading slash and parameters, use underscores
-        clean_path = path.strip('/').replace('/', '_').replace('{', '').replace('}', '').replace('-', '_')
-        tool_id = f"{self.api_id}_{method}_{clean_path}".lower()
+        # Remove path parameters and their slashes
+        # E.g., "/api/publicregister/{registerCode}/Organizations" → "api/publicregister/Organizations"
+        clean_path = re.sub(r'/\{[^}]+\}', '', clean_path)
         
-        # Ensure valid identifier
+        # Replace slashes with underscores
+        clean_path = clean_path.replace('/', '_')
+        
+        # Replace hyphens with underscores
+        clean_path = clean_path.replace('-', '_')
+        
+        # Build tool ID with consistent dnb_{api_name}_ prefix
+        # Convert api_id (like "public-register") to underscore format
+        api_prefix = self.api_id.replace('-', '_')
+        tool_id = f"dnb_{api_prefix}_{clean_path}".lower()
+        
+        # Ensure valid identifier (remove any remaining invalid characters)
         tool_id = re.sub(r'[^a-z0-9_.]', '_', tool_id)
         
-        # Truncate to 64 characters
-        if len(tool_id) > 64:
-            tool_id = tool_id[:64]
+        # Remove multiple consecutive underscores
+        tool_id = re.sub(r'_+', '_', tool_id)
+        
+        # Truncate to 128 characters if needed (reasonable limit for tool names)
+        # This allows most full path names while preventing excessively long identifiers
+        if len(tool_id) > 128:
+            tool_id = tool_id[:128]
         
         return tool_id
     
