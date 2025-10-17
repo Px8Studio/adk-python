@@ -34,7 +34,7 @@ $venvPython = Join-Path $venvPath "Scripts\python.exe"
 
 if (Test-Path $venvPath) {
   Write-Host "   ✓ Virtual environment exists at: $venvPath" -ForegroundColor Green
-  
+
   if (Test-Path $venvPython) {
     try {
       $pyVersion = & $venvPython --version 2>&1
@@ -63,7 +63,7 @@ try {
   $dockerVersion = & docker --version 2>&1
   if ($LASTEXITCODE -eq 0) {
     Write-Host "   ✓ Docker installed: $dockerVersion" -ForegroundColor Green
-    
+
     # Check if Docker is running
     try {
       $null = & docker ps 2>&1
@@ -153,8 +153,8 @@ try {
   if ($LASTEXITCODE -eq 0 -and $toolboxContainer) {
     Write-Host "   ✓ GenAI Toolbox container running: $toolboxContainer" -ForegroundColor Green
   } else {
-  Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
-  Write-Host "   ℹ Start with: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
+    Write-Host "   ⚠ GenAI Toolbox container not running" -ForegroundColor Yellow
+    Write-Host "   ℹ Start with: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d" -ForegroundColor Cyan
   }
 } catch {
   Write-Host "   ⚠ Could not check Docker containers" -ForegroundColor Yellow
@@ -206,7 +206,7 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
     }
     Write-Host ""
   }
-  
+
   if ($warnings.Count -gt 0) {
     Write-Host "⚠ WARNINGS ($($warnings.Count)):" -ForegroundColor Yellow
     foreach ($warning in $warnings) {
@@ -214,7 +214,7 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
     }
     Write-Host ""
   }
-  
+
   Write-Host "Recommended fixes:" -ForegroundColor Cyan
   if ($issues -contains "Poetry not installed") {
     Write-Host "  • Install Poetry: (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -"
@@ -222,11 +222,23 @@ if ($issues.Count -eq 0 -and $warnings.Count -eq 0) {
   if ($issues -contains "Virtual environment not created") {
     Write-Host "  • Create venv: cd '$ProjectRoot'; poetry install"
   }
+  if ($issues -contains "Python executable missing from venv" -or $issues -contains "Python in venv not working") {
+    Write-Host "  • Recreate venv: cd '$ProjectRoot'; rmdir .venv /s /q; poetry install"
+  }
+  if ($issues -contains "Docker not installed") {
+    Write-Host "  • Install Docker Desktop and ensure it's running"
+  }
+  if ($warnings -contains "Docker daemon not running" -or $warnings -contains "Docker daemon not accessible") {
+    Write-Host "  • Start Docker Desktop and retry: docker ps"
+  }
+  if ($warnings -contains "Node.js not installed" -or $warnings -contains "npm not installed") {
+    Write-Host "  • Install Node.js LTS: https://nodejs.org"
+  }
+  if ($issues -contains "Invalid GOOGLE_APPLICATION_CREDENTIALS path" -or $warnings -contains "No GCP authentication configured") {
+    Write-Host "  • Configure GCP: gcloud auth application-default login"
+  }
   if ($warnings -contains "GenAI Toolbox binary not found (Docker recommended)") {
     Write-Host "  • Start Toolbox: cd backend\toolbox; docker-compose -f docker-compose.dev.yml up -d"
-  }
-  if ($warnings -contains "No GCP authentication configured") {
-    Write-Host "  • Configure GCP: gcloud auth application-default login"
   }
 }
 
