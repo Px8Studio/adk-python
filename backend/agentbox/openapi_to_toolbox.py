@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import sys
+import re
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 import yaml
@@ -36,6 +37,22 @@ TOOLBOX_PROD_DIR = TOOLBOX_DIR / "prod"
 GENERATED_DIR.mkdir(exist_ok=True)
 TOOLBOX_DEV_DIR.mkdir(exist_ok=True)
 TOOLBOX_PROD_DIR.mkdir(exist_ok=True)
+
+
+# Type mapping from OpenAPI to GenAI Toolbox
+OPENAPI_TO_TOOLBOX_TYPE_MAP = {
+    'integer': 'integer',
+    'number': 'number',
+    'string': 'string',
+    'boolean': 'boolean',
+    'array': 'array',
+    'object': 'object',
+}
+
+
+def map_openapi_type(openapi_type: str) -> str:
+    """Map OpenAPI type to GenAI Toolbox type"""
+    return OPENAPI_TO_TOOLBOX_TYPE_MAP.get(openapi_type, 'string')
 
 
 class AuthType(Enum):
@@ -66,6 +83,11 @@ class ToolDefinition:
     path: str
     description: str
     parameters: List[ToolParameter]
+    request_body_template: Optional[str] = None
+    
+    def _convert_path_to_go_template(self, path: str) -> str:
+        """Convert OpenAPI {param} syntax to Go template {{.param}} syntax"""
+        return re.sub(r'\{([^}]+)\}', r'{{.\1}}', path)
     
     def to_toolbox_format(self) -> Dict[str, Any]:
         """Convert to GenAI Toolbox YAML format (dictionary format)"""
@@ -73,7 +95,7 @@ class ToolDefinition:
             "kind": "http",
             "source": self.source_id,
             "method": self.method,
-            "path": self.path,
+            "path": self._convert_path_to_go_template(self.path),  # Convert path parameters
             "description": self.description
         }
         
@@ -122,6 +144,22 @@ class ToolDefinition:
                     }
                     for p in header_params
                 ]
+            
+            # Add body parameters
+            if body_params:
+                tool["bodyParams"] = [
+                    {
+                        "name": p.name,
+                        "type": p.data_type,
+                        "description": p.description or "",
+                        "required": p.required
+                    }
+                    for p in body_params
+                ]
+        
+        # Add request body template if present
+        if self.request_body_template:
+            tool["requestBody"] = self.request_body_template
         
         return tool
 
@@ -210,9 +248,81 @@ class OpenAPIParser:
         
         return AuthType.API_KEY, {}
     
-    def extract_parameters(self, operation: Dict) -> List[ToolParameter]:
-        """Extract parameters from an operation"""
+    def generate_request_body_template(self, schema: Dict) -> Tuple[Optional[str], List[ToolParameter]]:
+        """
+        Generate Go template for request body from OpenAPI schema
+        
+        Returns:
+            (template_string, list_of_body_params)
+        """
+        if not schema:
+            return None, []
+        
+        schema_type = schema.get('type', 'object')
+        
+        # Handle object type (most common for JSON APIs)
+        if schema_type == 'object':
+            properties = schema.get('properties', {})
+            required = schema.get('required', [])
+            
+            if not properties:
+                return None, []
+            
+            body_params = []
+            template_props = []
+            
+            for prop_name, prop_schema in properties.items():
+                prop_type = prop_schema.get('type', 'string')
+                mapped_type = map_openapi_type(prop_type)
+                
+                body_params.append(ToolParameter(
+                    name=prop_name,
+                    param_type='body',
+                    data_type=mapped_type,
+                    required=prop_name in required,
+                    description=prop_schema.get('description', '')
+                ))
+                
+                # Generate template line based on type
+                # Non-string types don't need quotes in JSON
+                if prop_type in ['integer', 'number', 'boolean', 'array', 'object']:
+                    template_props.append(f'    "{prop_name}": {{{{.{prop_name}}}}}')
+                else:
+                    # Strings need quotes
+                    template_props.append(f'    "{prop_name}": "{{{{.{prop_name}}}}}"')
+            
+            # Build JSON template
+            template = "{\n" + ",\n".join(template_props) + "\n  }"
+            return template, body_params
+        
+        elif schema_type == 'array':
+            # Handle array request bodies
+            return "{{json .body}}", [ToolParameter(
+                name='body',
+                param_type='body',
+                data_type='array',
+                required=True,
+                description='Array request body'
+            )]
+        
+        else:
+            # Handle primitive types (string, integer, etc.)
+            return "{{.body}}", [ToolParameter(
+                name='body',
+                param_type='body',
+                data_type=schema_type,
+                required=True,
+                description='Request body'
+            )]
+    
+    def extract_parameters(self, operation: Dict) -> Tuple[List[ToolParameter], Optional[str]]:
+        """Extract parameters from an operation
+        
+        Returns:
+            (parameters_list, request_body_template)
+        """
         parameters = []
+        request_body_template = None
         
         # Path and query parameters
         for param in operation.get('parameters', []):
@@ -222,13 +332,13 @@ class OpenAPIParser:
             parameters.append(ToolParameter(
                 name=param.get('name', ''),
                 param_type=param_in,
-                data_type=param_schema.get('type', 'string'),
+                data_type=map_openapi_type(param_schema.get('type', 'string')),
                 required=param.get('required', False),
                 description=param.get('description', ''),
                 default=param_schema.get('default')
             ))
         
-        # Request body
+        # Request body - generate template and parameters
         if 'requestBody' in operation:
             request_body = operation['requestBody']
             content = request_body.get('content', {})
@@ -238,16 +348,11 @@ class OpenAPIParser:
                 content_type = list(content.keys())[0]
                 schema = content[content_type].get('schema', {})
                 
-                parameters.append(ToolParameter(
-                    name='body',
-                    param_type='body',
-                    data_type='object',
-                    required=request_body.get('required', False),
-                    description=request_body.get('description', 'Request body'),
-                    default=None
-                ))
+                # Generate template and body parameters
+                request_body_template, body_params = self.generate_request_body_template(schema)
+                parameters.extend(body_params)
         
-        return parameters
+        return parameters, request_body_template
     
     def get_operations(self) -> List[Tuple[str, str, Dict]]:
         """Extract all operations (path, method, operation)"""
@@ -310,7 +415,7 @@ class GenAIToolboxGenerator:
         for path, method, operation in self.parser.get_operations():
             tool_id = self.generate_tool_id(operation, method, path)
             description = operation.get('summary', operation.get('description', ''))
-            parameters = self.parser.extract_parameters(operation)
+            parameters, request_body_template = self.parser.extract_parameters(operation)
             
             tools.append(ToolDefinition(
                 id=tool_id,
@@ -318,7 +423,8 @@ class GenAIToolboxGenerator:
                 method=method.upper(),
                 path=path,
                 description=description,
-                parameters=parameters
+                parameters=parameters,
+                request_body_template=request_body_template
             ))
         
         return tools
@@ -618,6 +724,86 @@ APIS = {
 }
 
 
+def validate_generated_config(config: Dict[str, Any]) -> List[str]:
+    """Validate generated config against GenAI Toolbox requirements
+    
+    Returns:
+        List of validation error messages (empty if valid)
+    """
+    errors = []
+    
+    # Check sources
+    sources = config.get('sources', {})
+    if not sources:
+        errors.append("Configuration has no sources defined")
+    
+    for source_id, source in sources.items():
+        if 'kind' not in source:
+            errors.append(f"Source '{source_id}': missing required field 'kind'")
+        elif source['kind'] != 'http':
+            errors.append(f"Source '{source_id}': only 'http' kind is supported, got '{source['kind']}'")
+        
+        if 'baseUrl' not in source:
+            errors.append(f"Source '{source_id}': missing required field 'baseUrl'")
+        
+        if 'timeout' in source and not source['timeout'].endswith('s'):
+            errors.append(f"Source '{source_id}': timeout must end with 's' (e.g., '30s'), got '{source['timeout']}'")
+    
+    # Check tools
+    tools = config.get('tools', {})
+    if not tools:
+        errors.append("Configuration has no tools defined")
+    
+    for tool_id, tool in tools.items():
+        # Check required fields
+        required_fields = ['kind', 'source', 'method', 'path', 'description']
+        for field in required_fields:
+            if field not in tool:
+                errors.append(f"Tool '{tool_id}': missing required field '{field}'")
+        
+        # Validate kind
+        if tool.get('kind') != 'http':
+            errors.append(f"Tool '{tool_id}': only 'http' kind is supported, got '{tool.get('kind')}'")
+        
+        # Validate method
+        valid_methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
+        if tool.get('method') not in valid_methods:
+            errors.append(f"Tool '{tool_id}': invalid HTTP method '{tool.get('method')}'")
+        
+        # Check path parameters consistency
+        path = tool.get('path', '')
+        if '{{.' in path:
+            # Path has Go template variables, must have pathParams
+            if not tool.get('pathParams'):
+                errors.append(f"Tool '{tool_id}': path contains template variables but no pathParams defined")
+            else:
+                # Verify all path params are defined
+                import re
+                path_vars = set(re.findall(r'\{\{\.([^}]+)\}\}', path))
+                defined_params = set(p['name'] for p in tool.get('pathParams', []))
+                missing = path_vars - defined_params
+                if missing:
+                    errors.append(f"Tool '{tool_id}': path variables {missing} not defined in pathParams")
+        
+        # Check source reference
+        if tool.get('source') not in sources:
+            errors.append(f"Tool '{tool_id}': references non-existent source '{tool.get('source')}'")
+        
+        # Validate parameter structures
+        for param_type in ['queryParams', 'pathParams', 'bodyParams', 'headerParams']:
+            params = tool.get(param_type, [])
+            if params and not isinstance(params, list):
+                errors.append(f"Tool '{tool_id}': {param_type} must be a list")
+            
+            for param in params:
+                if 'name' not in param:
+                    errors.append(f"Tool '{tool_id}': {param_type} parameter missing 'name'")
+                if 'type' not in param:
+                    errors.append(f"Tool '{tool_id}': {param_type} parameter '{param.get('name', '?')}' missing 'type'")
+    
+    return errors
+
+
 def write_config_with_env_var(config: Dict[str, Any], output_file: Path, env_var: str) -> None:
     """Write config to file, replacing DNB_SUBSCRIPTION_KEY with environment-specific variable"""
     # Convert config to YAML string
@@ -669,6 +855,17 @@ def convert_api(api_name: str, output_file: Optional[Path] = None,
         
         print(f"✅ Generated {len(toolbox_config['sources'])} source(s)")
         print(f"✅ Generated {len(toolbox_config['tools'])} tool(s)")
+        
+        # Validate configuration
+        validation_errors = validate_generated_config(toolbox_config)
+        if validation_errors:
+            print(f"\n⚠️  Configuration validation found {len(validation_errors)} issue(s):")
+            for i, error in enumerate(validation_errors, 1):
+                print(f"  {i}. {error}")
+            print("\n❌ Validation failed. Configuration may not work correctly.")
+            # Don't fail completely, just warn
+        else:
+            print(f"✅ Configuration validation passed")
         
         # Determine output strategy
         if output_file is not None:
