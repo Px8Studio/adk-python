@@ -11,7 +11,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations
-    description: Retrieve latest organizations for relation numbers.
+    description: 'Retrieve latest organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
     queryParams:
     - name: relationNumbers
       type: string
@@ -32,7 +35,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
-    description: Retrieve historical organizations for relation numbers.
+    description: 'Retrieve historical organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
     queryParams:
     - name: relationNumbers
       type: string
@@ -57,7 +63,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}
-    description: Retrieve latest publication.
+    description: 'Retrieve latest publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
     queryParams:
     - name: page
       type: integer
@@ -83,7 +92,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}/historicalrecord/{{.date}}
-    description: Retrieve historical publication.
+    description: 'Retrieve historical publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
     queryParams:
     - name: page
       type: integer
@@ -113,7 +125,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/search
-    description: Search publications.
+    description: 'Search publications.
+
+      Note: parameter names are case-sensitive. Send exact names: ActArticleName,
+      OrganizationName, RegisterCode, languageCode, pageSize'
     queryParams:
     - name: RegisterCode
       type: string
@@ -148,7 +163,9 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/RegisterArticles
-    description: Retrieve latest act articles.
+    description: 'Retrieve latest act articles.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
@@ -169,7 +186,9 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
-    description: Retrieve latest act article names.
+    description: 'Retrieve latest act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
@@ -184,7 +203,9 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames/historicalrecord/{{.date}}
-    description: Retrieve historical act article names.
+    description: 'Retrieve historical act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
