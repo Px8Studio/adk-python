@@ -30,6 +30,7 @@ VENV_DIR = PROJECT_ROOT / ".venv"
 VENV_BIN = VENV_DIR / ("Scripts" if platform.system() == "Windows" else "bin")
 TOOLBOX_HEALTH_URL = os.environ.get("TOOLBOX_HEALTH_URL", "http://localhost:5000/health")
 WEB_PORT = 8000
+DOT_ENV = PROJECT_ROOT / ".env"
 
 # ---------- Helpers ----------
 
@@ -138,35 +139,54 @@ def env_with_venv_path(base: Optional[dict] = None) -> dict:
         env["VIRTUAL_ENV"] = str(VENV_DIR)
     return env
 
+# NEW: Load .env (very small parser; avoids extra dependency)
+def load_dotenv_if_present(env: dict) -> dict:
+    try:
+        if DOT_ENV.exists():
+            with DOT_ENV.open("r", encoding="utf-8") as f:
+                for line in f:
+                    s = line.strip()
+                    if not s or s.startswith("#"):
+                        continue
+                    if "=" in s:
+                        k, v = s.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip('"').strip("'")
+                        # Do not override existing environment values
+                        if k and (k not in env or env[k] == ""):
+                            env[k] = v
+    except Exception:
+        pass
+    return env
+
+# NEW: Basic credential sanity check so users see clear guidance early
+def has_google_credentials(env: dict) -> tuple[bool, str]:
+    # Option A: Google AI (Gemini) API key
+    if env.get("GEMINI_API_KEY"):
+        return True, "Using GEMINI_API_KEY for Google AI (Gemini)"
+    if env.get("GOOGLE_API_KEY"):
+        return True, "Using GOOGLE_API_KEY for Google AI (Gemini)"
+    # Option B: Vertex AI via ADC (either gcloud ADC or service account JSON)
+    project = env.get("GOOGLE_CLOUD_PROJECT") or env.get("PROJECT") or env.get("VERTEXAI_PROJECT")
+    location = env.get("GOOGLE_CLOUD_LOCATION") or env.get("LOCATION") or env.get("VERTEXAI_LOCATION")
+    if project and location:
+        # We can't fully verify ADC here, but project/location are set.
+        return True, f"Using Vertex AI (project={project}, location={location})"
+    return False, (
+        "Missing Google AI/Vertex credentials. Set one of:\n"
+        "  - GOOGLE_API_KEY=<api key>\n"
+        "  - or Vertex: GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION, plus ADC via\n"
+        "      GOOGLE_APPLICATION_CREDENTIALS or 'gcloud auth application-default login'"
+    )
+
 # NEW: Resolve ADK CLI invocation reliably on Windows and POSIX
 def resolve_adk_invocation() -> List[str]:
     """
-    Returns the base command to invoke the ADK CLI:
-      1) Prefer venv-local executable (adk.exe/cmd/bat or adk).
-      2) Then locate via PATH (with VENV_BIN precedence).
-      3) Finally, fallback to python -m google.adk.cli.cli.
+    Return a module-based ADK CLI invocation to ensure stdout/stderr live-stream
+    in the current terminal (more reliable on Windows vs shim executables).
     """
-    candidates: List[Path] = []
-    if platform.system() == "Windows":
-        candidates = [
-            VENV_BIN / "adk.exe",
-            VENV_BIN / "adk.cmd",
-            VENV_BIN / "adk.bat",
-            VENV_BIN / "adk",
-        ]
-    else:
-        candidates = [VENV_BIN / "adk"]
-
-    for c in candidates:
-        if c.exists():
-            return [str(c)]
-
-    found = which("adk", extra_paths=[VENV_BIN])
-    if found:
-        return [found]
-
-    # Fallback: module invocation
-    return [str(sys.executable), "-m", "google.adk.cli.cli"]
+    py = str(sys.executable)
+    return [py, "-m", "google.adk.cli.cli"]
 
 
 # NEW: Print compose ps and tail logs to aid debugging on health failures
@@ -404,6 +424,17 @@ def start_web_server(force_kill_port: bool = False) -> int:
         return 1
 
     env = env_with_venv_path()
+    env = load_dotenv_if_present(env)
+
+    # Map GEMINI_API_KEY -> GOOGLE_API_KEY for downstream libs that read GOOGLE_API_KEY
+    if env.get("GEMINI_API_KEY") and not env.get("GOOGLE_API_KEY"):
+        env["GOOGLE_API_KEY"] = env["GEMINI_API_KEY"]
+
+    ok_creds, msg = has_google_credentials(env)
+    if ok_creds:
+        print_ok(msg)
+    else:
+        print_info(msg)
 
     # Use robust ADK CLI resolution
     adk_base = resolve_adk_invocation()
