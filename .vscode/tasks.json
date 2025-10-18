@@ -5,15 +5,9 @@
     // Quick Start - Full Stack
     // ============================================================
     {
-      "label": "🚀 Quick Start: Full Orkhon Stack (Cross-Platform)",
+      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "quick-start",
-        "--wait",
-        "30"
-      ],
+      "command": "${workspaceFolder}/quick-start.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -32,18 +26,11 @@
       }
     },
     {
-      "label": "Toolbox: Start (Cross-Platform)",
+      "label": "Toolbox: Start (Dev Compose)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "toolbox",
-        "start",
-        "--wait",
-        "30"
-      ],
+      "command": "docker-compose -f docker-compose.dev.yml up -d",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
@@ -57,16 +44,11 @@
       }
     },
     {
-      "label": "Toolbox: Logs (Cross-Platform)",
+      "label": "Toolbox: Logs (Live)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "toolbox",
-        "logs"
-      ],
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
@@ -75,31 +57,11 @@
         "clear": true
       }
     },
+    
     {
-      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
+      "label": "ADK: Start Web Server Only (PowerShell)",
       "type": "shell",
-      "command": "${workspaceFolder}/quick-start.ps1",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true,
-        "panel": "dedicated",
-        "showReuseMessage": false,
-        "clear": false
-      }
-    },
-    {
-      "label": "ADK: Start Web Server Only (Cross-Platform)",
-      "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "web"
-      ],
+      "command": "${workspaceFolder}/start-adk-web.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -112,7 +74,7 @@
         "showReuseMessage": false,
         "clear": false
       },
-      "isBackground": true,
+      "isBackground": false,
       "group": "build"
     },
     {

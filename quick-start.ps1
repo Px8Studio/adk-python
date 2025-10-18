@@ -13,6 +13,7 @@ Set-StrictMode -Version Latest
 $ProjectRoot = "C:\Users\rjjaf\_Projects\orkhon"
 $ToolboxPath = Join-Path $ProjectRoot "backend\toolbox"
 $VenvActivate = Join-Path $ProjectRoot ".venv\Scripts\Activate.ps1"
+$DotEnv = Join-Path $ProjectRoot ".env"
 
 # Console output helpers (ASCII-only, avoid conflicts with built-ins)
 function Show-Step {
@@ -122,31 +123,7 @@ if (-not $SkipDiagnostics) {
         Show-Ok "Diagnostics completed successfully"
       }
     } else {
-      # Fallback: use cross-platform Python CLI (scripts/dev.py diagnose)
-      Show-Info "Diagnostics scripts not found. Falling back to Python CLI diagnose..."
-      $devCli = Join-Path $ProjectRoot "scripts/dev.py"
-      $venvPy = Join-Path $ProjectRoot ".venv/Scripts/python.exe"
-      # PowerShell 5.1 doesn't support the ternary operator, use if/else instead
-      if (Test-Path $venvPy) {
-        $python = $venvPy
-      } else {
-        $python = "python"
-      }
-      $psi = New-Object System.Diagnostics.ProcessStartInfo
-      $psi.FileName = $python
-      $psi.Arguments = "`"$devCli`" diagnose"
-      $psi.WorkingDirectory = $ProjectRoot
-      $psi.UseShellExecute = $false
-      $psi.RedirectStandardOutput = $true
-      $psi.RedirectStandardError = $true
-      $p = [System.Diagnostics.Process]::Start($psi)
-      $p.WaitForExit()
-      if ($p.ExitCode -ne 0) {
-        Show-Err "Diagnostics (Python CLI) exited with code: $($p.ExitCode)"
-        Show-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
-      } else {
-        Show-Ok "Diagnostics completed successfully (Python CLI)"
-      }
+      Show-Info "Diagnostics scripts not found. Skipping diagnostics step."
     }
   } catch {
     Show-Err "Diagnostics failed: $($_.Exception.Message)"
@@ -247,6 +224,33 @@ try {
 Show-Step "Step 4/4: Starting ADK Web Server..."
 try {
   Set-Location $ProjectRoot
+
+  # Load .env if present (simple parser; ignores comments/empty lines)
+  if (Test-Path $DotEnv) {
+    Show-Info "Loading environment from .env"
+    try {
+      Get-Content -Path $DotEnv | ForEach-Object {
+        $line = $_.Trim()
+        if (-not $line -or $line.StartsWith('#')) { return }
+        $idx = $line.IndexOf('=')
+        if ($idx -gt 0) {
+          $key = $line.Substring(0, $idx).Trim()
+          $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
+          if (-not [string]::IsNullOrWhiteSpace($key)) {
+            # Only set if not already present in the current process environment
+            $current = [System.Environment]::GetEnvironmentVariable($key, 'Process')
+            if ([string]::IsNullOrWhiteSpace($current)) {
+              [System.Environment]::SetEnvironmentVariable($key, $val, 'Process')
+            }
+          }
+        }
+      }
+    } catch {
+      Show-Info "Failed to parse .env (continuing): $($_.Exception.Message)"
+    }
+  } else {
+    Show-Info ".env not found (optional). You can copy .env.example and fill values."
+  }
   
   # Check if port 8000 is in use
   $portInUse = $false
@@ -283,6 +287,13 @@ try {
   
   # Activate venv and start server
   & $VenvActivate
+  # If only GEMINI_API_KEY is set, mirror it to GOOGLE_API_KEY for downstream libs
+  $gemini = [System.Environment]::GetEnvironmentVariable('GEMINI_API_KEY', 'Process')
+  $google = [System.Environment]::GetEnvironmentVariable('GOOGLE_API_KEY', 'Process')
+  if ($gemini -and [string]::IsNullOrWhiteSpace($google)) {
+    [System.Environment]::SetEnvironmentVariable('GOOGLE_API_KEY', $gemini, 'Process')
+    Show-Info "Mirrored GEMINI_API_KEY -> GOOGLE_API_KEY for this session"
+  }
   & adk web --reload_agents --host=0.0.0.0 --port=8000 "$ProjectRoot\backend\adk\agents"
   
 } catch {

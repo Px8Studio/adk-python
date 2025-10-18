@@ -23,7 +23,8 @@ from google.adk import Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
-_TOOLSET_NAME = os.getenv("DNB_TOOLSET_NAME", "dnb-tools")
+# Use per-agent env var with sensible default matching generator: dnb_echo_tools
+_TOOLSET_NAME = os.getenv("DNB_ECHO_TOOLSET_NAME", "dnb_echo_tools")
 
 # ADK Web expects 'root_agent'
 root_agent = Agent(
