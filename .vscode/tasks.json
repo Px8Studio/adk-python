@@ -509,12 +509,50 @@
       }
     },
     {
-      "label": "Toolbox: List DNB Toolset",
+      "label": "Toolbox: List Toolset (Statistics)",
       "type": "shell",
       "command": "Invoke-RestMethod",
       "args": [
         "-Uri",
-        "http://localhost:5000/api/toolset/dnb-tools",
+        "http://localhost:5000/api/toolset/dnb_statistics_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Echo)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_echo_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Public Register)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_public_register_tools",
         "|",
         "ConvertTo-Json",
         "-Depth",

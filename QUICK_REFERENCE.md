@@ -70,6 +70,42 @@ Invoke-WebRequest http://localhost:8000
 
 ## 🆘 Common Issues
 
+### Missing Google AI/Vertex credentials
+If you see an error like:
+
+> Missing key inputs argument! To use the Google AI API, provide (api_key). To use the Google Cloud API, provide (vertexai, project & location).
+
+Set one of the following in a local .env file (copy .env.example to .env):
+
+Option A: Google AI API key
+
+```powershell
+# .env
+GOOGLE_API_KEY=your_api_key_here
+```
+
+Option B: Vertex AI (Application Default Credentials)
+
+```powershell
+# .env
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+
+# Authenticate once in a terminal
+gcloud auth application-default login
+```
+
+Option B (service account file):
+
+```powershell
+# .env
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=us-central1
+GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\service-account.json
+```
+
+Then re-run Quick Start or the ADK Web task.
+
 ### Port 8000 in use
 ```powershell
 netstat -ano | findstr :8000
