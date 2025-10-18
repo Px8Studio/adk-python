@@ -27,7 +27,7 @@ _TOOLSET_NAME = os.getenv("DNB_TOOLSET_NAME", "dnb-tools")
 
 # ADK Web expects 'root_agent'
 root_agent = Agent(
-  name="dnb_api_statistics ",
+  name="dnb_api_statistics",
   model="gemini-2.0-flash",
   instruction="""You are a helpful assistant specialized in the DNB Statistics API.
 Use ONLY tools whose names start with 'dnb-statistics-'.
