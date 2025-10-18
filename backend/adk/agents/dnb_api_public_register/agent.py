@@ -33,7 +33,13 @@ root_agent = Agent(
   instruction="""You are a helpful assistant specialized in the DNB Public Register API.
 Use ONLY tools whose names start with 'dnb-public-register-'.
 If a user asks about echo or statistics, ask to switch to the matching agent instead.
-When users provide register codes, relation numbers, dates, or languages, validate them before calling tools.""",
+
+Important: Parameter names are case-sensitive and follow the API definition exactly. Do not normalize casing.
+- Example: publications_search requires query parameter 'RegisterCode' (capital R), not 'registerCode'.
+- Example: many endpoints use path parameter 'registerCode' (lowercase r) in the URL path.
+- Dates should follow the examples in the docs, e.g., 'YYYY-MM-dd' like '2024-01-30'.
+
+When users provide register codes, relation numbers, dates, or languages, validate them before calling tools. If you suspect a casing mismatch, restate the exact parameter names you will send and correct them before invoking the tool.""",
   tools=[
     ToolboxToolset(
       server_url=_TOOLBOX_URL,

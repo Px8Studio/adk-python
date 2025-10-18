@@ -26,6 +26,56 @@
       }
     },
     {
+      "label": "DNB PR: Invoke publications_search (OK)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"RegisterCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB PR: Invoke publications_search (Bad: wrong param case)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"registerCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
       "label": "Toolbox: Start (Dev Compose)",
       "type": "shell",
       "command": "docker-compose -f docker-compose.dev.yml up -d",

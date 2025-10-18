@@ -186,6 +186,22 @@ class ToolDefinition:
                     for p in body_params
                 ]
         
+            # If any parameter names contain uppercase letters, append a case-sensitivity note
+            try:
+                all_params = [*query_params, *path_params, *header_params, *body_params]
+                cs_params = [p.name for p in all_params if any(ch.isupper() for ch in p.name)]
+                if cs_params:
+                    note = (
+                        "\nNote: parameter names are case-sensitive. Send exact names: "
+                        + ", ".join(sorted(set(cs_params)))
+                    )
+                    # Ensure description exists and append
+                    base_desc = tool.get("description") or ""
+                    tool["description"] = (base_desc + note).strip()
+            except Exception:
+                # Non-fatal; keep tool as-is if any issue occurs building the note
+                pass
+
         # Add request body template if present
         if self.request_body_template:
             tool["requestBody"] = self.request_body_template
