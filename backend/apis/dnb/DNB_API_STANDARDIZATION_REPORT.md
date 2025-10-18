@@ -21,7 +21,7 @@ This report documents several standardization opportunities across DNB’s Publi
 - Concrete references:
   - File: `backend/apis/dnb/specs/openapi3_publicdatav1.yaml`
   - Endpoint: `/api/publicregister/{languageCode}/Publications/search` → parameter `RegisterCode`
-  - Endpoint: `/api/publicregister/{languageCode}/{registerCode}/Publications/{...}` → parameter `registerCode`
+  - Endpoint: `/api/publicregister/{languageCode}/Publications/{registerCode}` → parameter `registerCode`
 - Impact: LLMs often normalize to lowerCamel (e.g., `registerCode`) when emitting function-call arguments. If the receiving service expects `RegisterCode`, the parameter is omitted/misnamed, leading to HTTP 400.
 
 2) Mixed array vs string encoding for list-like parameters
