@@ -1,367 +1,79 @@
 # Orkhon Multi-Agent Architecture Diagram
 
-## 🎨 Complete Multi-Agent System Architecture
+## Agent Tree Overview (October 2025)
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                              ORKHON AI PLATFORM                                │
-│                         Multi-Agent Architecture v2.0                          │
-└───────────────────────────────────────────────────────────────────────────────┘
+root_agent (LlmAgent, gemini-2.0-flash)
+├─ dnb_coordinator (LlmAgent, Toolbox path)
+│  ├─ dnb_echo_agent (ToolboxToolset: dnb_echo_tools)
+│  ├─ dnb_statistics_agent (ToolboxToolset: dnb_statistics_tools)
+│  └─ dnb_public_register_agent (ToolboxToolset: dnb_public_register_tools)
+├─ dnb_openapi_coordinator (LlmAgent, OpenAPIToolset path)
+│  ├─ dnb_openapi_echo_agent (OpenAPIToolset ← openapi3-echo-api.yaml)
+│  ├─ dnb_openapi_statistics_agent (OpenAPIToolset ← openapi3_statisticsdatav2024100101.yaml)
+│  └─ dnb_openapi_public_register_agent (OpenAPIToolset ← openapi3_publicdatav1.yaml)
+└─ [future] google_coordinator / data_coordinator / utility_coordinator
+```
 
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           🎯 LAYER 1: ROOT COORDINATOR                           │
-│                                                                                   │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  root_agent (LlmAgent)                                                  │   │
-│  │  ─────────────────────────────                                           │   │
-│  │  Role: Top-level intelligent router                                      │   │
-│  │  Model: gemini-2.0-flash                                                 │   │
-│  │  Pattern: Coordinator/Dispatcher                                         │   │
-│  │                                                                           │   │
-│  │  Capabilities:                                                            │   │
-│  │  • Multi-turn conversation management                                    │   │
-│  │  • Cross-domain workflow orchestration                                   │   │
-│  │  • Context preservation across agents                                    │   │
-│  │  • High-level decision making                                            │   │
-│  │                                                                           │   │
-│  │  Routes to:                                                               │   │
-│  │  ├─→ api_coordinators/    (API category)                                │   │
-│  │  ├─→ data_coordinators/   (Data category - future)                      │   │
-│  │  └─→ utility_coordinators/ (Utility category - future)                  │   │
-│  └─────────────────────────────────────────────────────────────────────────┘   │
-│                                   │                                              │
-│                                   │ LLM-Driven Delegation (transfer_to_agent)   │
-│                                   │ or AgentTool (explicit invocation)          │
-└───────────────────────────────────┼──────────────────────────────────────────────┘
-                                    │
-┌───────────────────────────────────▼──────────────────────────────────────────────┐
-│                        🗂️ LAYER 2: CATEGORY COORDINATORS                         │
-│                                                                                   │
-│  ┌──────────────────────────────┐  ┌──────────────────────────────┐            │
-│  │ DNB API Coordinator          │  │ Google API Coordinator       │            │
-│  │ ───────────────────          │  │ ─────────────────────        │ (FUTURE)   │
-│  │ Name: dnb_coordinator        │  │ Name: google_coordinator     │            │
-│  │ Type: LlmAgent               │  │ Type: LlmAgent               │            │
-│  │ Pattern: Coordinator         │  │ Pattern: Coordinator         │            │
-│  │                              │  │                              │            │
-│  │ Routes to 3 DNB domains:     │  │ Routes to:                   │            │
-│  │ • Echo (health checks)       │  │ • Search                     │            │
-│  │ • Statistics (data)          │  │ • Maps                       │            │
-│  │ • Public Register (licenses) │  │ • Calendar                   │            │
-│  └──────────┬───────────────────┘  └──────────────────────────────┘            │
-│             │                                                                    │
-│             │ sub_agents delegation                                             │
-│             │                                                                    │
-└─────────────┼────────────────────────────────────────────────────────────────────┘
-              │
-┌─────────────▼────────────────────────────────────────────────────────────────────┐
-│                         🔧 LAYER 3: SPECIALIZED AGENTS                            │
-│                                                                                   │
-│  ┌────────────────────┐  ┌─────────────────────┐  ┌────────────────────────┐   │
-│  │ DNB Echo Agent     │  │ DNB Statistics      │  │ DNB Public Register   │   │
-│  │ ──────────────     │  │ ──────────────      │  │ ───────────────────   │   │
-│  │ dnb_echo_agent     │  │ dnb_statistics_agent│  │ dnb_public_reg_agent  │   │
-│  │                    │  │                     │  │                       │   │
-│  │ Toolset:           │  │ Toolset:            │  │ Toolset:              │   │
-│  │ • dnb_echo_tools   │  │ • dnb_stats_tools   │  │ • dnb_pr_tools        │   │
-│  │   (3 tools)        │  │   (79 tools)        │  │   (5 tools)           │   │
-│  │                    │  │                     │  │                       │   │
-│  │ Tools:             │  │ Tools:              │  │ Tools:                │   │
-│  │ - helloworld       │  │ - get_metadata      │  │ - publications_search │   │
-│  │ - health_check     │  │ - query_data        │  │ - entities_search     │   │
-│  │ - echo_message     │  │ - list_datasets     │  │ - get_entity_details  │   │
-│  └────────┬───────────┘  └──────────┬──────────┘  └─────────┬──────────────┘   │
-│           │                         │                        │                   │
-│           │ ToolboxToolset          │ ToolboxToolset         │ ToolboxToolset    │
-│           │ (HTTP Client)           │ (HTTP Client)          │ (HTTP Client)     │
-│           │                         │                        │                   │
-└───────────┼─────────────────────────┼────────────────────────┼───────────────────┘
-            │                         │                        │
-            │                         │                        │
-┌───────────▼─────────────────────────▼────────────────────────▼───────────────────┐
-│                         🛠️ LAYER 4: TOOL EXECUTION LAYER                         │
-│                                                                                   │
-│  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │               GenAI Toolbox MCP Server (Docker Container)               │   │
-│  │               ───────────────────────────────────────────               │   │
-│  │               Port: 5000 | Service: genai-toolbox-mcp                   │   │
-│  │                                                                          │   │
-│  │  Services:                                                               │   │
-│  │  • Tool Registry (/api/toolset, /api/tools)                            │   │
-│  │  • HTTP Tool Executor (POST /api/tool/{tool_name}/invoke)              │   │
-│  │  • Schema Validation                                                    │   │
-│  │  • Authentication (DNB API keys)                                        │   │
-│  │  • OpenTelemetry Tracing → Jaeger                                      │   │
-│  │                                                                          │   │
-│  │  Configuration:                                                          │   │
-│  │  • config/dev/dnb-echo-tools.yaml                                      │   │
-│  │  • config/dev/dnb-statistics-tools.yaml                                │   │
-│  │  • config/dev/dnb-public-register-tools.yaml                           │   │
-│  └──────────────────────────────────┬───────────────────────────────────────┘   │
-│                                     │                                            │
-│                                     │ HTTP REST API                              │
-│                                     │                                            │
-└─────────────────────────────────────┼────────────────────────────────────────────┘
-                                      │
-┌─────────────────────────────────────▼────────────────────────────────────────────┐
-│                         🌐 LAYER 5: EXTERNAL APIS                                │
-│                                                                                   │
-│  ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐  │
-│  │   DNB Echo API       │  │  DNB Statistics API  │  │  DNB Public Reg API  │  │
-│  │   api.dnb.nl/echo    │  │  api.dnb.nl/stats    │  │  api.dnb.nl/pr       │  │
-│  └──────────────────────┘  └──────────────────────┘  └──────────────────────┘  │
-└───────────────────────────────────────────────────────────────────────────────────┘
+### Key Notes
+- `root_agent` delegates through `sub_agents`. Instructions live in `root_agent/instructions.txt`.
+- `dnb_coordinator` defaults to Toolbox-backed specialists but honours `DNB_COORDINATOR_USE_OPENAPI` to swap in OpenAPI variants.
+- `dnb_openapi_coordinator` mounts the OpenAPI agents directly for runtime tool generation.
+- Each specialized agent is an LlmAgent exposing a single toolset to keep prompts simple.
 
+## Package-Level Coordinator (`api_agents/agent.py`)
+- Provides a consolidated entry point that exposes all DNB specialists (Toolbox) plus the unified OpenAPI agent and the placeholder Google search agent.
+- Useful for scripts or tests that want a single agent without the higher-level `root_agent` hierarchy.
 
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                  🔄 LAYER 2B: WORKFLOW ORCHESTRATORS (FUTURE)                      │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  Data Pipeline (SequentialAgent)                                         │    │
-│  │  ────────────────────────────────                                        │    │
-│  │  Pattern: Sequential Pipeline                                            │    │
-│  │  Flow: Validate → Transform → Analyze → Store                           │    │
-│  │                                                                           │    │
-│  │  Sub-agents:                                                              │    │
-│  │  1. data_validator   (validates input, sets validation_status)          │    │
-│  │  2. data_transformer (transforms if valid, sets transformed_data)       │    │
-│  │  3. data_analyzer    (analyzes data, sets insights)                     │    │
-│  │  4. data_storer      (persists results)                                 │    │
-│  │                                                                           │    │
-│  │  State Flow:                                                              │    │
-│  │  state['validation_status'] → state['transformed_data'] → state['insights'] │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  Parallel API Fetcher (ParallelAgent)                                    │    │
-│  │  ─────────────────────────────────────                                   │    │
-│  │  Pattern: Parallel Fan-Out/Gather                                        │    │
-│  │  Flow: Fetch API1 ║ Fetch API2 ║ Fetch API3 → Aggregate                │    │
-│  │                                                                           │    │
-│  │  Sub-agents:                                                              │    │
-│  │  • api1_fetcher (parallel, sets api1_result)                            │    │
-│  │  • api2_fetcher (parallel, sets api2_result)                            │    │
-│  │  • api3_fetcher (parallel, sets api3_result)                            │    │
-│  │  • result_aggregator (sequential, combines results)                     │    │
-│  │                                                                           │    │
-│  │  State Flow:                                                              │    │
-│  │  [api1_result, api2_result, api3_result] → aggregated_result           │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  Pagination Loop (LoopAgent)                                             │    │
-│  │  ────────────────────────                                                │    │
-│  │  Pattern: Iterative Loop                                                 │    │
-│  │  Flow: Fetch Page → Check More? → Repeat                                │    │
-│  │                                                                           │    │
-│  │  Sub-agents:                                                              │    │
-│  │  • page_fetcher    (fetches one page, updates current_page)             │    │
-│  │  • has_more_checker (checks if more pages exist, escalates if done)     │    │
-│  │                                                                           │    │
-│  │  Loop Control:                                                            │    │
-│  │  • max_iterations: 100                                                   │    │
-│  │  • Termination: has_more_checker escalates when no more pages           │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────────────────────────────────────┘
+## Workflow Scaffolds (`workflows/`)
 
+```
+data_pipeline (SequentialAgent)
+  ├─ data_validator  → output_key="validation_status"
+  ├─ data_transformer → output_key="transformed_data"
+  └─ data_analyzer   → output_key="insights"
 
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                     🌍 A2A (AGENT-TO-AGENT) NETWORK LAYER                         │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  A2A Server Configuration                                                │    │
-│  │  ────────────────────────                                                │    │
-│  │  Port: 8001                                                              │    │
-│  │  Protocol: HTTP/JSON-RPC 2.0                                             │    │
-│  │                                                                           │    │
-│  │  Exposed Agents:                                                          │    │
-│  │  • root_agent      (/a2a/root_agent)                                  │    │
-│  │  • dnb_coordinator  (/a2a/dnb_coordinator)                              │    │
-│  │                                                                           │    │
-│  │  Agent Cards:                                                             │    │
-│  │  • /.well-known/agent-card (discovery)                                  │    │
-│  │  • Capabilities, version, metadata                                       │    │
-│  │                                                                           │    │
-│  │  Remote Agent Usage:                                                      │    │
-│  │  from google.adk.agents import RemoteA2AAgent                           │    │
-│  │  remote = RemoteA2AAgent(url="http://other-server:8001/a2a/agent_name") │    │
-│  │  root_agent.sub_agents.append(remote)                                   │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────────────────────────────────────┘
+parallel_api_fetcher (ParallelAgent)
+  ├─ api1_fetcher → output_key="api1_result"
+  ├─ api2_fetcher → output_key="api2_result"
+  └─ result_aggregator → output_key="aggregated_result"
+```
 
+- Both agents are scaffolds. Coordinators should clone or pass in real specialists before use.
+- Deterministic flows (validate→transform→analyze, fan-out/fan-in) reduce LLM token cost when wired into coordinators.
 
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                          📊 STATE & SESSION MANAGEMENT                             │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  Session State (Shared across agents in same invocation)                 │    │
-│  │  ──────────────────────────────────────────────────────────              │    │
-│  │                                                                           │    │
-│  │  Example State Flow:                                                      │    │
-│  │                                                                           │    │
-│  │  1. User Input: "Get DNB statistics for Q3 2024"                        │    │
-│  │     state['user_query'] = "Get DNB statistics for Q3 2024"              │    │
-│  │                                                                           │    │
-│  │  2. root_agent routes to dnb_coordinator                               │    │
-│  │     state['routing_decision'] = "dnb_coordinator"                       │    │
-│  │                                                                           │    │
-│  │  3. dnb_coordinator routes to dnb_statistics_agent                      │    │
-│  │     state['api_category'] = "statistics"                                │    │
-│  │                                                                           │    │
-│  │  4. dnb_statistics_agent executes tool                                  │    │
-│  │     state['api_result'] = {...data...}                                  │    │
-│  │     state['api_metadata'] = {tool_name, timestamp, status}              │    │
-│  │                                                                           │    │
-│  │  5. Results bubble up                                                    │    │
-│  │     state['final_response'] = "Here are Q3 2024 statistics..."          │    │
-│  │                                                                           │    │
-│  │  State Scopes:                                                            │    │
-│  │  • session: Current conversation                                         │    │
-│  │  • user: Across all sessions for user                                    │    │
-│  │  • app: Global application state                                         │    │
-│  │  • temp: Temporary, cleared after agent                                  │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────────────────────────────────────┘
+## Tool Execution Paths
 
+| Path | Source | Tool layer | Auth | Typical use |
+|------|--------|------------|------|--------------|
+| Toolbox | `api_agents/dnb_*` | MCP Toolbox server (`http://localhost:5000`) | API key stored in Toolbox config | Stable day-to-day execution |
+| OpenAPI | `api_agents/dnb_openapi/*` | ADK OpenAPIToolset (specs under `backend/apis/dnb/specs`) | `token_to_scheme_credential` adds header | Experiments, schema drift validation |
 
-┌───────────────────────────────────────────────────────────────────────────────────┐
-│                       🔍 OBSERVABILITY & MONITORING                                │
-│                                                                                    │
-│  ┌─────────────────────────────────────────────────────────────────────────┐    │
-│  │  OpenTelemetry Tracing                                                   │    │
-│  │  ─────────────────────────                                               │    │
-│  │                                                                           │    │
-│  │  Components:                                                              │    │
-│  │  • Instrumented: ADK agents, Toolbox, HTTP clients                      │    │
-│  │  • Collector: Jaeger (all-in-one)                                       │    │
-│  │  • Endpoint: http://jaeger:4318 (OTLP)                                  │    │
-│  │  • UI: http://localhost:16686                                           │    │
-│  │                                                                           │    │
-│  │  Trace Hierarchy:                                                         │    │
-│  │  root_agent invocation                                                   │    │
-│  │  ├─ dnb_coordinator invocation                                          │    │
-│  │  │  ├─ dnb_statistics_agent invocation                                  │    │
-│  │  │  │  ├─ tool: get_metadata                                            │    │
-│  │  │  │  │  ├─ HTTP request to toolbox                                   │    │
-│  │  │  │  │  │  └─ HTTP request to DNB API                                │    │
-│  │  │  │  │  └─ Response processing                                       │    │
-│  │  │  │  └─ LLM response generation                                      │    │
-│  │  │  └─ State update                                                     │    │
-│  │  └─ Final response                                                       │    │
-│  │                                                                           │    │
-│  │  Metrics Tracked:                                                         │    │
-│  │  • Agent invocation latency                                              │    │
-│  │  • Tool execution time                                                   │    │
-│  │  • LLM token usage                                                       │    │
-│  │  • Error rates                                                           │    │
-│  │  • State access patterns                                                 │    │
-│  └─────────────────────────────────────────────────────────────────────────┘    │
-└────────────────────────────────────────────────────────────────────────────────────┘
+- Both routes emit OpenTelemetry spans through the Toolbox service and ADK adapters.
 
+## Data Flow Example
 
-═══════════════════════════════════════════════════════════════════════════════════
-                             LEGEND & KEY CONCEPTS
-═══════════════════════════════════════════════════════════════════════════════════
+1. User query enters `root_agent`.
+2. `root_agent` transfers to `dnb_coordinator` (Toolbox path) or `dnb_openapi_coordinator` (OpenAPI path) based on instructions or operator choice.
+3. Coordinator delegates to one or more specialists via `transfer_to_agent`.
+4. Specialist invokes toolset:
+   - Toolbox: REST call → MCP Toolbox → DNB API.
+   - OpenAPI: Generated tool → direct HTTP call defined by spec.
+5. Specialist writes results to state via `output_key`.
+6. Coordinator aggregates and returns to `root_agent`, which formats the final reply.
 
-AGENT TYPES:
-├─ LlmAgent:       🤖 Intelligent, LLM-powered reasoning & routing
-├─ SequentialAgent: ➡️ Deterministic sequential execution
-├─ ParallelAgent:   ⚡ Concurrent execution (fan-out)
-└─ LoopAgent:       🔄 Iterative execution with termination conditions
+## Supporting Infrastructure
+- **Toolbox server**: Docker Compose service `genai-toolbox-mcp`, config in `backend/toolbox/config/dev/`.
+- **OpenAPI specs**: `backend/apis/dnb/specs/` feed runtime tool generation.
+- **Jaeger**: Optional tracing at `http://localhost:16686`; spans show `root_agent → coordinator → specialist → tool` chain.
 
-PATTERNS:
-├─ Coordinator/Dispatcher:  Central router to specialists
-├─ Sequential Pipeline:     Step-by-step data processing
-├─ Parallel Fan-Out/Gather: Concurrent + aggregation
-└─ Loop/Iteration:         Repetitive tasks with exit condition
+## A2A Status
+- `root_agent/agent.json` is present; other agent cards are pending.
+- No `a2a_config.yaml` or server bootstrap script yet—add during Phase 3 of the roadmap.
 
-COMMUNICATION MECHANISMS:
-├─ LLM-Driven Delegation:   transfer_to_agent(agent_name="...")
-├─ Explicit Invocation:     AgentTool wrapping
-├─ Shared Session State:    context.state['key'] = value
-└─ A2A Protocol:           Remote agent invocation over HTTP
+## Next Additions
+- Implement Google/data/utility coordinators when toolsets become available.
+- Wire workflow scaffolds into coordinators for predictable multi-call flows.
+- Extend agent cards and automation to publish coordinators over A2A.
 
-STATE MANAGEMENT:
-├─ output_key:    Saves agent result to state
-├─ {variable}:    Reads from state in instructions
-└─ Scopes:        session, user, app, temp
-
-TOOL INTEGRATION:
-├─ ToolboxToolset:      Connects to GenAI Toolbox MCP server
-├─ FunctionTool:        Python function as tool
-├─ AgentTool:          Wraps agent as callable tool
-└─ Custom Tool:        Implement BaseTool interface
-
-═══════════════════════════════════════════════════════════════════════════════════
-
-
-═══════════════════════════════════════════════════════════════════════════════════
-                           EXAMPLE REQUEST FLOW
-═══════════════════════════════════════════════════════════════════════════════════
-
-USER: "Get me pension fund statistics and list public register publications"
-
-┌─────────────────────────────────────────────────────────────────────┐
-│ 1. root_agent receives query                                        │
-│    • Understands multi-part request                                  │
-│    • Recognizes both require DNB API                                 │
-│    • Decides: Route to dnb_coordinator                              │
-│    • Action: transfer_to_agent(agent_name="dnb_coordinator")        │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────────┐
-│ 2. dnb_coordinator receives query                                    │
-│    • Identifies two sub-tasks:                                       │
-│      Task A: Pension statistics (dnb_statistics_agent)              │
-│      Task B: Publications (dnb_public_register_agent)               │
-│    • Decides: Need both agents                                       │
-│    • Option 1: Sequential execution                                  │
-│      - transfer_to_agent(agent_name="dnb_statistics_agent")         │
-│      - Then transfer_to_agent(agent_name="dnb_public_register_agent")│
-│    • Option 2: Use parallel_fetcher workflow                         │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────────┐
-│ 3a. dnb_statistics_agent executes                                    │
-│     • Invokes tool: dnb_statistics_api_query_data                   │
-│     • Parameters: {category: "pension_funds", period: "Q3_2024"}    │
-│     • ToolboxToolset → Toolbox → DNB API                            │
-│     • Saves: state['pension_stats'] = <result>                      │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────────┐
-│ 3b. dnb_public_register_agent executes                               │
-│     • Invokes tool: dnb_public_register_api_publications_search     │
-│     • Parameters: {page: 1, pageSize: 10}                           │
-│     • ToolboxToolset → Toolbox → DNB API                            │
-│     • Saves: state['publications'] = <result>                       │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────────┐
-│ 4. dnb_coordinator aggregates                                        │
-│    • Reads: state['pension_stats'], state['publications']          │
-│    • Synthesizes combined response                                   │
-│    • Returns to root_agent                                         │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────────────────┐
-│ 5. root_agent formats final response                                │
-│    • "Here are your results:                                         │
-│       1. Pension Fund Statistics for Q3 2024: ...                   │
-│       2. Recent Public Register Publications: ..."                  │
-│    • Returns to user                                                 │
-└──────────────────────────────────────────────────────────────────────┘
-
-TRACE IN JAEGER:
-root_agent [200ms]
-└─ dnb_coordinator [180ms]
-   ├─ dnb_statistics_agent [90ms]
-   │  └─ tool: query_data [80ms]
-   │     └─ HTTP: toolbox [70ms]
-   │        └─ HTTP: DNB API [60ms]
-   └─ dnb_public_register_agent [85ms]
-      └─ tool: publications_search [75ms]
-         └─ HTTP: toolbox [65ms]
-            └─ HTTP: DNB API [55ms]
-
-═══════════════════════════════════════════════════════════════════════════════════
+*Last updated: 2025-10-19*
