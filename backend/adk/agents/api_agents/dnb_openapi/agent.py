@@ -24,7 +24,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from google.adk import Agent
+from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.openapi_tool.auth.auth_helpers import (
   token_to_scheme_credential,
 )

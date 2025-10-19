@@ -54,7 +54,7 @@ if USE_OPENAPI_VARIANTS:
         _OPENAPI_ECHO = dnb_openapi_echo_agent
         _OPENAPI_STATS = dnb_openapi_statistics_agent
         _OPENAPI_PR = dnb_openapi_public_register_agent
-    except Exception as _e:  # fall back silently if import fails
+    except ImportError:  # Silently fall back to standard agents if OpenAPI variants unavailable
         _OPENAPI_ECHO = None
         _OPENAPI_STATS = None
         _OPENAPI_PR = None
@@ -90,11 +90,19 @@ else:
         "Provide clear, structured summaries."
     )
 
-_sub_agents = [
-    _OPENAPI_ECHO or dnb_echo_agent,
-    _OPENAPI_STATS or dnb_statistics_agent,
-    _OPENAPI_PR or dnb_public_register_agent,
-]
+def _clone_for_coordinator(agent: Agent) -> Agent:
+    """Creates an isolated copy so agents can appear in multiple trees."""
+
+    return agent.clone()
+
+
+_delegated_echo_agent = _clone_for_coordinator(_OPENAPI_ECHO or dnb_echo_agent)
+_delegated_statistics_agent = _clone_for_coordinator(
+    _OPENAPI_STATS or dnb_statistics_agent
+)
+_delegated_public_register_agent = _clone_for_coordinator(
+    _OPENAPI_PR or dnb_public_register_agent
+)
 
 dnb_coordinator_agent = Agent(
     name="dnb_coordinator",
@@ -105,6 +113,10 @@ dnb_coordinator_agent = Agent(
         "(licenses/registrations) based on request type."
     ),
     instruction=INSTRUCTION,
-    sub_agents=_sub_agents,
+    sub_agents=[
+        _delegated_echo_agent,
+        _delegated_statistics_agent,
+        _delegated_public_register_agent,
+    ],
     output_key="dnb_coordinator_response",
 )

@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import os
 
-from google.adk import Agent
+from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
