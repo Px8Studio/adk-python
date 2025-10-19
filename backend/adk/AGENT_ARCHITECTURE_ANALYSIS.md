@@ -10,49 +10,48 @@ Based on comprehensive research of ADK documentation and best practices, your Or
 
 ### ✅ What You Have (Strengths)
 
-1. **Working Coordinator Pattern**
-   - `dnb_agent/agent.py` acts as a coordinator with 3 sub-agents
-   - Uses `LlmAgent` with `sub_agents` for routing
-   - Proper instruction for delegation
+1. **Layered Coordinator Stack**
+  - `root_agent/agent.py` routes requests to domain coordinators with
+    `sub_agents`.
+  - `api_coordinators/dnb_coordinator/agent.py` fans out to
+    `dnb_echo`, `dnb_statistics`, and `dnb_public_register` specialists.
 
 2. **Specialized API Agents**
-   - `dnb_api_echo` - Echo API operations
-   - `dnb_api_statistics` - Statistics data
-   - `dnb_api_public_register` - Public register operations
+  - `api_agents/dnb_*` modules follow ADK import conventions and encapsulate
+    Toolbox toolsets per domain.
+  - Public Register agent normalizes casing/pagination and surfaces helpful
+    validation errors.
 
-3. **Toolbox Integration**
-   - ToolboxToolset properly configured
-   - MCP server architecture
-   - OpenAPI-generated tools
+3. **Toolbox & OpenAPI Options**
+  - Toolbox-based toolsets remain the default approach.
+  - `api_agents/dnb_openapi/agent.py` provides an OpenAPI-driven alternative
+    for environments that prefer runtime tool discovery.
 
-### ⚠️ What's Missing (Critical Gaps)
+4. **Workflow Scaffolds Ready for Use**
+  - `workflows/data_pipeline` (SequentialAgent) and
+    `workflows/parallel_fetcher` (ParallelAgent) scaffolds are checked in and
+    ready to be wired into orchestrations.
 
-#### 1. **Naming Convention Issues**
-   - Current: `dnb_agent`, `dnb_api_echo`, `dnb_api_statistics`
-   - ❌ Not aligned with ADK best practices
-   - ❌ Not extensible for future non-DNB agents
+### ⚠️ Remaining Gaps (Critical Focus Areas)
 
-#### 2. **Architecture Pattern Gaps**
-   - ❌ No clear distinction between coordinator and orchestrator roles
-   - ❌ No workflow agents (Sequential/Parallel/Loop) where appropriate
-   - ❌ All agents are LLM-based (expensive for simple routing)
-   - ❌ No explicit AgentTool pattern for tighter control
+#### 1. **Workflow Integration & Deterministic Flows**
+  - Workflow scaffolds exist but are not yet invoked by coordinators.
+  - Multi-call use cases still rely on LLM reasoning instead of deterministic
+    pipelines.
 
-#### 3. **Multi-Agent System Shortcomings**
-   - ❌ Single-level hierarchy (coordinator → API agents)
-   - ❌ No intermediate orchestrators for complex workflows
-   - ❌ No parallel execution patterns
-   - ❌ No loop patterns for iterative tasks
+#### 2. **Additional Domain Coordinators**
+  - Only the DNB pathway is implemented; Google/data/utility coordinators are
+    placeholders.
+  - Need a documented pattern for introducing new categories and sharing state
+    between them.
 
-#### 4. **A2A Network Readiness**
-   - ❌ No A2A agent cards
-   - ❌ No A2A server configuration
-   - ❌ Not prepared for agent-to-agent communication
+#### 3. **A2A Network Readiness**
+  - `root_agent/agent.json` exists, but other agents lack cards.
+  - No shared `a2a_config.yaml` or automation for starting the A2A server.
 
-#### 5. **Extensibility Concerns**
-   - ❌ Hard to add non-DNB agents (GoogleSearch, Weather, etc.)
-   - ❌ No clear pattern for different agent "categories"
-   - ❌ Tight coupling to DNB-specific naming
+#### 4. **Testing & Observability**
+  - Smoke tests are manual; no automated coverage for routing paths.
+  - Jaeger/telemetry dashboards are not yet curated for the multi-agent view.
 
 ---
 
@@ -278,11 +277,17 @@ coordinate sequential or parallel execution. Provide clear summaries.""",
 
 ### Priority 2: High (Week 2)
 
+**Status:** 🚧 In progress – workflow agent scaffolds live in repo; coordinator
+integration and documentation remain.
+### Priority 1: Critical (Week 1)
+
+**Status:** ✅ Completed (implemented on `dev`, Oct 2025). Details are retained below
+for historical context and onboarding reference.
 #### 2.1 Add Workflow Agents
 
 **Example: Parallel API Fetcher**
 
-**File:** `backend/adk/agents/workflows/parallel_fetcher/agent.py`
+**Legacy Structure (Jan 2025):**
 
 ```python
 """
@@ -291,18 +296,18 @@ Parallel API Fetcher - Executes multiple API calls concurrently.
 Use when you need to fetch data from multiple sources simultaneously
 and aggregate results.
 """
-
+**Resulting Structure (Oct 2025):**
 from __future__ import annotations
 
 from google.adk.agents import ParallelAgent, LlmAgent as Agent
 
 # This would be used as a sub-agent in a larger workflow
-parallel_api_fetcher = ParallelAgent(
-    name="parallel_api_fetcher",
-    description="Fetches data from multiple APIs concurrently",
-    sub_agents=[],  # Dynamically populated based on request
-)
-
+**Migration Notes:**
+1. New structure created alongside the legacy modules (completed Jan 2025).
+2. Imports updated to absolute package references under `api_agents`.
+3. Smoke testing performed via `adk run root_agent ...` during migration.
+4. Legacy `dnb_agent` package removed after validation.
+5. Documentation refreshed (this file, summary, diagrams) in Oct 2025.
 # Example aggregator
 api_aggregator = Agent(
     name="api_aggregator",
@@ -382,6 +387,9 @@ coordinator = Agent(
 ```
 
 ### Priority 3: Medium (Week 3-4)
+
+**Status:** ⚠️ Not started – root agent card exists, but broader A2A work is not
+yet in the codebase.
 
 #### 3.1 Add A2A Network Preparation
 
@@ -510,6 +518,9 @@ google_search_agent = Agent(
 ```
 
 ### Priority 4: Low (Future)
+
+**Status:** ⏳ Planned – placeholders exist (`google_search`), implementation
+will follow once upstream APIs are prioritised.
 
 #### 4.1 Advanced Patterns
 
@@ -784,6 +795,6 @@ root_agent (Root Coordinator)
 
 ---
 
-*Last Updated: 2025-01-19*
+*Last Updated: 2025-10-19*
 *Author: AI Architecture Assistant*
-*Version: 1.0*
+*Version: 1.1*
