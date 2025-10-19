@@ -15,9 +15,6 @@ uv = "^0.9.3"
 toolbox-core = "^0.5.2"
 
 
-[tool.poetry.group.dev.dependencies]
-openapi-python-client = "^0.26.2"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+from pyopenapi_gen import generate_client, GenerationError
 
 
 @dataclass(frozen=True)
@@ -136,3 +137,19 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
   sys.exit(main())
+
+from pyopenapi_gen import generate_client, GenerationError
+
+for spec, package in [
+    ("backend/apis/dnb/specs/openapi3_publicdatav1.yaml", "dnb_clients.public_register"),
+    ("backend/apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml", "dnb_clients.statistics"),
+    ("backend/apis/dnb/specs/openapi3-echo-api.yaml", "dnb_clients.echo"),
+]:
+    generate_client(
+        spec_path=spec,
+        project_root="backend",
+        output_package=package,
+        core_package="dnb_clients.core",
+        force=True,
+        verbose=True,
+    )
