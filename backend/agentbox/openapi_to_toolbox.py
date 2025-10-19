@@ -45,6 +45,7 @@ import json
 from dataclasses import dataclass
 from enum import Enum
 import re
+import hashlib
 
 
 # Base paths
@@ -65,11 +66,16 @@ TOOLBOX_PROD_DIR.mkdir(exist_ok=True)
 # Type mapping from OpenAPI to GenAI Toolbox
 OPENAPI_TO_TOOLBOX_TYPE_MAP = {
     'integer': 'integer',
-    'number': 'number',
+    # GenAI Toolbox uses 'float' for numeric (non-integer) parameters
+    'number': 'float',
     'string': 'string',
     'boolean': 'boolean',
-    'array': 'string',  # GenAI Toolbox doesn't support array type in parameters, use string
-    'object': 'object',
+    # Arrays in Toolbox require an 'items' schema; since this generator
+    # does not yet emit items, keep arrays as strings for now to avoid
+    # invalid configs in parameter sections.
+    'array': 'string',
+    # GenAI Toolbox expects 'map' for object-like parameters
+    'object': 'map',
 }
 
 
@@ -156,9 +162,9 @@ class ToolDefinition:
                     for p in path_params
                 ]
             
-            # Add header parameters
+            # Add header parameters (Toolbox expects 'headerParams')
             if header_params:
-                tool["headers"] = [
+                tool["headerParams"] = [
                     {
                         "name": p.name,
                         "type": p.data_type,
@@ -180,9 +186,29 @@ class ToolDefinition:
                     for p in body_params
                 ]
         
+            # If any parameter names contain uppercase letters, append a case-sensitivity note
+            try:
+                all_params = [*query_params, *path_params, *header_params, *body_params]
+                cs_params = [p.name for p in all_params if any(ch.isupper() for ch in p.name)]
+                if cs_params:
+                    note = (
+                        "\nNote: parameter names are case-sensitive. Send exact names: "
+                        + ", ".join(sorted(set(cs_params)))
+                    )
+                    # Ensure description exists and append
+                    base_desc = tool.get("description") or ""
+                    tool["description"] = (base_desc + note).strip()
+            except Exception:
+                # Non-fatal; keep tool as-is if any issue occurs building the note
+                pass
+
         # Add request body template if present
         if self.request_body_template:
             tool["requestBody"] = self.request_body_template
+            # Provide a default Content-Type for JSON if not otherwise provided
+            # This can be edited in the UI via "Edit Headers"
+            if "headers" not in tool:
+                tool["headers"] = {"Content-Type": "application/json"}
         
         return tool
 
@@ -482,10 +508,22 @@ class GenAIToolboxGenerator:
         # Remove multiple consecutive underscores
         tool_id = re.sub(r'_+', '_', tool_id)
         
-        # Truncate to 128 characters if needed (reasonable limit for tool names)
-        # This allows most full path names while preventing excessively long identifiers
-        if len(tool_id) > 128:
-            tool_id = tool_id[:128]
+        # Gemini function name constraints (for tool calling):
+        # - Must start with a letter or underscore
+        # - Allowed chars: a-z, A-Z, 0-9, underscores (_), dots (.), colons (:), dashes (-)
+        # - Max length: 64
+        # Our IDs are lowercase with [a-z0-9_.-], ensure first char is a letter/underscore
+        if not re.match(r"^[a-z_]", tool_id):
+            tool_id = f"_{tool_id}"
+
+        # Enforce maximum length of 64 with a stable hash suffix to avoid collisions
+        max_len = 64
+        if len(tool_id) > max_len:
+            # Use md5 of the full original to keep suffix stable and short
+            digest = hashlib.md5(tool_id.encode("utf-8")).hexdigest()[:8]
+            # Leave room for separator and suffix
+            base_len = max_len - 1 - len(digest)
+            tool_id = f"{tool_id[:base_len]}_{digest}"
         
         return tool_id
     
@@ -509,7 +547,10 @@ class GenAIToolboxGenerator:
         
         for path, method, operation in self.parser.get_operations():
             tool_id = self.generate_tool_id(operation, method, path)
-            description = operation.get('summary', operation.get('description', ''))
+            # Prefer summary, fallback to description, then construct a sensible default
+            description = operation.get('summary', '') or operation.get('description', '')
+            if not description:
+                description = f"{method.upper()} {path}"
             parameters, request_body_template = self.parser.extract_parameters(operation)
             
             tools.append(ToolDefinition(
@@ -523,6 +564,15 @@ class GenAIToolboxGenerator:
             ))
         
         return tools
+
+    @staticmethod
+    def _is_valid_function_name(name: str) -> bool:
+        """Validate name against Gemini function naming rules."""
+        if len(name) > 64:
+            return False
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_.:-]*$", name):
+            return False
+        return True
     
     def generate_toolset(self, tools: List[ToolDefinition]) -> Dict[str, List[str]]:
         """Generate toolset definition for this API"""
@@ -545,7 +595,12 @@ class GenAIToolboxGenerator:
         
         # Convert to dictionary format (not list)
         sources_dict = {source.id: source.to_toolbox_format()}
-        tools_dict = {tool.id: tool.to_toolbox_format() for tool in tools}
+        tools_dict: Dict[str, Any] = {}
+        for tool in tools:
+            # Double-check validity and warn if any slip through
+            if not self._is_valid_function_name(tool.id):
+                print(f"⚠️  WARNING: Generated tool id '{tool.id}' is not a valid Gemini function name. It will likely fail at runtime.")
+            tools_dict[tool.id] = tool.to_toolbox_format()
         toolsets_dict = self.generate_toolset(tools)
         
         # Validate for duplicates within this config
@@ -885,6 +940,17 @@ def validate_generated_config(config: Dict[str, Any]) -> List[str]:
     tool_ids_set = set(tools.keys())
     
     for tool_id, tool in tools.items():
+        # Enforce Gemini function naming constraints for tool ids, since ADK will
+        # map these tool ids to Gemini function_declarations.name
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_.:-]{0,63}$", tool_id):
+            errors.append(
+                (
+                    f"Tool id '{tool_id}': invalid function name for Gemini. "
+                    "Must start with a letter or underscore; allowed chars are "
+                    "letters, digits, underscores (_), dots (.), colons (:), "
+                    "or dashes (-); max length 64."
+                )
+            )
         # Check required fields
         required_fields = ['kind', 'source', 'method', 'path', 'description']
         for field in required_fields:

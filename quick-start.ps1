@@ -4,7 +4,7 @@
 param(
   [switch]$SkipDiagnostics,
   [switch]$RestartToolbox,
-  [int]$WaitSeconds = 15
+  [int]$WaitSeconds = 30
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,26 +13,77 @@ Set-StrictMode -Version Latest
 $ProjectRoot = "C:\Users\rjjaf\_Projects\orkhon"
 $ToolboxPath = Join-Path $ProjectRoot "backend\toolbox"
 $VenvActivate = Join-Path $ProjectRoot ".venv\Scripts\Activate.ps1"
+$DotEnv = Join-Path $ProjectRoot ".env"
 
-# Color helper functions
-function Write-Step {
+# Console output helpers (ASCII-only, avoid conflicts with built-ins)
+function Show-Step {
   param([string]$Message)
   Write-Host "`n==> $Message" -ForegroundColor Cyan
 }
 
-function Write-Success {
+function Show-Ok {
   param([string]$Message)
-  Write-Host "    ✓ $Message" -ForegroundColor Green
+  Write-Host "  [OK]  $Message" -ForegroundColor Green
 }
 
-function Write-Error {
+function Show-Err {
   param([string]$Message)
-  Write-Host "    ✗ $Message" -ForegroundColor Red
+  Write-Host "  [ERR] $Message" -ForegroundColor Red
 }
 
-function Write-Info {
+function Show-Info {
   param([string]$Message)
-  Write-Host "    ℹ $Message" -ForegroundColor Yellow
+  Write-Host "  [INFO] $Message" -ForegroundColor Yellow
+}
+
+# Simple HTTP probe helpers
+function Test-Endpoint200 {
+  param([string]$Url, [int]$TimeoutSec = 2)
+  try {
+    $resp = Invoke-WebRequest -Uri $Url -TimeoutSec $TimeoutSec -ErrorAction Stop
+    return ($resp.StatusCode -eq 200)
+  } catch { return $false }
+}
+
+# Helper: Safely join base URL and relative path (avoid Join-Path for HTTP)
+function Join-HttpUrl {
+  param(
+    [Parameter(Mandatory=$true)][string]$Base,
+    [Parameter(Mandatory=$true)][string]$Relative
+  )
+  if (-not $Base.EndsWith('/')) { $Base = "$Base/" }
+  $rel = $Relative.TrimStart('/')
+  $baseUri = [System.Uri]$Base
+  $fullUri = [System.Uri]::new($baseUri, $rel)
+  return $fullUri.AbsoluteUri
+}
+
+# Replace/define readiness probe to avoid filesystem path APIs on URLs
+function Test-ToolboxReady {
+  param(
+    [Parameter(Mandatory=$true)][string]$BaseUrl
+  )
+
+  $probes = @(
+    "health",
+    "api/toolsets",   # preferred (plural)
+    "api/toolset/",   # legacy path (singular)
+    "ui/"
+  )
+
+  foreach ($rel in $probes) {
+    try {
+      $url = Join-HttpUrl -Base $BaseUrl -Relative $rel
+      $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 3
+      if ($resp -and $resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
+        return @{ Ready = $true; Url = $url }
+      }
+    } catch {
+      # Ignore and try next endpoint
+    }
+  }
+
+  return @{ Ready = $false; Url = $null }
 }
 
 # Header
@@ -44,36 +95,46 @@ Write-Host ""
 
 # Step 1: Run Diagnostics
 if (-not $SkipDiagnostics) {
-  Write-Step "Step 1/4: Running system diagnostics..."
+  Show-Step "Step 1/4: Running system diagnostics..."
   try {
-    $diagScript = "$ProjectRoot\backend\adk\diagnose-setup.ps1"
-    if (Test-Path $diagScript) {
+    # Prefer repo-root diagnostics, then legacy backend path
+    $diagCandidates = @(
+      (Join-Path $ProjectRoot "diagnose-setup.ps1"),
+      (Join-Path $ProjectRoot "backend\adk\diagnose-setup.ps1")
+    )
+
+    $diagScript = $null
+    foreach ($c in $diagCandidates) {
+      if (Test-Path $c) { $diagScript = $c; break }
+    }
+
+    if ($diagScript) {
+      Show-Info "Found diagnostics script: $diagScript"
+
+      # Always run diagnostics in a separate PowerShell process
       Set-Location $ProjectRoot
-      # Run in a separate process to isolate parse errors
       $result = Start-Process -FilePath "powershell.exe" `
         -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $diagScript `
         -Wait -PassThru -NoNewWindow
-      
-      if ($result.ExitCode -eq 0) {
-        Write-Success "Diagnostics completed successfully"
+      if ($result.ExitCode -ne 0) {
+        Show-Err "Diagnostics exited with code: $($result.ExitCode)"
+        Show-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
       } else {
-        Write-Error "Diagnostics exited with code: $($result.ExitCode)"
-        Write-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
+        Show-Ok "Diagnostics completed successfully"
       }
     } else {
-      Write-Error "Diagnostics script not found: $diagScript"
-      Write-Info "Skipping diagnostics..."
+      Show-Info "Diagnostics scripts not found. Skipping diagnostics step."
     }
   } catch {
-    Write-Error "Diagnostics failed: $($_.Exception.Message)"
-    Write-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
+    Show-Err "Diagnostics failed: $($_.Exception.Message)"
+    Show-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
   }
 } else {
-  Write-Step "Step 1/4: Skipping diagnostics (-SkipDiagnostics flag)"
+  Show-Step "Step 1/4: Skipping diagnostics (-SkipDiagnostics flag)"
 }
 
 # Step 2: Start GenAI Toolbox
-Write-Step "Step 2/4: Starting GenAI Toolbox (Docker)..."
+Show-Step "Step 2/4: Starting GenAI Toolbox (Docker)..."
 try {
   Set-Location $ToolboxPath
   
@@ -82,77 +143,114 @@ try {
   
   if ($running -and $running -like "*genai-toolbox*") {
     if ($RestartToolbox) {
-      Write-Info "Restarting existing container..."
+  Show-Info "Restarting existing container..."
       & docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
       if ($LASTEXITCODE -ne 0) { throw "Failed to restart container" }
-      Write-Success "Container restarted"
+      Show-Ok "Container restarted"
     } else {
-      Write-Success "GenAI Toolbox already running: $running"
+      Show-Ok "GenAI Toolbox already running: $running"
     }
   } else {
-    Write-Info "Starting fresh container..."
+    Show-Info "Starting fresh container..."
     & docker-compose -f docker-compose.dev.yml up -d
     if ($LASTEXITCODE -ne 0) { throw "Failed to start container" }
-    Write-Success "Container started successfully"
+    Show-Ok "Container started successfully"
   }
-  
-  # Wait for container to be ready
-  Write-Info "Waiting $WaitSeconds seconds for GenAI Toolbox to initialize..."
-  $elapsed = 0
+
+  # Fast readiness probe with fallbacks
+  $base = "http://localhost:5000/"
   $ready = $false
-  
-  while ($elapsed -lt $WaitSeconds -and -not $ready) {
-    Start-Sleep -Seconds 2
-    $elapsed += 2
-    try {
-      $response = Invoke-WebRequest -Uri "http://localhost:5000/health" -TimeoutSec 1 -ErrorAction SilentlyContinue
-      if ($response.StatusCode -eq 200) {
-        $ready = $true
-        Write-Success "GenAI Toolbox is ready! (responded after $elapsed seconds)"
-        break
-      }
-    } catch {
-      Write-Host "." -NoNewline
-    }
+  $readyUrl = $null
+  $probe = Test-ToolboxReady -BaseUrl $base
+  if ($probe.Ready) {
+    $ready = $true
+    $readyUrl = $probe.Url
+    Show-Ok "GenAI Toolbox responded at: $readyUrl (skipping wait)"
   }
-  
+
   if (-not $ready) {
-    Write-Error "GenAI Toolbox did not respond after $WaitSeconds seconds"
-    Write-Info "Container may still be starting. Check logs:"
-    Write-Host "    docker-compose -f docker-compose.dev.yml logs genai-toolbox-mcp" -ForegroundColor Yellow
-    $continue = Read-Host "`nContinue anyway? (y/n)"
-    if ($continue -ne "y") { exit 1 }
+    # Wait for container to be ready
+    Show-Info "Waiting $WaitSeconds seconds for GenAI Toolbox to initialize..."
+    $elapsed = 0
+    while ($elapsed -lt $WaitSeconds -and -not $ready) {
+      Start-Sleep -Seconds 2
+      $elapsed += 2
+      $probe = Test-ToolboxReady -BaseUrl $base
+      if ($probe.Ready) {
+        $ready = $true
+        $readyUrl = $probe.Url
+        Show-Ok "GenAI Toolbox is ready (after $elapsed s) at: $readyUrl"
+        break
+      } else {
+        Write-Host "." -NoNewline
+      }
+    }
+
+    if (-not $ready) {
+      Show-Err "GenAI Toolbox did not respond on any of: /health, /api/toolset/, /ui/ after $WaitSeconds seconds"
+      Show-Info "Container may still be starting. Check logs:"
+      Write-Host "    docker-compose -f docker-compose.dev.yml logs genai-toolbox-mcp" -ForegroundColor Yellow
+      $continue = Read-Host "`nContinue anyway? (y/n)"
+      if ($continue -ne "y") { exit 1 }
+    }
   }
   
 } catch {
-  Write-Error "Failed to start GenAI Toolbox: $($_.Exception.Message)"
-  Write-Info "Check Docker Desktop is running"
-  Write-Info "Try: docker-compose -f docker-compose.dev.yml logs"
+  Show-Err "Failed to start GenAI Toolbox: $($_.Exception.Message)"
+  Show-Info "Check Docker Desktop is running"
+  Show-Info "Try: docker-compose -f docker-compose.dev.yml logs"
   exit 1
 }
 
 # Step 3: Verify Virtual Environment
-Write-Step "Step 3/4: Verifying Python virtual environment..."
+Show-Step "Step 3/4: Verifying Python virtual environment..."
 try {
   Set-Location $ProjectRoot
   
   if (-not (Test-Path $VenvActivate)) {
-    Write-Error "Virtual environment not found at: $VenvActivate"
-    Write-Info "Run: poetry install"
+    Show-Err "Virtual environment not found at: $VenvActivate"
+    Show-Info "Run: poetry install"
     exit 1
   }
   
-  Write-Success "Virtual environment found"
+  Show-Ok "Virtual environment found"
   
 } catch {
-  Write-Error "Virtual environment check failed: $($_.Exception.Message)"
+  Show-Err "Virtual environment check failed: $($_.Exception.Message)"
   exit 1
 }
 
 # Step 4: Start ADK Web Server
-Write-Step "Step 4/4: Starting ADK Web Server..."
+Show-Step "Step 4/4: Starting ADK Web Server..."
 try {
   Set-Location $ProjectRoot
+
+  # Load .env if present (simple parser; ignores comments/empty lines)
+  if (Test-Path $DotEnv) {
+    Show-Info "Loading environment from .env"
+    try {
+      Get-Content -Path $DotEnv | ForEach-Object {
+        $line = $_.Trim()
+        if (-not $line -or $line.StartsWith('#')) { return }
+        $idx = $line.IndexOf('=')
+        if ($idx -gt 0) {
+          $key = $line.Substring(0, $idx).Trim()
+          $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
+          if (-not [string]::IsNullOrWhiteSpace($key)) {
+            # Only set if not already present in the current process environment
+            $current = [System.Environment]::GetEnvironmentVariable($key, 'Process')
+            if ([string]::IsNullOrWhiteSpace($current)) {
+              [System.Environment]::SetEnvironmentVariable($key, $val, 'Process')
+            }
+          }
+        }
+      }
+    } catch {
+      Show-Info "Failed to parse .env (continuing): $($_.Exception.Message)"
+    }
+  } else {
+    Show-Info ".env not found (optional). You can copy .env.example and fill values."
+  }
   
   # Check if port 8000 is in use
   $portInUse = $false
@@ -166,8 +264,8 @@ try {
   }
   
   if ($portInUse) {
-    Write-Error "Port 8000 is already in use!"
-    Write-Info "Find what's using it: netstat -ano | findstr :8000"
+    Show-Err "Port 8000 is already in use!"
+    Show-Info "Find what's using it: netstat -ano | findstr :8000"
     $continue = Read-Host "`nTry to kill the process? (y/n)"
     if ($continue -eq "y") {
       $connections = netstat -ano | Select-String ":8000"
@@ -176,8 +274,8 @@ try {
     exit 1
   }
   
-  Write-Success "Port 8000 is available"
-  Write-Info "Activating virtual environment and starting ADK Web..."
+  Show-Ok "Port 8000 is available"
+  Show-Info "Activating virtual environment and starting ADK Web..."
   Write-Host ""
   Write-Host "========================================================" -ForegroundColor Green
   Write-Host "            ADK Web Server Starting...                  " -ForegroundColor Green
@@ -189,12 +287,19 @@ try {
   
   # Activate venv and start server
   & $VenvActivate
+  # If only GEMINI_API_KEY is set, mirror it to GOOGLE_API_KEY for downstream libs
+  $gemini = [System.Environment]::GetEnvironmentVariable('GEMINI_API_KEY', 'Process')
+  $google = [System.Environment]::GetEnvironmentVariable('GOOGLE_API_KEY', 'Process')
+  if ($gemini -and [string]::IsNullOrWhiteSpace($google)) {
+    [System.Environment]::SetEnvironmentVariable('GOOGLE_API_KEY', $gemini, 'Process')
+    Show-Info "Mirrored GEMINI_API_KEY -> GOOGLE_API_KEY for this session"
+  }
   & adk web --reload_agents --host=0.0.0.0 --port=8000 "$ProjectRoot\backend\adk\agents"
   
 } catch {
-  Write-Error "Failed to start ADK Web: $($_.Exception.Message)"
-  Write-Info "Check the error messages above"
-  Write-Info "Try running manually: adk web backend\adk\agents"
+  Show-Err "Failed to start ADK Web: $($_.Exception.Message)"
+  Show-Info "Check the error messages above"
+  Show-Info "Try running manually: adk web backend\adk\agents"
   exit 1
 }
 
@@ -204,5 +309,5 @@ Write-Host "========================================================" -Foregroun
 Write-Host "            ADK Web Server Stopped                      " -ForegroundColor Yellow
 Write-Host "========================================================" -ForegroundColor Yellow
 Write-Host ""
-Write-Info "GenAI Toolbox is still running in Docker"
-Write-Info "To stop it: cd backend\toolbox && docker-compose -f docker-compose.dev.yml down"
+Show-Info "GenAI Toolbox is still running in Docker"
+Show-Info "To stop it: cd backend\toolbox && docker-compose -f docker-compose.dev.yml down"

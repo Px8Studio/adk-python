@@ -5,15 +5,9 @@
     // Quick Start - Full Stack
     // ============================================================
     {
-      "label": "🚀 Quick Start: Full Orkhon Stack (Cross-Platform)",
+      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "quick-start",
-        "--wait",
-        "30"
-      ],
+      "command": "${workspaceFolder}/quick-start.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -32,18 +26,61 @@
       }
     },
     {
-      "label": "Toolbox: Start (Cross-Platform)",
+      "label": "DNB PR: Invoke publications_search (OK)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
+      "command": "Invoke-RestMethod",
       "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "toolbox",
-        "start",
-        "--wait",
-        "30"
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"RegisterCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
       ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB PR: Invoke publications_search (Bad: wrong param case)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"registerCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: Start (Dev Compose)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml up -d",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
@@ -57,16 +94,11 @@
       }
     },
     {
-      "label": "Toolbox: Logs (Cross-Platform)",
+      "label": "Toolbox: Logs (Live)",
       "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "toolbox",
-        "logs"
-      ],
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
@@ -75,31 +107,11 @@
         "clear": true
       }
     },
+    
     {
-      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
+      "label": "ADK: Start Web Server Only (PowerShell)",
       "type": "shell",
-      "command": "${workspaceFolder}/quick-start.ps1",
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": true,
-        "panel": "dedicated",
-        "showReuseMessage": false,
-        "clear": false
-      }
-    },
-    {
-      "label": "ADK: Start Web Server Only (Cross-Platform)",
-      "type": "shell",
-      "command": ".venv/Scripts/python.exe",
-      "args": [
-        "${workspaceFolder}/scripts/dev.py",
-        "web"
-      ],
+      "command": "${workspaceFolder}/start-adk-web.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -112,7 +124,7 @@
         "showReuseMessage": false,
         "clear": false
       },
-      "isBackground": true,
+      "isBackground": false,
       "group": "build"
     },
     {
@@ -547,12 +559,50 @@
       }
     },
     {
-      "label": "Toolbox: List DNB Toolset",
+      "label": "Toolbox: List Toolset (Statistics)",
       "type": "shell",
       "command": "Invoke-RestMethod",
       "args": [
         "-Uri",
-        "http://localhost:5000/api/toolset/dnb-tools",
+        "http://localhost:5000/api/toolset/dnb_statistics_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Echo)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_echo_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Public Register)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_public_register_tools",
         "|",
         "ConvertTo-Json",
         "-Depth",

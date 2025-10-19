@@ -11,7 +11,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations
-    description: Retrieve latest organizations for relation numbers.
+    description: 'Retrieve latest organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
     queryParams:
     - name: relationNumbers
       type: string
@@ -27,12 +30,15 @@ tools:
       type: string
       description: The register code.
       required: true
-  dnb_public_register_api_publicregister_organizations_historicalrecord:
+  dnb_public_register_api_publicregister_organizations_hi_f7af5e88:
     kind: http
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
-    description: Retrieve historical organizations for relation numbers.
+    description: 'Retrieve historical organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
     queryParams:
     - name: relationNumbers
       type: string
@@ -57,7 +63,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}
-    description: Retrieve latest publication.
+    description: 'Retrieve latest publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
     queryParams:
     - name: page
       type: integer
@@ -78,12 +87,15 @@ tools:
       type: string
       description: The publication in the specified register.
       required: true
-  dnb_public_register_api_publicregister_publications_historicalrecord:
+  dnb_public_register_api_publicregister_publications_his_eb7c434e:
     kind: http
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}/historicalrecord/{{.date}}
-    description: Retrieve historical publication.
+    description: 'Retrieve historical publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
     queryParams:
     - name: page
       type: integer
@@ -113,7 +125,10 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/Publications/search
-    description: Search publications.
+    description: 'Search publications.
+
+      Note: parameter names are case-sensitive. Send exact names: ActArticleName,
+      OrganizationName, RegisterCode, languageCode, pageSize'
     queryParams:
     - name: RegisterCode
       type: string
@@ -148,7 +163,9 @@ tools:
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/RegisterArticles
-    description: Retrieve latest act articles.
+    description: 'Retrieve latest act articles.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
@@ -164,12 +181,14 @@ tools:
     method: GET
     path: /api/publicregister/Registers
     description: Retrieve all registers.
-  dnb_public_register_api_publicregister_registrations_actarticlenames:
+  dnb_public_register_api_publicregister_registrations_ac_b783ee42:
     kind: http
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
-    description: Retrieve latest act article names.
+    description: 'Retrieve latest act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
@@ -179,12 +198,14 @@ tools:
       type: string
       description: The register code.
       required: true
-  dnb_public_register_api_publicregister_registrations_actarticlenames_historicalrecord:
+  dnb_public_register_api_publicregister_registrations_ac_b7ab4fa7:
     kind: http
     source: public_register_api
     method: GET
     path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames/historicalrecord/{{.date}}
-    description: Retrieve historical act article names.
+    description: 'Retrieve historical act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
     pathParams:
     - name: languageCode
       type: string
@@ -207,12 +228,12 @@ tools:
 toolsets:
   dnb_public_register_tools:
   - dnb_public_register_api_publicregister_organizations
-  - dnb_public_register_api_publicregister_organizations_historicalrecord
+  - dnb_public_register_api_publicregister_organizations_hi_f7af5e88
   - dnb_public_register_api_publicregister_publications
-  - dnb_public_register_api_publicregister_publications_historicalrecord
+  - dnb_public_register_api_publicregister_publications_his_eb7c434e
   - dnb_public_register_api_publicregister_publications_search
   - dnb_public_register_api_publicregister_registerarticles
   - dnb_public_register_api_publicregister_registers
-  - dnb_public_register_api_publicregister_registrations_actarticlenames
-  - dnb_public_register_api_publicregister_registrations_actarticlenames_historicalrecord
+  - dnb_public_register_api_publicregister_registrations_ac_b783ee42
+  - dnb_public_register_api_publicregister_registrations_ac_b7ab4fa7
   - dnb_public_register_api_publicregister_supportedlanguages

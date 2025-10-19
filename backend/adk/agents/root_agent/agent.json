@@ -1,0 +1,29 @@
+{
+  "name": "root",
+  "version": "2.0.0",
+  "description": "Main coordinator for Orkhon AI platform. Routes to specialized domain coordinators.",
+  "capabilities": {
+    "streaming": true,
+    "artifacts": true,
+    "tools": false,
+    "sub_agents": true,
+    "session_state": true
+  },
+  "sub_agents": [
+    {
+      "name": "dnb_coordinator_agent",
+      "description": "DNB API operations coordinator"
+    }
+  ],
+  "metadata": {
+    "domain": "multi-domain-coordination",
+    "vendor": "Orkhon",
+    "contact": "team@orkhon.dev",
+    "model": "gemini-2.0-flash",
+    "pattern": "coordinator-dispatcher"
+  },
+  "endpoints": {
+    "invoke": "/a2a/root/invoke",
+    "agent_card": "/a2a/root/.well-known/agent-card"
+  }
+}
