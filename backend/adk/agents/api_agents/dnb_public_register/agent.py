@@ -13,7 +13,13 @@
 # limitations under the License.
 
 """
-DNB Public Register Agent - Focused on Public Register API tools only.
+DNB Public Register Agent
+
+Specialized agent for DNB Public Register API operations.
+Handles license searches, registration data, and regulatory information.
+
+Hierarchy:
+  root_agent → dnb_coordinator → dnb_public_register_agent (this)
 """
 
 from __future__ import annotations
@@ -114,23 +120,36 @@ class DNBBoundaryToolset(ToolboxToolset):
         return wrapped
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
-# Default to generator convention: dnb_public_register_tools; allow override
 _TOOLSET_NAME = os.getenv("DNB_PUBLIC_REGISTER_TOOLSET_NAME", "dnb_public_register_tools")
+MODEL = os.getenv("DNB_PUBLIC_REGISTER_MODEL", "gemini-2.0-flash")
 
-# ADK Web expects 'root_agent'
-root_agent = Agent(
-    name="dnb_api_public_register",
-    model="gemini-2.0-flash",
-    instruction="""You are a helpful assistant specialized in the DNB Public Register API.
+dnb_public_register_agent = Agent(
+    name="dnb_public_register_agent",
+    model=MODEL,
+    description="Specialist for DNB Public Register API - license searches, registration data, and regulatory information.",
+    instruction="""You are a specialist in DNB Public Register API operations.
+
+CAPABILITIES:
+- License and registration searches
+- Entity details and regulatory information
+- Publications and announcements
+- Institutional data
+
+TOOLS AVAILABLE:
 Use ONLY tools whose names start with 'dnb-public-register-'.
-If a user asks about echo or statistics, ask to switch to the matching agent instead.
 
-Important: Parameter names are case-sensitive and follow the API definition exactly. Do not normalize casing.
-- Example: publications_search requires query parameter 'RegisterCode' (capital R), not 'registerCode'.
-- Example: many endpoints use path parameter 'registerCode' (lowercase r) in the URL path.
-- Dates should follow the examples in the docs, e.g., 'YYYY-MM-dd' like '2024-01-30'.
+IMPORTANT - PARAMETER CASING:
+Parameter names are case-sensitive and follow the API definition exactly:
+- publications_search requires 'RegisterCode' (capital R), not 'registerCode'
+- Many endpoints use path parameter 'registerCode' (lowercase r) in the URL path
+- Dates should follow format 'YYYY-MM-dd' (e.g., '2024-01-30')
+- languageCode defaults to 'NL'
 
-When users provide register codes, relation numbers, dates, or languages, validate them before calling tools. If you suspect a casing mismatch, restate the exact parameter names you will send and correct them before invoking the tool.""",
+GUIDELINES:
+- Validate register codes, relation numbers, dates before calling tools
+- Restate exact parameter names if casing mismatch is suspected
+- Format search results clearly
+- For echo or statistics operations, inform user to route through coordinator""",
     tools=[
         DNBBoundaryToolset(
             server_url=_TOOLBOX_URL,
@@ -139,6 +158,6 @@ When users provide register codes, relation numbers, dates, or languages, valida
     ],
 )
 
-agent = root_agent
-
-agent = root_agent
+# Backwards compatibility aliases
+root_agent = dnb_public_register_agent
+agent = dnb_public_register_agent

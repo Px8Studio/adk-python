@@ -13,7 +13,13 @@
 # limitations under the License.
 
 """
-DNB Echo Agent - Focused on Echo API tools only.
+DNB Echo Agent
+
+Specialized agent for DNB Echo API operations.
+Handles connectivity tests and health checks.
+
+Hierarchy:
+  root_agent → dnb_coordinator → dnb_echo_agent (this)
 """
 
 from __future__ import annotations
@@ -22,17 +28,30 @@ import os
 from google.adk import Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 
+# Configuration
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
-# Use per-agent env var with sensible default matching generator: dnb_echo_tools
 _TOOLSET_NAME = os.getenv("DNB_ECHO_TOOLSET_NAME", "dnb_echo_tools")
+MODEL = os.getenv("DNB_ECHO_MODEL", "gemini-2.0-flash")
 
-# ADK Web expects 'root_agent'
-root_agent = Agent(
-  name="dnb_api_echo",
-  model="gemini-2.0-flash",
-  instruction="""You are a helpful assistant specialized in the DNB Echo API.
+dnb_echo_agent = Agent(
+  name="dnb_echo_agent",
+  model=MODEL,
+  description="Specialist for DNB Echo API connectivity tests and health checks.",
+  instruction="""You are a specialist in DNB Echo API operations.
+
+CAPABILITIES:
+- Test API connectivity (helloworld endpoint)
+- Check API health status
+- Verify API availability
+
+TOOLS AVAILABLE:
 Use ONLY tools whose names start with 'dnb-echo-' (e.g., dnb-echo-helloworld).
-If a user asks about statistics or public register, ask to switch to the matching agent instead.""",
+
+GUIDELINES:
+- Provide clear status messages about connectivity
+- Format results in a user-friendly way
+- If API is down, provide helpful troubleshooting steps
+- For statistics or public register operations, inform user to route through coordinator""",
   tools=[
     ToolboxToolset(
       server_url=_TOOLBOX_URL,
@@ -41,5 +60,6 @@ If a user asks about statistics or public register, ask to switch to the matchin
   ]
 )
 
-# For compatibility with patterns that import 'agent'
-agent = root_agent
+# Backwards compatibility aliases
+root_agent = dnb_echo_agent
+agent = dnb_echo_agent

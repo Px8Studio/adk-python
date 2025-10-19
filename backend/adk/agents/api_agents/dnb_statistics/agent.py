@@ -13,7 +13,13 @@
 # limitations under the License.
 
 """
-DNB Statistics Agent - Focused on DNB Statistics API tools only.
+DNB Statistics Agent
+
+Specialized agent for DNB Statistics API operations.
+Handles economic datasets, exchange rates, and financial statistics.
+
+Hierarchy:
+  root_agent → dnb_coordinator → dnb_statistics_agent (this)
 """
 
 from __future__ import annotations
@@ -122,17 +128,30 @@ class DNBStatsBoundaryToolset(ToolboxToolset):
       raise
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
-# Default to generator convention: dnb_statistics_tools; allow override
 _TOOLSET_NAME = os.getenv("DNB_STATISTICS_TOOLSET_NAME", "dnb_statistics_tools")
+MODEL = os.getenv("DNB_STATISTICS_MODEL", "gemini-2.0-flash")
 
-# ADK Web expects 'root_agent'
-root_agent = Agent(
-  name="dnb_api_statistics",
-  model="gemini-2.0-flash",
-  instruction="""You are a helpful assistant specialized in the DNB Statistics API.
+dnb_statistics_agent = Agent(
+  name="dnb_statistics_agent",
+  model=MODEL,
+  description="Specialist for DNB Statistics API - economic datasets, exchange rates, and financial statistics.",
+  instruction="""You are a specialist in DNB Statistics API operations.
+
+CAPABILITIES:
+- Economic datasets and indicators
+- Exchange rates and currency data
+- Financial statistics and balance of payments
+- Pension fund data
+- Time-series data
+
+TOOLS AVAILABLE:
 Use ONLY tools whose names start with 'dnb-statistics-'.
-If a user asks about echo or public register, ask to switch to the matching agent instead.
-When returning results, summarize datasets, units, and time ranges clearly.""",
+
+GUIDELINES:
+- Summarize datasets clearly with units and time ranges
+- Provide context for economic indicators
+- Format large datasets for readability
+- For echo or public register operations, inform user to route through coordinator""",
   tools=[
     DNBStatsBoundaryToolset(
       server_url=_TOOLBOX_URL,
@@ -141,4 +160,6 @@ When returning results, summarize datasets, units, and time ranges clearly.""",
   ]
 )
 
-agent = root_agent
+# Backwards compatibility aliases
+root_agent = dnb_statistics_agent
+agent = dnb_statistics_agent

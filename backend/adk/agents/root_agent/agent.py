@@ -13,13 +13,13 @@
 # limitations under the License.
 
 """
-Orkhon Root Coordinator Agent
+Root Coordinator Agent
 
-The top-level intelligent router for the Orkhon AI Platform.
+The top-level intelligent router for the multi-agent system.
 Routes requests to specialized category coordinators.
 
 Hierarchy:
-  orkhon_root (this)
+  root_agent (this)
   ├─ dnb_coordinator       (DNB API operations)
   ├─ google_coordinator    (Google API operations - future)
   └─ data_coordinator      (Data processing - future)
@@ -37,14 +37,14 @@ from google.adk.agents import LlmAgent as Agent
 from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent  # type: ignore
 
 # Model configuration
-MODEL = os.getenv("ORKHON_ROOT_MODEL", "gemini-2.0-flash")
+MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
 
 # Load instructions from file for better maintainability
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
   INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-  INSTRUCTION = """You are the Orkhon platform coordinator.
+  INSTRUCTION = """You are the main system coordinator.
 
 Your role:
 1. Understand user requests across multiple domains
@@ -65,10 +65,10 @@ Guidelines:
 
 # Root agent definition
 root_agent = Agent(
-    name="orkhon_root",
+    name="root_agent",
     model=MODEL,
     description=(
-        "Main coordinator for the Orkhon AI platform. Routes requests to "
+        "Main coordinator agent. Routes requests to "
         "specialized domain coordinators for API integrations, data processing, "
         "and utility operations. Handles multi-domain workflows and maintains "
         "conversational context."
@@ -82,7 +82,7 @@ root_agent = Agent(
         # data_coordinator_agent,
     ],
     # Output key for tracking in state
-    output_key="orkhon_root_response",
+    output_key="root_response",
 )
 
 # Backwards compatibility alias
