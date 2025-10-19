@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-__all__: list[str] = []
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,5 +17,6 @@ Orkhon Agent Package
 
 This package contains all ADK agents for the Orkhon project.
 """
+from __future__ import annotations
 
-__all__ = []
+__all__: list[str] = []
