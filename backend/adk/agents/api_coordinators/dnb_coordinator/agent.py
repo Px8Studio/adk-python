@@ -19,7 +19,7 @@ Category coordinator for DNB (De Nederlandsche Bank) API operations.
 Routes to specialized agents for Echo, Statistics, and Public Register APIs.
 
 Hierarchy:
-  root_agent
+  root_agent (from root_agent/agent.py)
   └─ dnb_coordinator (this)
      ├─ dnb_echo_agent
      ├─ dnb_statistics_agent
