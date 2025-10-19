@@ -102,6 +102,19 @@ class DNBBoundaryToolset(ToolboxToolset):
                 return await self._underlying(**args)
             except Exception as exc:
                 safe_args = {k: ("***" if k.lower().endswith("key") else v) for k, v in args.items()}
+                error_msg = str(exc)
+                
+                # Check for invalid register code error
+                if "register code" in error_msg.lower() and "not valid" in error_msg.lower():
+                    register_code = args.get("RegisterCode", "UNKNOWN")
+                    enhanced_msg = (
+                        f"Invalid register code '{register_code}'. "
+                        f"Use dnb_public_register_api_publicregister_registers tool to get valid register codes. "
+                        f"Original error: {error_msg}"
+                    )
+                    logging.warning("Invalid register code detected. args=%s error=%s", safe_args, exc)
+                    raise ValueError(enhanced_msg) from exc
+                
                 logging.warning("Publications search failed. args=%s error=%s", safe_args, exc)
                 raise
 
@@ -138,6 +151,13 @@ CAPABILITIES:
 TOOLS AVAILABLE:
 Use ONLY tools whose names start with 'dnb-public-register-'.
 
+CRITICAL - DISCOVERING VALID REGISTER CODES:
+Before searching publications or entities, you MUST first discover valid register codes:
+1. Call dnb_public_register_api_publicregister_registers to get the list of available registers
+2. This returns register codes like 'WFTAF', 'WFT', etc. with their names and types
+3. Use the EXACT register code from this list in subsequent API calls
+4. Common mistake: Do NOT assume 'AFM' is a valid register code - always check first!
+
 IMPORTANT - PARAMETER CASING:
 Parameter names are case-sensitive and follow the API definition exactly:
 - publications_search requires 'RegisterCode' (capital R), not 'registerCode'
@@ -146,10 +166,17 @@ Parameter names are case-sensitive and follow the API definition exactly:
 - languageCode defaults to 'NL'
 
 GUIDELINES:
+- ALWAYS fetch available registers first if you don't know the valid register codes
 - Validate register codes, relation numbers, dates before calling tools
 - Restate exact parameter names if casing mismatch is suspected
-- Format search results clearly
-- For echo or statistics operations, inform user to route through coordinator""",
+- Format search results clearly with register names and codes
+- For echo or statistics operations, inform user to route through coordinator
+
+EXAMPLE WORKFLOW:
+User: "Find financial institutions in the AFM register"
+Step 1: Call dnb_public_register_api_publicregister_registers to discover valid codes
+Step 2: Use the correct register code (e.g., 'WFTAF' for financial services) in search
+Step 3: Return results with clear explanation of which register was searched""",
     tools=[
         DNBBoundaryToolset(
             server_url=_TOOLBOX_URL,

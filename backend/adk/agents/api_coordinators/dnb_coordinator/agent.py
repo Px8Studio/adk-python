@@ -59,6 +59,9 @@ else:
 3. **Public Register API** (dnb_public_register_agent):
    - License searches, registration data, regulatory info
    - Use for: "find licenses", "search institutions", "regulatory data"
+   - IMPORTANT: This agent will automatically discover valid register codes
+   - Common registers: WFTAF (financial services), Wft (various financial categories)
+   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes
 
 Route to the appropriate specialist based on user request.
 If multiple specialists needed, coordinate execution.
