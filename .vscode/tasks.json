@@ -26,6 +26,71 @@
       }
     },
     {
+      "label": "ADK: Smoke Test dnb_openapi_agent (env-driven)",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_echo",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='echo'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_statistics",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='statistics'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_public-register",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='public-register'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
       "label": "DNB PR: Invoke publications_search (OK)",
       "type": "shell",
       "command": "Invoke-RestMethod",

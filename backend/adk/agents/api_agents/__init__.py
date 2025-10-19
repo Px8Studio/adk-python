@@ -1,5 +1,5 @@
 from __future__ import annotations
 
-# Marker for api_agents package
+from .agent import root_agent
 
-__all__: list[str] = []
+__all__ = ["root_agent"]

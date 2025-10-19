@@ -42,6 +42,27 @@ from api_agents.dnb_public_register.agent import (
     dnb_public_register_agent,
 )  # type: ignore
 
+# Optional: OpenAPI-native variants (runtime tool generation)
+USE_OPENAPI_VARIANTS = os.getenv("DNB_COORDINATOR_USE_OPENAPI", "0") in ("1", "true", "True")
+if USE_OPENAPI_VARIANTS:
+    try:
+        from api_agents.dnb_openapi.agent import (
+            dnb_openapi_echo_agent,
+            dnb_openapi_statistics_agent,
+            dnb_openapi_public_register_agent,
+        )  # type: ignore
+        _OPENAPI_ECHO = dnb_openapi_echo_agent
+        _OPENAPI_STATS = dnb_openapi_statistics_agent
+        _OPENAPI_PR = dnb_openapi_public_register_agent
+    except Exception as _e:  # fall back silently if import fails
+        _OPENAPI_ECHO = None
+        _OPENAPI_STATS = None
+        _OPENAPI_PR = None
+else:
+    _OPENAPI_ECHO = None
+    _OPENAPI_STATS = None
+    _OPENAPI_PR = None
+
 # Model configuration
 MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
 
@@ -69,6 +90,12 @@ else:
         "Provide clear, structured summaries."
     )
 
+_sub_agents = [
+    _OPENAPI_ECHO or dnb_echo_agent,
+    _OPENAPI_STATS or dnb_statistics_agent,
+    _OPENAPI_PR or dnb_public_register_agent,
+]
+
 dnb_coordinator_agent = Agent(
     name="dnb_coordinator",
     model=MODEL,
@@ -78,10 +105,6 @@ dnb_coordinator_agent = Agent(
         "(licenses/registrations) based on request type."
     ),
     instruction=INSTRUCTION,
-    sub_agents=[
-        dnb_echo_agent,
-        dnb_statistics_agent,
-        dnb_public_register_agent,
-    ],
+    sub_agents=_sub_agents,
     output_key="dnb_coordinator_response",
 )
