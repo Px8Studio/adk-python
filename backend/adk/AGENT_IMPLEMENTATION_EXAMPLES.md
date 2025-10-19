@@ -6,7 +6,7 @@
 
 ```
 backend/adk/agents/
-├── orkhon_root/                    # NEW: Root coordinator
+├── root_agent/                    # NEW: Root coordinator
 │   ├── __init__.py
 │   ├── agent.py
 │   ├── agent.json                  # A2A agent card
@@ -47,7 +47,7 @@ backend/adk/agents/
 
 ## 1️⃣ Root Coordinator Implementation
 
-### `backend/adk/agents/orkhon_root/agent.py`
+### `backend/adk/agents/root_agent/agent.py`
 
 ```python
 # Copyright 2025 Google LLC
@@ -71,7 +71,7 @@ The top-level intelligent router for the Orkhon AI Platform.
 Routes requests to specialized category coordinators.
 
 Hierarchy:
-  orkhon_root (this)
+  root_agent (this)
   ├─ dnb_coordinator       (DNB API operations)
   ├─ google_coordinator    (Google API operations - future)
   └─ data_coordinator      (Data processing - future)
@@ -89,7 +89,7 @@ from google.adk.agents import LlmAgent as Agent
 from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent  # type: ignore
 
 # Model configuration
-MODEL = os.getenv("ORKHON_ROOT_MODEL", "gemini-2.0-flash")
+MODEL = os.getenv("root_agent_MODEL", "gemini-2.0-flash")
 
 # Load instructions from file for better maintainability
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
@@ -117,7 +117,7 @@ Guidelines:
 
 # Root agent definition
 root_agent = Agent(
-    name="orkhon_root",
+    name="root_agent",
     model=MODEL,
     description=(
         "Main coordinator for the Orkhon AI platform. Routes requests to "
@@ -134,14 +134,14 @@ root_agent = Agent(
         # data_coordinator_agent,
     ],
     # Output key for tracking in state
-    output_key="orkhon_root_response",
+    output_key="root_agent_response",
 )
 
 # Backwards compatibility alias
 agent = root_agent
 ```
 
-### `backend/adk/agents/orkhon_root/__init__.py`
+### `backend/adk/agents/root_agent/__init__.py`
 
 ```python
 from __future__ import annotations
@@ -151,7 +151,7 @@ from .agent import root_agent
 __all__ = ["root_agent"]
 ```
 
-### `backend/adk/agents/orkhon_root/instructions.txt`
+### `backend/adk/agents/root_agent/instructions.txt`
 
 ```text
 You are the Orkhon platform coordinator, the main entry point for all user requests.
@@ -199,11 +199,11 @@ RESPONSE STYLE:
 - Guide users when capabilities are limited
 ```
 
-### `backend/adk/agents/orkhon_root/agent.json` (A2A Agent Card)
+### `backend/adk/agents/root_agent/agent.json` (A2A Agent Card)
 
 ```json
 {
-  "name": "orkhon_root",
+  "name": "root_agent",
   "version": "2.0.0",
   "description": "Main coordinator for Orkhon AI platform. Routes to specialized domain coordinators.",
   "capabilities": {
@@ -227,8 +227,8 @@ RESPONSE STYLE:
     "pattern": "coordinator-dispatcher"
   },
   "endpoints": {
-    "invoke": "/a2a/orkhon_root/invoke",
-    "agent_card": "/a2a/orkhon_root/.well-known/agent-card"
+    "invoke": "/a2a/root_agent/invoke",
+    "agent_card": "/a2a/root_agent/.well-known/agent-card"
   }
 }
 ```
@@ -261,7 +261,7 @@ Category coordinator for DNB (De Nederlandsche Bank) API operations.
 Routes to specialized agents for Echo, Statistics, and Public Register APIs.
 
 Hierarchy:
-  orkhon_root
+  root_agent
   └─ dnb_coordinator (this)
      ├─ dnb_echo_agent
      ├─ dnb_statistics_agent
@@ -431,7 +431,7 @@ Specialized agent for DNB Echo API operations.
 Handles connectivity tests and health checks.
 
 Hierarchy:
-  orkhon_root → dnb_coordinator → dnb_echo_agent (this)
+  root_agent → dnb_coordinator → dnb_echo_agent (this)
 """
 
 from __future__ import annotations
@@ -791,8 +791,8 @@ server:
 
 # Agents exposed via A2A
 agents:
-  - name: "orkhon_root"
-    module: "orkhon_root.agent"
+  - name: "root_agent"
+    module: "root_agent.agent"
     agent_var: "root_agent"
     enabled: true
     expose_externally: true
@@ -869,9 +869,9 @@ async def main():
   
   try:
     # Load and register root agent
-    root_agent = load_agent("orkhon_root.agent", "root_agent")
-    server.register_agent("orkhon_root", root_agent)
-    logger.info("✓ Registered: orkhon_root")
+    root_agent = load_agent("root_agent.agent", "root_agent")
+    server.register_agent("root_agent", root_agent)
+    logger.info("✓ Registered: root_agent")
     
     # Load and register DNB coordinator
     dnb_coordinator = load_agent(
@@ -888,7 +888,7 @@ async def main():
   # Start server
   logger.info("Starting server on http://0.0.0.0:8001")
   logger.info("Agent cards available at:")
-  logger.info("  - http://localhost:8001/a2a/orkhon_root/.well-known/agent-card")
+  logger.info("  - http://localhost:8001/a2a/root_agent/.well-known/agent-card")
   logger.info("  - http://localhost:8001/a2a/dnb_coordinator/.well-known/agent-card")
   
   await server.start()
@@ -908,7 +908,7 @@ if __name__ == "__main__":
 # Orkhon Agent Configuration
 
 # Model Selection
-ORKHON_ROOT_MODEL=gemini-2.0-flash
+root_agent_MODEL=gemini-2.0-flash
 DNB_COORDINATOR_MODEL=gemini-2.0-flash
 DNB_ECHO_MODEL=gemini-2.0-flash
 DNB_STATISTICS_MODEL=gemini-2.0-flash
@@ -966,7 +966,7 @@ def migrate_agents(agents_dir: Path, dry_run: bool = False):
   
   # Step 1: Create new directories
   new_dirs = [
-      agents_dir / "orkhon_root",
+      agents_dir / "root_agent",
       agents_dir / "api_coordinators" / "dnb_coordinator",
       agents_dir / "api_agents" / "dnb_echo",
       agents_dir / "api_agents" / "dnb_statistics",
@@ -1071,7 +1071,7 @@ from google.adk.runner import Runner
 @pytest.fixture
 def root_agent():
   """Load root agent for testing."""
-  from orkhon_root.agent import root_agent
+  from root_agent.agent import root_agent
   return root_agent
 
 
@@ -1084,7 +1084,7 @@ def dnb_coordinator():
 
 def test_root_agent_structure(root_agent):
   """Test root agent has correct structure."""
-  assert root_agent.name == "orkhon_root"
+  assert root_agent.name == "root_agent"
   assert isinstance(root_agent, LlmAgent)
   assert len(root_agent.sub_agents) >= 1  # Should have dnb_coordinator
 
@@ -1145,7 +1145,7 @@ async def test_dnb_echo_agent(dnb_coordinator):
 
 ```bash
 # Test root agent
-adk run orkhon_root -q "Hello, what can you do?"
+adk run root_agent -q "Hello, what can you do?"
 
 # Test DNB coordinator
 adk run api_coordinators.dnb_coordinator -q "Test DNB connection"
@@ -1170,7 +1170,7 @@ python start_a2a_server.py
 
 ### 4. Test from UI
 
-Navigate to http://localhost:8000 and select "orkhon_root"
+Navigate to http://localhost:8000 and select "root_agent"
 
 Try queries:
 - "Test DNB API connection"

@@ -136,7 +136,7 @@ backend/adk/agents/
 **Proposed Structure:**
 ```
 backend/adk/agents/
-├── orkhon_root/                    # NEW: Main coordinator
+├── root_agent/                    # NEW: Main coordinator
 │   └── agent.py (root_agent)
 ├── api_coordinators/               # NEW: Category coordinators
 │   └── dnb_coordinator/
@@ -164,11 +164,11 @@ backend/adk/agents/
 
 #### 1.2 Create Root Coordinator
 
-**File:** `backend/adk/agents/orkhon_root/agent.py`
+**File:** `backend/adk/agents/root_agent/agent.py`
 
 ```python
 """
-Orkhon Root Coordinator - Top-level agent for the Orkhon platform.
+Root Coordinator - Top-level agent for the multi-agent system.
 
 This agent routes requests to specialized category coordinators:
 - DNB API operations
@@ -182,7 +182,7 @@ from google.adk.agents import LlmAgent as Agent
 from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent
 
 root_agent = Agent(
-    name="orkhon_root",
+    name="root_agent",
     model="gemini-2.0-flash",
     description=(
         "Main coordinator for the Orkhon AI platform. Routes requests to "
@@ -389,11 +389,11 @@ coordinator = Agent(
 
 **Step 1: Create Agent Cards**
 
-**File:** `backend/adk/agents/orkhon_root/agent.json`
+**File:** `backend/adk/agents/root_agent/agent.json`
 
 ```json
 {
-  "name": "orkhon_root",
+  "name": "root_agent",
   "description": "Main coordinator for Orkhon AI platform",
   "version": "1.0.0",
   "capabilities": {
@@ -423,8 +423,8 @@ server:
   port: 8001
   
 agents:
-  - name: "orkhon_root"
-    module: "orkhon_root.agent"
+  - name: "root_agent"
+    module: "root_agent.agent"
     agent_var: "root_agent"
     enabled: true
     
@@ -450,8 +450,8 @@ def main():
     server = A2AServer(config_path="a2a_config.yaml")
     
     # Register agents
-    root_agent = load_agent("orkhon_root.agent", "root_agent")
-    server.register_agent("orkhon_root", root_agent)
+    root_agent = load_agent("root_agent.agent", "root_agent")
+    server.register_agent("root_agent", root_agent)
     
     dnb_coordinator = load_agent("api_coordinators.dnb_coordinator.agent", "dnb_coordinator_agent")
     server.register_agent("dnb_coordinator", dnb_coordinator)
@@ -527,7 +527,7 @@ google_search_agent = Agent(
 
 | Type | When to Use | Example in Orkhon |
 |------|-------------|-------------------|
-| **LlmAgent** | Intelligent routing, NL understanding, tool usage | `orkhon_root`, `dnb_coordinator`, all API agents |
+| **LlmAgent** | Intelligent routing, NL understanding, tool usage | `root_agent`, `dnb_coordinator`, all API agents |
 | **SequentialAgent** | Multi-step pipelines, ordered processing | Data pipeline, validate→process→store |
 | **ParallelAgent** | Concurrent operations, multiple API calls | Parallel DNB statistics + public register queries |
 | **LoopAgent** | Iterative tasks, pagination, polling | Future: Paginate through large datasets |
@@ -540,7 +540,7 @@ google_search_agent = Agent(
 ### Phase 1: Foundation (Week 1)
 - [x] Research ADK patterns
 - [ ] Create new directory structure
-- [ ] Implement `orkhon_root` agent
+- [ ] Implement `root_agent` agent
 - [ ] Refactor `dnb_coordinator`
 - [ ] Update imports
 - [ ] Test basic routing
@@ -599,7 +599,7 @@ google_search_agent = Agent(
 
 ```python
 # ✅ GOOD: Clear, descriptive, role-based
-root_agent = Agent(name="orkhon_root", ...)
+root_agent = Agent(name="root_agent", ...)
 coordinator = Agent(name="dnb_coordinator", ...)
 specialist = Agent(name="dnb_statistics_agent", ...)
 
@@ -613,7 +613,7 @@ api_agent = Agent(name="dnb_api_stats", ...)  # Inconsistent pattern
 ```
 ✅ GOOD:
 agents/
-  orkhon_root/           # Top-level coordinator
+  root_agent/           # Top-level coordinator
   api_coordinators/      # Category coordinators
     dnb_coordinator/
   api_agents/            # Specialized agents
@@ -663,7 +663,7 @@ dnb_agent (Coordinator)
 ### After (Proposed)
 
 ```
-orkhon_root (Root Coordinator)
+root_agent (Root Coordinator)
 ├── dnb_coordinator (Category Coordinator)
 │   ├── dnb_echo_agent (Specialized Agent)
 │   ├── dnb_statistics_agent (Specialized Agent)
@@ -710,7 +710,7 @@ orkhon_root (Root Coordinator)
 - [ ] Review this architecture document with team
 - [ ] Decide on migration strategy (gradual vs clean slate)
 - [ ] Create new directory structure
-- [ ] Implement `orkhon_root` agent
+- [ ] Implement `root_agent` agent
 - [ ] Refactor `dnb_coordinator`
 - [ ] Test basic routing
 

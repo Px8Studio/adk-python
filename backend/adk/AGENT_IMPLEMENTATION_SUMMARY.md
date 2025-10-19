@@ -26,7 +26,7 @@
 ### New Architecture
 
 ```
-orkhon_root (Root Coordinator)
+root_agent (Root Coordinator)
 ├── dnb_coordinator (Category Coordinator)
 │   ├── dnb_echo_agent (Specialized Agent)
 │   ├── dnb_statistics_agent (Specialized Agent)
@@ -60,16 +60,16 @@ orkhon_root (Root Coordinator)
 1. **Create directory structure**
    ```bash
    cd backend/adk/agents
-   mkdir -p orkhon_root
+   mkdir -p root_agent
    mkdir -p api_coordinators/dnb_coordinator
    mkdir -p api_agents/{dnb_echo,dnb_statistics,dnb_public_register}
    mkdir -p workflows/{data_pipeline,parallel_fetcher}
    ```
 
-2. **Implement orkhon_root agent**
+2. **Implement root_agent agent**
    - Copy template from `AGENT_IMPLEMENTATION_EXAMPLES.md` section 1
-   - File: `agents/orkhon_root/agent.py`
-   - Test: `adk run orkhon_root -q "What can you do?"`
+   - File: `agents/root_agent/agent.py`
+   - Test: `adk run root_agent -q "What can you do?"`
 
 3. **Refactor dnb_coordinator**
    - Copy template from `AGENT_IMPLEMENTATION_EXAMPLES.md` section 2
@@ -85,14 +85,14 @@ orkhon_root (Root Coordinator)
 5. **Test basic routing**
    ```bash
    # Test root → coordinator → specialized agent
-   adk run orkhon_root -q "Test DNB connection"
+   adk run root_agent -q "Test DNB connection"
    
-   # Should route: orkhon_root → dnb_coordinator → dnb_echo_agent
+   # Should route: root_agent → dnb_coordinator → dnb_echo_agent
    ```
 
 **Deliverables:**
 - ✅ New directory structure
-- ✅ Working orkhon_root agent
+- ✅ Working root_agent agent
 - ✅ Refactored dnb_coordinator
 - ✅ Migrated specialized agents
 - ✅ Basic routing tested
@@ -141,7 +141,7 @@ orkhon_root (Root Coordinator)
 
 #### Tasks:
 1. **Create agent cards**
-   - File: `agents/orkhon_root/agent.json`
+   - File: `agents/root_agent/agent.json`
    - File: `agents/api_coordinators/dnb_coordinator/agent.json`
    - Follow template from `AGENT_IMPLEMENTATION_EXAMPLES.md` section 1
 
@@ -156,7 +156,7 @@ orkhon_root (Root Coordinator)
    python backend/adk/start_a2a_server.py
    
    # Test agent card endpoint
-   curl http://localhost:8001/a2a/orkhon_root/.well-known/agent-card
+   curl http://localhost:8001/a2a/root_agent/.well-known/agent-card
    
    # Test remote agent invocation
    # (from another service/agent)
@@ -221,20 +221,20 @@ orkhon_root (Root Coordinator)
    ```
 
 2. **Implement new agents one by one**
-   - Start with `orkhon_root`
+   - Start with `root_agent`
    - Then `dnb_coordinator`
    - Finally specialized agents
 
 3. **Test thoroughly at each step**
    ```bash
-   adk run orkhon_root -q "Test query"
+   adk run root_agent -q "Test query"
    ```
 
 4. **Update ADK Web to use new root**
    ```bash
    # In quick-start.ps1 or manual startup
    adk web --reload_agents backend/adk/agents/
-   # ADK will discover orkhon_root automatically
+   # ADK will discover root_agent automatically
    ```
 
 5. **Deprecate old agents**
@@ -313,9 +313,9 @@ orkhon_root (Root Coordinator)
 
 ### Implementation Steps
 - [ ] Create new directory structure
-- [ ] Implement `orkhon_root/agent.py`
-- [ ] Implement `orkhon_root/__init__.py`
-- [ ] Create `orkhon_root/instructions.txt`
+- [ ] Implement `root_agent/agent.py`
+- [ ] Implement `root_agent/__init__.py`
+- [ ] Create `root_agent/instructions.txt`
 - [ ] Implement `api_coordinators/dnb_coordinator/agent.py`
 - [ ] Implement `api_coordinators/dnb_coordinator/__init__.py`
 - [ ] Create `dnb_coordinator/instructions.txt`
@@ -326,7 +326,7 @@ orkhon_root (Root Coordinator)
 - [ ] Update variable names (add `_agent` suffix)
 
 ### Testing
-- [ ] Test `orkhon_root` individually: `adk run orkhon_root -q "Hello"`
+- [ ] Test `root_agent` individually: `adk run root_agent -q "Hello"`
 - [ ] Test `dnb_coordinator` individually
 - [ ] Test each specialized agent individually
 - [ ] Test complete hierarchy: root → coordinator → specialist
@@ -410,7 +410,7 @@ agent2 = LlmAgent(
 
 ```python
 # ✅ GOOD
-root_agent = Agent(name="orkhon_root", ...)
+root_agent = Agent(name="root_agent", ...)
 coordinator_agent = Agent(name="dnb_coordinator", ...)
 specialized_agent = Agent(name="dnb_echo_agent", ...)
 
@@ -481,7 +481,7 @@ api_agent = Agent(name="dnb_api", ...)  # Unclear role
 ## 📊 Success Metrics
 
 ### Phase 1 Success
-- ✅ Can query via `orkhon_root` in ADK Web
+- ✅ Can query via `root_agent` in ADK Web
 - ✅ Routing works: root → coordinator → specialist
 - ✅ All existing DNB tools still work
 - ✅ Jaeger traces show complete hierarchy

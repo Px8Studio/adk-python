@@ -12,7 +12,7 @@
 │                           🎯 LAYER 1: ROOT COORDINATOR                           │
 │                                                                                   │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │  orkhon_root (LlmAgent)                                                  │   │
+│  │  root_agent (LlmAgent)                                                  │   │
 │  │  ─────────────────────────────                                           │   │
 │  │  Role: Top-level intelligent router                                      │   │
 │  │  Model: gemini-2.0-flash                                                 │   │
@@ -175,7 +175,7 @@
 │  │  Protocol: HTTP/JSON-RPC 2.0                                             │    │
 │  │                                                                           │    │
 │  │  Exposed Agents:                                                          │    │
-│  │  • orkhon_root      (/a2a/orkhon_root)                                  │    │
+│  │  • root_agent      (/a2a/root_agent)                                  │    │
 │  │  • dnb_coordinator  (/a2a/dnb_coordinator)                              │    │
 │  │                                                                           │    │
 │  │  Agent Cards:                                                             │    │
@@ -202,7 +202,7 @@
 │  │  1. User Input: "Get DNB statistics for Q3 2024"                        │    │
 │  │     state['user_query'] = "Get DNB statistics for Q3 2024"              │    │
 │  │                                                                           │    │
-│  │  2. orkhon_root routes to dnb_coordinator                               │    │
+│  │  2. root_agent routes to dnb_coordinator                               │    │
 │  │     state['routing_decision'] = "dnb_coordinator"                       │    │
 │  │                                                                           │    │
 │  │  3. dnb_coordinator routes to dnb_statistics_agent                      │    │
@@ -302,7 +302,7 @@ TOOL INTEGRATION:
 USER: "Get me pension fund statistics and list public register publications"
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│ 1. orkhon_root receives query                                        │
+│ 1. root_agent receives query                                        │
 │    • Understands multi-part request                                  │
 │    • Recognizes both require DNB API                                 │
 │    • Decides: Route to dnb_coordinator                              │
@@ -341,11 +341,11 @@ USER: "Get me pension fund statistics and list public register publications"
 │ 4. dnb_coordinator aggregates                                        │
 │    • Reads: state['pension_stats'], state['publications']          │
 │    • Synthesizes combined response                                   │
-│    • Returns to orkhon_root                                         │
+│    • Returns to root_agent                                         │
 └─────────────────────────┬───────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────┐
-│ 5. orkhon_root formats final response                                │
+│ 5. root_agent formats final response                                │
 │    • "Here are your results:                                         │
 │       1. Pension Fund Statistics for Q3 2024: ...                   │
 │       2. Recent Public Register Publications: ..."                  │
@@ -353,7 +353,7 @@ USER: "Get me pension fund statistics and list public register publications"
 └──────────────────────────────────────────────────────────────────────┘
 
 TRACE IN JAEGER:
-orkhon_root [200ms]
+root_agent [200ms]
 └─ dnb_coordinator [180ms]
    ├─ dnb_statistics_agent [90ms]
    │  └─ tool: query_data [80ms]
