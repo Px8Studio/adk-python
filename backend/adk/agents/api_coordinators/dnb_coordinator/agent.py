@@ -34,9 +34,13 @@ from pathlib import Path
 from google.adk.agents import LlmAgent as Agent
 
 # Import specialized DNB agents
+# Use absolute imports so ADK's module loader (which adds the agents dir to sys.path)
+# can resolve sibling packages reliably.
 from api_agents.dnb_echo.agent import dnb_echo_agent  # type: ignore
 from api_agents.dnb_statistics.agent import dnb_statistics_agent  # type: ignore
-from api_agents.dnb_public_register.agent import dnb_public_register_agent  # type: ignore
+from api_agents.dnb_public_register.agent import (
+    dnb_public_register_agent,
+)  # type: ignore
 
 # Model configuration
 MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
@@ -44,28 +48,26 @@ MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
 # Load instructions
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
-  INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
+    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-  INSTRUCTION = """You coordinate DNB API operations across three specialized domains:
-
-1. **Echo API** (dnb_echo_agent):
-   - Connectivity tests, health checks, API availability
-   - Use for: "test DNB connection", "is DNB API up?"
-
-2. **Statistics API** (dnb_statistics_agent):
-   - Economic datasets, exchange rates, financial statistics
-   - Use for: "get exchange rates", "pension fund data", "balance of payments"
-
-3. **Public Register API** (dnb_public_register_agent):
-   - License searches, registration data, regulatory info
-   - Use for: "find licenses", "search institutions", "regulatory data"
-   - IMPORTANT: This agent will automatically discover valid register codes
-   - Common registers: WFTAF (financial services), Wft (various financial categories)
-   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes
-
-Route to the appropriate specialist based on user request.
-If multiple specialists needed, coordinate execution.
-Provide clear, structured summaries."""
+    INSTRUCTION = (
+        "You coordinate DNB API operations across three specialized domains:\n\n"
+        "1. **Echo API** (dnb_echo_agent):\n"
+        "   - Connectivity tests, health checks, API availability\n"
+        "   - Use for: \"test DNB connection\", \"is DNB API up?\"\n\n"
+        "2. **Statistics API** (dnb_statistics_agent):\n"
+        "   - Economic datasets, exchange rates, financial statistics\n"
+        "   - Use for: \"get exchange rates\", \"pension fund data\", \"balance of payments\"\n\n"
+        "3. **Public Register API** (dnb_public_register_agent):\n"
+        "   - License searches, registration data, regulatory info\n"
+        "   - Use for: \"find licenses\", \"search institutions\", \"regulatory data\"\n"
+        "   - IMPORTANT: This agent will automatically discover valid register codes\n"
+        "   - Common registers: WFTAF (financial services), Wft (various financial categories)\n"
+        "   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes\n\n"
+        "Route to the appropriate specialist based on user request.\n"
+        "If multiple specialists needed, coordinate execution.\n"
+        "Provide clear, structured summaries."
+    )
 
 dnb_coordinator_agent = Agent(
     name="dnb_coordinator",

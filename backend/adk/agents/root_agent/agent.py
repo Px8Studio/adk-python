@@ -42,9 +42,9 @@ MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
 # Load instructions from file for better maintainability
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
-  INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
+    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-  INSTRUCTION = """You are the main system coordinator.
+    INSTRUCTION = """You are the main system coordinator.
 
 Your role:
 1. Understand user requests across multiple domains

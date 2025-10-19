@@ -311,19 +311,20 @@ root_agent (Root Coordinator)
 - [ ] Backup existing agents
 - [ ] Decide: Gradual vs Clean Slate migration
 
-### Implementation Steps
-- [ ] Create new directory structure
-- [ ] Implement `root_agent/agent.py`
-- [ ] Implement `root_agent/__init__.py`
-- [ ] Create `root_agent/instructions.txt`
-- [ ] Implement `api_coordinators/dnb_coordinator/agent.py`
-- [ ] Implement `api_coordinators/dnb_coordinator/__init__.py`
+### Implementation Steps (Current Status)
+- [x] Create new directory structure
+- [x] Implement `root_agent/agent.py`
+- [x] Implement `root_agent/__init__.py`
+- [x] Create `root_agent/instructions.txt`
+- [x] Implement `api_coordinators/dnb_coordinator/agent.py`
+- [x] Implement `api_coordinators/dnb_coordinator/__init__.py`
 - [ ] Create `dnb_coordinator/instructions.txt`
-- [ ] Copy/refactor `dnb_echo` to `api_agents/dnb_echo`
-- [ ] Copy/refactor `dnb_statistics` to `api_agents/dnb_statistics`
-- [ ] Copy/refactor `dnb_public_register` to `api_agents/dnb_public_register`
-- [ ] Update all `__init__.py` files with proper exports
-- [ ] Update variable names (add `_agent` suffix)
+- [x] Copy/refactor `dnb_echo` to `api_agents/dnb_echo`
+- [x] Copy/refactor `dnb_statistics` to `api_agents/dnb_statistics`
+- [x] Copy/refactor `dnb_public_register` to `api_agents/dnb_public_register`
+- [x] Update all `__init__.py` files with proper exports
+- [x] Update variable names (add `_agent` suffix)
+- [x] Add `workflows/` folder with `data_pipeline` and `parallel_fetcher` scaffolds
 
 ### Testing
 - [ ] Test `root_agent` individually: `adk run root_agent -q "Hello"`
@@ -333,6 +334,20 @@ root_agent (Root Coordinator)
 - [ ] Test multiple queries in ADK Web UI
 - [ ] Verify state management works
 - [ ] Check Jaeger traces for complete flow
+
+### Status Snapshot (as of now)
+- Root coordinator and DNB coordinator are implemented and wired via `sub_agents`.
+- Specialized DNB agents (echo, statistics, public register) are implemented; statistics agent uses standard ToolboxToolset for stability.
+- Placeholder `api_agents/google_search/agent.py` exists (to be implemented later).
+- Workflow scaffolds (`workflows/data_pipeline` and `workflows/parallel_fetcher`) are added for Phase 2.
+
+### Next Incremental Step
+1) Create `backend/adk/agents/api_coordinators/dnb_coordinator/instructions.txt` with routing playbook and examples.
+2) Run quick smoke tests:
+   - `adk run root_agent -q "Test DNB connection"` (should route to echo)
+   - `adk run root_agent -q "Get latest exchange rates from DNB"` (should route to statistics)
+   - `adk run root_agent -q "Search DNB public register for WFTAF publications"` (should route to public register)
+3) If tests pass, wire `parallel_fetcher` into `dnb_coordinator` for multi-API fan-out in a follow-up.
 
 ### Documentation
 - [ ] Update `QUICK_REFERENCE.md` with new agent names
