@@ -23,7 +23,7 @@ services:
       - --telemetry-service-name
       - ${OTEL_SERVICE_NAME}
       - --log-level
-      - info
+      - debug
     ports:
       - "5000:5000"
     volumes:
