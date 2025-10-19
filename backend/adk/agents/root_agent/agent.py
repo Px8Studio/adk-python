@@ -84,6 +84,3 @@ root_agent = Agent(
     # Output key for tracking in state
     output_key="root_response",
 )
-
-# Backwards compatibility alias
-agent = root_agent

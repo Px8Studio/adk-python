@@ -80,6 +80,3 @@ dnb_coordinator_agent = Agent(
     ],
     output_key="dnb_coordinator_response",
 )
-
-# Backwards compatibility
-agent = dnb_coordinator_agent

@@ -59,7 +59,3 @@ GUIDELINES:
     )
   ]
 )
-
-# Backwards compatibility aliases
-root_agent = dnb_echo_agent
-agent = dnb_echo_agent

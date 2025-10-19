@@ -159,7 +159,3 @@ GUIDELINES:
     )
   ]
 )
-
-# Backwards compatibility aliases
-root_agent = dnb_statistics_agent
-agent = dnb_statistics_agent

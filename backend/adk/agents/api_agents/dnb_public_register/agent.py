@@ -157,7 +157,3 @@ GUIDELINES:
         )
     ],
 )
-
-# Backwards compatibility aliases
-root_agent = dnb_public_register_agent
-agent = dnb_public_register_agent
