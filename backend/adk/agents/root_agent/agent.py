@@ -35,6 +35,9 @@ from google.adk.agents import LlmAgent as Agent
 # Import category coordinators
 # ADK adds the agents directory to sys.path, so these absolute imports work
 from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent  # type: ignore
+from api_coordinators.dnb_openapi_coordinator.agent import (  # type: ignore
+    dnb_openapi_coordinator_agent,
+)
 
 # Model configuration
 MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
@@ -77,6 +80,7 @@ root_agent = Agent(
     # Sub-agents: LLM will use transfer_to_agent() to delegate
     sub_agents=[
         dnb_coordinator_agent,
+        dnb_openapi_coordinator_agent,
         # Future coordinators will be added here:
         # google_coordinator_agent,
         # data_coordinator_agent,
