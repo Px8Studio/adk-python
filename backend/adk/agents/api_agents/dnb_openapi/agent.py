@@ -103,13 +103,13 @@ def build_openapi_toolset(api: str) -> OpenAPIToolset:
 
 
 def _default_instruction(api: str) -> str:
-        return (
-                "You are a DNB API specialist using tools generated from an OpenAPI spec.\n"
-                "- Prefer calling tools when you need data.\n"
-                "- Clearly summarize responses and include key parameters used.\n"
-                "- Authentication is handled automatically.\n"
-                f"Target API: {api}."
-        )
+    return (
+        "You are a DNB API specialist using tools generated from an OpenAPI spec.\n"
+        "- Prefer calling tools when you need data.\n"
+        "- Clearly summarize responses and include key parameters used.\n"
+        "- Authentication is handled automatically.\n"
+        f"Target API: {api}."
+    )
 
 
 def _unified_instruction() -> str:
