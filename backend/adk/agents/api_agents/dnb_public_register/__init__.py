@@ -1,4 +1,4 @@
 from __future__ import annotations
-from .agent import root_agent  # noqa: F401
+from .agent import dnb_public_register_agent  # noqa: F401
 
-__all__ = ["root_agent"]
+__all__ = ["dnb_public_register_agent"]
