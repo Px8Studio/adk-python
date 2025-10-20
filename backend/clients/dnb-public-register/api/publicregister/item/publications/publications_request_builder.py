@@ -24,7 +24,7 @@ class PublicationsRequestBuilder(BaseRequestBuilder):
     
     def by_register_code(self,register_code: str) -> WithRegisterCodeItemRequestBuilder:
         """
-        Gets an item from the dnb_public_register.api.publicregister.item.Publications.item collection
+        Gets an item from the dnb_public_register_client.api.publicregister.item.Publications.item collection
         param register_code: The publication in the specified register.
         Returns: WithRegisterCodeItemRequestBuilder
         """

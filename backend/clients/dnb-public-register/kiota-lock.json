@@ -5,7 +5,7 @@
   "kiotaVersion": "1.28.0",
   "clientClassName": "DnbPublicRegisterClient",
   "typeAccessModifier": "Public",
-  "clientNamespaceName": "dnb_public_register",
+  "clientNamespaceName": "dnb_public_register_client",
   "language": "Python",
   "usesBackingStore": false,
   "excludeBackwardCompatible": true,

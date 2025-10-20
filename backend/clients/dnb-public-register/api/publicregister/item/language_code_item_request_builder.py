@@ -25,7 +25,7 @@ class LanguageCodeItemRequestBuilder(BaseRequestBuilder):
     
     def by_register_code(self,register_code: str) -> WithRegisterCodeItemRequestBuilder:
         """
-        Gets an item from the dnb_public_register.api.publicregister.item.item collection
+        Gets an item from the dnb_public_register_client.api.publicregister.item.item collection
         param register_code: The register code.
         Returns: WithRegisterCodeItemRequestBuilder
         """

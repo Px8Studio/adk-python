@@ -25,7 +25,7 @@ class PublicregisterRequestBuilder(BaseRequestBuilder):
     
     def by_language_code_id(self,language_code_id: str) -> LanguageCodeItemRequestBuilder:
         """
-        Gets an item from the dnb_public_register.api.publicregister.item collection
+        Gets an item from the dnb_public_register_client.api.publicregister.item collection
         param language_code_id: The language code.
         Returns: LanguageCodeItemRequestBuilder
         """

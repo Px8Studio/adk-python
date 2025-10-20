@@ -24,7 +24,7 @@ class HistoricalrecordRequestBuilder(BaseRequestBuilder):
     
     def by_date(self,date: datetime.datetime) -> WithDateItemRequestBuilder:
         """
-        Gets an item from the dnb_public_register.api.publicregister.item.item.Organizations.historicalrecord.item collection
+        Gets an item from the dnb_public_register_client.api.publicregister.item.item.Organizations.historicalrecord.item collection
         param date: The date of when the publication was published.
         Returns: WithDateItemRequestBuilder
         """
