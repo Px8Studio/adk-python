@@ -10,11 +10,13 @@ from pathlib import Path
 import argparse
 import shutil
 import os
+from typing import Optional
 
 # Base paths
 SCRIPT_DIR = Path(__file__).parent
 SPECS_DIR = SCRIPT_DIR.parent / "specs"
 GENERATED_DIR = SCRIPT_DIR.parent / "generated"
+CLIENTS_DIR = SCRIPT_DIR.parent / "generated_clients"
 
 
 def get_uv_command():
@@ -103,7 +105,50 @@ def check_uvx():
         return False
 
 
-def generate_mcp_server(api_name: str, include_agent: bool = True, include_eval: bool = True):
+def _locate_mcp_package(output_dir: Path) -> Optional[Path]:
+    """Return the generated MCP package directory (mcp_*)."""
+    if not output_dir.exists():
+        return None
+
+    candidates = [path for path in output_dir.iterdir() if path.is_dir()]
+    # Prefer directories starting with mcp_
+    for candidate in candidates:
+        if candidate.name.startswith("mcp_"):
+            return candidate
+    return candidates[0] if candidates else None
+
+
+def _extract_http_client(output_dir: Path, api_name: str) -> bool:
+    """Copy the generated http client, tools, and models into generated_clients/."""
+    mcp_pkg = _locate_mcp_package(output_dir)
+    if not mcp_pkg:
+        print("⚠️  Unable to locate generated MCP package; skipping client extraction")
+        return False
+
+    # Prepare destination
+    dest_root = CLIENTS_DIR / api_name
+    if dest_root.exists():
+        shutil.rmtree(dest_root)
+    dest_root.mkdir(parents=True, exist_ok=True)
+
+    api_client = mcp_pkg / "api" / "client.py"
+    if not api_client.exists():
+        print(f"⚠️  No client.py found in {api_client.parent}; skipping client extraction")
+        return False
+
+    shutil.copy2(api_client, dest_root / "client.py")
+
+    for subdir in ["models", "tools"]:
+        src_dir = mcp_pkg / subdir
+        dest_dir = dest_root / subdir
+        if src_dir.exists():
+            shutil.copytree(src_dir, dest_dir)
+
+    print(f"📦 HTTP client materials copied to: {dest_root}")
+    return True
+
+
+def generate_mcp_server(api_name: str, include_agent: bool = True, include_eval: bool = True, *, client_only: bool = False):
     """Generate MCP server for specified API"""
     
     if api_name not in APIS:
@@ -138,13 +183,16 @@ def generate_mcp_server(api_name: str, include_agent: bool = True, include_eval:
         "--output-dir", str(output_dir),
     ]
     
-    if include_agent:
+    if include_agent and not client_only:
         cmd.append("--generate-agent")
         print("🤖 Agent: YES")
-    
-    if include_eval:
+
+    if include_eval and not client_only:
         cmd.append("--generate-eval")
         print("🧪 Evaluation: YES")
+    elif client_only:
+        print("🤖 Agent: NO (client-only mode)")
+        print("🧪 Evaluation: NO (client-only mode)")
     
     print(f"\n⏳ Running code generation...")
     print(f"   Command: {' '.join(cmd)}")
@@ -168,10 +216,14 @@ def generate_mcp_server(api_name: str, include_agent: bool = True, include_eval:
                 if item.is_file():
                     rel_path = item.relative_to(output_dir)
                     print(f"   {rel_path}")
+
+        if client_only:
+            CLIENTS_DIR.mkdir(parents=True, exist_ok=True)
+            _extract_http_client(output_dir, api_name)
         
         # Show README if exists
         readme = output_dir / "README.md"
-        if readme.exists():
+        if readme.exists() and not client_only:
             print(f"\n📖 Next steps - see: {readme}")
             print("\nQuick start:")
             print(f"   cd {output_dir}")
@@ -211,12 +263,12 @@ def clean_generated(api_name: str = None):
     return True
 
 
-def generate_all(include_agent: bool = True, include_eval: bool = True):
+def generate_all(include_agent: bool = True, include_eval: bool = True, *, client_only: bool = False):
     """Generate MCP servers for all APIs"""
     results = {}
     
     for api_name in APIS:
-        success = generate_mcp_server(api_name, include_agent, include_eval)
+        success = generate_mcp_server(api_name, include_agent, include_eval, client_only=client_only)
         results[api_name] = success
     
     print(f"\n{'='*70}")
@@ -299,6 +351,12 @@ Examples:
         action="store_true",
         help="List available APIs"
     )
+
+    parser.add_argument(
+        "--client-only",
+        action="store_true",
+        help="Generate only the HTTP client/modules and copy them into generated_clients/."
+    )
     
     args = parser.parse_args()
     
@@ -314,6 +372,9 @@ Examples:
     # Handle clean
     if args.clean_all:
         clean_generated()
+        if CLIENTS_DIR.exists():
+            shutil.rmtree(CLIENTS_DIR)
+            print(f"🧹 Cleaned all generated HTTP clients: {CLIENTS_DIR}")
         return 0
     
     if args.clean:
@@ -321,6 +382,10 @@ Examples:
             print("❌ Please specify an API to clean")
             return 1
         clean_generated(args.api)
+        client_dir = CLIENTS_DIR / args.api
+        if client_dir.exists():
+            shutil.rmtree(client_dir)
+            print(f"🧹 Cleaned HTTP client artifacts: {client_dir}")
         return 0
     
     # Check uvx
@@ -334,7 +399,8 @@ Examples:
     if args.all:
         success = generate_all(
             include_agent=not args.no_agent,
-            include_eval=not args.no_eval
+            include_eval=not args.no_eval,
+            client_only=args.client_only
         )
         return 0 if success else 1
     
@@ -342,7 +408,8 @@ Examples:
         success = generate_mcp_server(
             args.api,
             include_agent=not args.no_agent,
-            include_eval=not args.no_eval
+            include_eval=not args.no_eval,
+            client_only=args.client_only
         )
         return 0 if success else 1
     
