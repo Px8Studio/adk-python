@@ -26,19 +26,11 @@ from kiota_abstractions.authentication.authentication_provider import (
 )
 from kiota_http.httpx_request_adapter import HttpxRequestAdapter
 
-# Import generated clients
-import sys
-from pathlib import Path
-
-# Add client directories to path
-clients_dir = Path(__file__).parent
-sys.path.insert(0, str(clients_dir / "dnb-echo"))
-sys.path.insert(0, str(clients_dir / "dnb-public-register"))
-sys.path.insert(0, str(clients_dir / "dnb-statistics"))
-
-from dnb_echo_client import DnbEchoClient
-from dnb_public_register_client import DnbPublicRegisterClient
-from dnb_statistics_client import DnbStatisticsClient
+# Import generated clients using the wrapper modules
+# These wrappers handle the sys.path manipulation needed for hyphenated directories
+from echo_client import DnbEchoClient
+from statistics_client import DnbStatisticsClient
+from public_register_client import DnbPublicRegisterClient
 
 
 class DnbApiKeyAuthProvider(ApiKeyAuthenticationProvider):
@@ -75,7 +67,11 @@ async def test_statistics_client(auth_provider: AuthenticationProvider) -> None:
   try:
     # Try to get exchange rates data (sample endpoint)
     result = await client.exchange_rates_of_the_euro_and_gold_price_day.get()
-    print(f"✓ Statistics API - Exchange rates retrieved: {len(result) if result else 0} records")
+    if result:
+      print(f"✓ Statistics API - Exchange rates retrieved successfully")
+      print(f"  Type: {type(result).__name__}")
+    else:
+      print(f"✗ Statistics API - No data returned")
   except Exception as e:
     print(f"✗ Statistics API error: {e}")
 
