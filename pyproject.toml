@@ -23,6 +23,8 @@ microsoft-kiota-serialization-multipart = "^1.7.0"
 httpx = "^0.28.1"
 sqlalchemy = "^2.0.44"
 psycopg2-binary = "^2.9.11"
+pandas = "^2.3.3"
+pyarrow = "^21.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
