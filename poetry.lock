@@ -1729,6 +1729,32 @@ files = [
 ]
 
 [[package]]
+name = "h2"
+version = "4.3.0"
+description = "Pure-Python HTTP/2 protocol implementation"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "h2-4.3.0-py3-none-any.whl", hash = "sha256:c438f029a25f7945c69e0ccf0fb951dc3f73a5f6412981daee861431b70e2bdd"},
+    {file = "h2-4.3.0.tar.gz", hash = "sha256:6c59efe4323fa18b47a632221a1888bd7fde6249819beda254aeca909f221bf1"},
+]
+
+[package.dependencies]
+hpack = ">=4.1,<5"
+hyperframe = ">=6.1,<7"
+
+[[package]]
+name = "hpack"
+version = "4.1.0"
+description = "Pure-Python HPACK header encoding"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496"},
+    {file = "hpack-4.1.0.tar.gz", hash = "sha256:ec5eca154f7056aa06f196a557655c5b009b382873ac8d1e66e79e87535f1dca"},
+]
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 description = "A minimal low-level HTTP client."
@@ -1777,6 +1803,7 @@ files = [
 [package.dependencies]
 anyio = "*"
 certifi = "*"
+h2 = {version = ">=3,<5", optional = true, markers = "extra == \"http2\""}
 httpcore = "==1.*"
 idna = "*"
 
@@ -1796,6 +1823,17 @@ python-versions = ">=3.9"
 files = [
     {file = "httpx_sse-0.4.3-py3-none-any.whl", hash = "sha256:0ac1c9fe3c0afad2e0ebb25a934a59f4c7823b60792691f779fad2c5568830fc"},
     {file = "httpx_sse-0.4.3.tar.gz", hash = "sha256:9b1ed0127459a66014aec3c56bebd93da3c1bc8bb6618c8082039a44889a755d"},
+]
+
+[[package]]
+name = "hyperframe"
+version = "6.1.0"
+description = "Pure-Python HTTP/2 framing"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5"},
+    {file = "hyperframe-6.1.0.tar.gz", hash = "sha256:f630908a00854a7adeabd6382b43923a4c4cd4b821fcb527e6ab9e15382a3b08"},
 ]
 
 [[package]]
@@ -2179,6 +2217,95 @@ uvicorn = {version = ">=0.31.1", markers = "sys_platform != \"emscripten\""}
 cli = ["python-dotenv (>=1.0.0)", "typer (>=0.16.0)"]
 rich = ["rich (>=13.9.4)"]
 ws = ["websockets (>=15.0.1)"]
+
+[[package]]
+name = "microsoft-kiota-abstractions"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_abstractions-1.9.7-py3-none-any.whl", hash = "sha256:8add66c38d05ab9a496c1c843bb16e04b70edc4651dc290b9629b14009f5c0c0"},
+    {file = "microsoft_kiota_abstractions-1.9.7.tar.gz", hash = "sha256:731ed60c2df74ca80d1bf36d40a4c390aab353db3a76796c63ea9e9a220ce65c"},
+]
+
+[package.dependencies]
+opentelemetry-api = ">=1.27.0"
+opentelemetry-sdk = ">=1.27.0"
+std-uritemplate = ">=2.0.0"
+
+[[package]]
+name = "microsoft-kiota-http"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_http-1.9.7-py3-none-any.whl", hash = "sha256:14ce6b14c4fa93608f535f2c6ae21d35b1d0e2635ab70501fa3a3afc90135261"},
+    {file = "microsoft_kiota_http-1.9.7.tar.gz", hash = "sha256:abcacca784649308ab93d8578c2afb581a42deed048b183d7bbdc48c325dd6a1"},
+]
+
+[package.dependencies]
+httpx = {version = ">=0.25,<1.0.0", extras = ["http2"]}
+microsoft-kiota-abstractions = ">=1.9.7,<1.10.0"
+opentelemetry-api = ">=1.27.0"
+opentelemetry-sdk = ">=1.27.0"
+
+[[package]]
+name = "microsoft-kiota-serialization-form"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_serialization_form-1.9.7-py3-none-any.whl", hash = "sha256:72d2dc5e57a993145702870ad89c85cebe3336d4d34f231d951ee1bc83ad11b9"},
+    {file = "microsoft_kiota_serialization_form-1.9.7.tar.gz", hash = "sha256:d3297a60778c0437513334b703225ce108fd109f13c1993afea599b85dc5a528"},
+]
+
+[package.dependencies]
+microsoft-kiota-abstractions = ">=1.9.7,<1.10.0"
+
+[[package]]
+name = "microsoft-kiota-serialization-json"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_serialization_json-1.9.7-py3-none-any.whl", hash = "sha256:6f44012f00cf7c4c4d8b9195e7f8a691d186021b5d9a20e791a77c800b5be531"},
+    {file = "microsoft_kiota_serialization_json-1.9.7.tar.gz", hash = "sha256:1e54ff90b185fe21cca94ebbf8468bf44a2ca5f082c4cf04dbd2d42a9472837a"},
+]
+
+[package.dependencies]
+microsoft-kiota-abstractions = ">=1.9.7,<1.10.0"
+
+[[package]]
+name = "microsoft-kiota-serialization-multipart"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_serialization_multipart-1.9.7-py3-none-any.whl", hash = "sha256:cd72ee004039ee64a35bd5254afd3f8bc89877e948282ab0fe0a7efab75f68bb"},
+    {file = "microsoft_kiota_serialization_multipart-1.9.7.tar.gz", hash = "sha256:1a13d193d078dea86711d8c6e89ac142aff5033079c7be4061279b2da5c83ef8"},
+]
+
+[package.dependencies]
+microsoft-kiota-abstractions = ">=1.9.7,<1.10.0"
+
+[[package]]
+name = "microsoft-kiota-serialization-text"
+version = "1.9.7"
+description = "Core abstractions for kiota generated libraries in Python"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "microsoft_kiota_serialization_text-1.9.7-py3-none-any.whl", hash = "sha256:47c4d774883bec269a6eb077a5ca2f26ae6715986c8defa374d536a9664dc43e"},
+    {file = "microsoft_kiota_serialization_text-1.9.7.tar.gz", hash = "sha256:d57a082d5c6ea1e650286314cac9a9e7a2662aa4beb80635bf4addd33d252bd5"},
+]
+
+[package.dependencies]
+microsoft-kiota-abstractions = ">=1.9.7,<1.10.0"
 
 [[package]]
 name = "multidict"
@@ -3925,6 +4052,17 @@ typing-extensions = {version = ">=4.10.0", markers = "python_version < \"3.13\""
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
 
 [[package]]
+name = "std-uritemplate"
+version = "2.0.8"
+description = "std-uritemplate implementation for Python"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "std_uritemplate-2.0.8-py3-none-any.whl", hash = "sha256:839807a7f9d07f0bad1a88977c3428bd97b9ff0d229412a0bf36123d8c724257"},
+    {file = "std_uritemplate-2.0.8.tar.gz", hash = "sha256:138ceff2c5bfef18a650372a5e8c82fe7f780c87235513de6c342fb5f7e18347"},
+]
+
+[[package]]
 name = "tenacity"
 version = "8.5.0"
 description = "Retry code until it succeeds"
@@ -4759,4 +4897,4 @@ cffi = ["cffi (>=1.17,<2.0)", "cffi (>=2.0.0b)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "94938c9fe39c49b60a2648a12c8efedd3731ec3d15854d0608733bd4bec4b2d2"
+content-hash = "d1d978d517ec5cd740375f450d455f929863c22cf028fc753a711eed72c72088"
