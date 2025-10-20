@@ -17,25 +17,20 @@ backend/clients/
 
 ### Prerequisites
 
-All Kiota runtime dependencies are managed by Poetry in the root `pyproject.toml`:
+- **Python 3.12+** managed by Poetry
+- **DNB API Key** stored in `.env` file in project root
 
-- `microsoft-kiota-abstractions`
-- `microsoft-kiota-http`
-- `microsoft-kiota-serialization-json`
-- `microsoft-kiota-serialization-text`
-- `microsoft-kiota-serialization-form`
-- `microsoft-kiota-serialization-multipart`
+All Kiota runtime dependencies are managed by Poetry in the root `pyproject.toml`.
 
 ### Environment Setup
 
-Set your DNB API subscription key:
+Your API keys are loaded automatically from the `.env` file:
 
-```powershell
-# PowerShell
-$env:DNB_SUBSCRIPTION_KEY = "your-api-key-here"
-
-# Or use the DEV key
-$env:DNB_SUBSCRIPTION_KEY_DEV = "your-dev-api-key-here"
+```ini
+# In C:\Users\rjjaf\_Projects\orkhon\.env
+DNB_SUBSCRIPTION_KEY_DEV=your-dev-key-here
+DNB_SUBSCRIPTION_KEY_PROD=your-prod-key-here
+DNB_ENVIRONMENT=dev  # or 'prod'
 ```
 
 ### Running the Test Script
@@ -119,22 +114,39 @@ asyncio.run(search_publications())
 
 ## 🔧 Regenerating Clients
 
-If the OpenAPI specs are updated, regenerate the clients using:
+### Automated Script (Recommended)
 
-```bash
+Use the included PowerShell script to regenerate clients:
+
+```powershell
+# Generate all clients
+.\backend\clients\generate-dnb-clients.ps1
+
+# Clean existing clients and regenerate
+.\backend\clients\generate-dnb-clients.ps1 -Clean
+
+# Generate only a specific client
+.\backend\clients\generate-dnb-clients.ps1 -ClientName echo
+```
+
+### Manual Commands
+
+If the OpenAPI specs are updated, you can also regenerate manually:
+
+```powershell
 # Echo API
-kiota generate -l python -c DnbEchoClient -n dnb_echo_client \
-  -d backend/apis/dnb/specs/openapi3-echo-api.yaml \
+kiota generate -l python -c DnbEchoClient -n dnb_echo_client `
+  -d backend/apis/dnb/specs/openapi3-echo-api.yaml `
   -o backend/clients/dnb-echo --exclude-backward-compatible
 
 # Public Register API
-kiota generate -l python -c DnbPublicRegisterClient -n dnb_public_register_client \
-  -d backend/apis/dnb/specs/openapi3_publicdatav1.yaml \
+kiota generate -l python -c DnbPublicRegisterClient -n dnb_public_register_client `
+  -d backend/apis/dnb/specs/openapi3_publicdatav1.yaml `
   -o backend/clients/dnb-public-register --exclude-backward-compatible
 
 # Statistics API
-kiota generate -l python -c DnbStatisticsClient -n dnb_statistics_client \
-  -d backend/apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml \
+kiota generate -l python -c DnbStatisticsClient -n dnb_statistics_client `
+  -d backend/apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml `
   -o backend/clients/dnb-statistics --exclude-backward-compatible
 ```
 
@@ -163,6 +175,17 @@ class DnbApiKeyAuthProvider(ApiKeyAuthenticationProvider):
 - [DNB API Documentation](https://api.dnb.nl/)
 
 ## 🐛 Troubleshooting
+
+### "Filename too long" Git Error (Windows)
+
+If you encounter `error: Filename too long` when committing, enable Git long path support:
+
+```powershell
+git config --global core.longpaths true
+git config core.longpaths true
+```
+
+This is necessary on Windows due to the deeply nested directory structures Kiota generates.
 
 ### Import Errors
 

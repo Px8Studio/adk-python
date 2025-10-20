@@ -52,7 +52,24 @@ Expected output:
 
 ## 🔄 Regenerating Clients
 
-If you update the OpenAPI specs, regenerate clients with:
+### Using the Generation Script (Recommended)
+
+```powershell
+# Generate all clients
+.\backend\clients\generate-dnb-clients.ps1
+
+# Clean and regenerate all clients
+.\backend\clients\generate-dnb-clients.ps1 -Clean
+
+# Generate only a specific client
+.\backend\clients\generate-dnb-clients.ps1 -ClientName echo
+.\backend\clients\generate-dnb-clients.ps1 -ClientName public-register
+.\backend\clients\generate-dnb-clients.ps1 -ClientName statistics
+```
+
+### Manual Generation
+
+If you prefer to run Kiota commands directly:
 
 ```powershell
 # Echo API
@@ -142,6 +159,17 @@ kiota show -d backend/clients/dnb-echo/kiota-lock.json
 - [DNB API Documentation](https://api.dnb.nl/)
 
 ## 🐛 Troubleshooting
+
+### "Filename too long" error when committing (Windows)
+**Problem**: Git shows `error: Filename too long` when trying to commit generated clients.
+
+**Solution**: Enable long path support in Git:
+```powershell
+git config --global core.longpaths true
+git config core.longpaths true
+```
+
+This is required on Windows because Kiota generates deeply nested directory structures from OpenAPI specs.
 
 ### "Module not found" errors
 Make sure you're using Poetry to run:
