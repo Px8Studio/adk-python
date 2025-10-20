@@ -12,12 +12,11 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from etl.dnb_public_register.orchestrator import main
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
-
-from etl.dnb_public_register.orchestrator import main
 
 if __name__ == "__main__":
     # Check for API key
