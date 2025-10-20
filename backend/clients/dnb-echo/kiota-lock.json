@@ -5,7 +5,7 @@
   "kiotaVersion": "1.28.0",
   "clientClassName": "DnbEchoClient",
   "typeAccessModifier": "Public",
-  "clientNamespaceName": "dnb_echo",
+  "clientNamespaceName": "dnb_echo_client",
   "language": "Python",
   "usesBackingStore": false,
   "excludeBackwardCompatible": true,
