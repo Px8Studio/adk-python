@@ -1,0 +1,34 @@
+{
+  "descriptionHash": "E1B4B96396C97E18A7E453CCA16B00996122ED93DC83A9B1B73DC3E46EDE0B08A176D23FDCEE24F91BB01394E0020959A5FA7AD9E8A367F26CF437BC70946B0C",
+  "descriptionLocation": "../../apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml",
+  "lockFileVersion": "1.0.0",
+  "kiotaVersion": "1.28.0",
+  "clientClassName": "DnbStatisticsClient",
+  "typeAccessModifier": "Public",
+  "clientNamespaceName": "dnb_statistics_client",
+  "language": "Python",
+  "usesBackingStore": false,
+  "excludeBackwardCompatible": true,
+  "includeAdditionalData": true,
+  "disableSSLValidation": false,
+  "serializers": [
+    "Microsoft.Kiota.Serialization.Json.JsonSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Text.TextSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Form.FormSerializationWriterFactory",
+    "Microsoft.Kiota.Serialization.Multipart.MultipartSerializationWriterFactory"
+  ],
+  "deserializers": [
+    "Microsoft.Kiota.Serialization.Json.JsonParseNodeFactory",
+    "Microsoft.Kiota.Serialization.Text.TextParseNodeFactory",
+    "Microsoft.Kiota.Serialization.Form.FormParseNodeFactory"
+  ],
+  "structuredMimeTypes": [
+    "application/json",
+    "text/plain;q=0.9",
+    "application/x-www-form-urlencoded;q=0.2",
+    "multipart/form-data;q=0.1"
+  ],
+  "includePatterns": [],
+  "excludePatterns": [],
+  "disabledValidationRules": []
+}
