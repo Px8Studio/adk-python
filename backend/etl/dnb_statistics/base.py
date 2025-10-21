@@ -8,7 +8,6 @@ and Parquet file writing.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import sys
 from abc import ABC, abstractmethod

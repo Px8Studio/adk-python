@@ -280,8 +280,7 @@ async def main():
     logger.info("DNB STATISTICS ETL ORCHESTRATOR")
     logger.info("=" * 70)
     logger.info(f"Started: {datetime.now().isoformat()}")
-    logger.info(f"Fetch output: {config.FETCH_DIR}")
-    logger.info(f"Bronze output: {config.BRONZE_DIR}")
+    logger.info(f"Output directory: {config.BRONZE_DIR}")
     logger.info(f"Rate limit: {config.RATE_LIMIT_CALLS} calls/{config.RATE_LIMIT_PERIOD}s")
     logger.info("=" * 70 + "\n")
     

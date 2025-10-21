@@ -37,10 +37,7 @@ if not DNB_API_KEY:
 # Root data directory
 DATA_ROOT: Final[Path] = Path(__file__).parent.parent.parent / "data"
 
-# 0-fetch: Raw API responses (landing zone)
-FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_statistics"
-
-# 1-bronze: Cleaned and typed Parquet files
+# 1-bronze: Cleaned and typed Parquet files (primary output)
 BRONZE_DIR: Final[Path] = DATA_ROOT / "1-bronze" / "dnb_statistics"
 
 # 2-silver: Enriched and joined data (optional)
@@ -48,6 +45,9 @@ SILVER_DIR: Final[Path] = DATA_ROOT / "2-silver" / "dnb_statistics"
 
 # 3-gold: Analytics-ready aggregations (optional)
 GOLD_DIR: Final[Path] = DATA_ROOT / "3-gold" / "dnb_statistics"
+
+# Legacy fetch directory (no longer used - kept for backwards compatibility)
+FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_statistics"
 
 # ==========================================
 # Processing Configuration

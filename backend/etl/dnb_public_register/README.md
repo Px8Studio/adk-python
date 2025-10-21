@@ -16,10 +16,7 @@ backend/etl/dnb_public_register/
 └── README.md             # This file
 
 backend/data/
-├── 0-fetch/              # Raw API responses (JSON Lines) - landing zone
-├── 1-bronze/             # Cleaned Parquet files - directly from API
-├── 2-silver/             # Enriched & joined data - business logic applied
-└── 3-gold/               # Analytics-ready aggregations - reporting layer
+└── 1-bronze/             # Cleaned Parquet files - directly from API
 ```
 
 ### Design Principles
