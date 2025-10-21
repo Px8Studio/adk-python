@@ -64,36 +64,25 @@ backend/data/
 
 ## Available Endpoints
 
-### Market Data (6 endpoints)
-- `exchange_rates_day` - Daily exchange rates and gold prices
-- `exchange_rates_month` - Monthly exchange rates
-- `exchange_rates_quarter` - Quarterly exchange rates
-- `market_interest_rates_day` - Daily market interest rates
-- `market_interest_rates_month` - Monthly market interest rates
-- `ecb_interest_rates` - ECB policy rates
+✅ **ALL 71 ENDPOINTS IMPLEMENTED!** (100% coverage)
 
-### Macroeconomic (3 endpoints)
-- `balance_of_payments_quarter` - Quarterly balance of payments
-- `balance_of_payments_year` - Yearly balance of payments
-- `macroeconomic_scoreboard_quarter` - Quarterly economic indicators
+### Summary by Category
 
-### Financial Statements (2 endpoints)
-- `dnb_balance_sheet_month` - Monthly DNB balance sheet
-- `mfi_balance_sheet_month` - Monthly MFI balance sheets
+- **Market Data**: 8 endpoints (exchange rates, interest rates, ECB rates)
+- **Macroeconomic**: 8 endpoints (balance of payments, FDI, monetary indicators)
+- **Financial Statements**: 14 endpoints (banks, MFIs, other financial institutions)
+- **Insurance & Pensions**: 17 endpoints (insurance corps, pension funds, premiums/claims)
+- **Investments & Securities**: 16 endpoints (holdings, household investments, sustainable finance)
+- **Loans & Mortgages**: 3 endpoints (securitisation, residential mortgages)
+- **Payments**: 4 endpoints (transactions, infrastructure)
+- **Other**: 1 endpoint (statutory interest rates)
 
-### Insurance & Pensions (2 endpoints)
-- `pension_funds_balance_sheet` - Pension fund financials
-- `insurance_corps_balance_sheet_quarter` - Insurance company financials
+### List All Available Endpoints
+```bash
+python -m backend.etl.dnb_statistics.orchestrator --list
+```
 
-### Investments & Securities (2 endpoints)
-- `dutch_household_savings_month` - Household savings data
-- `dutch_securities_holdings_by_holder` - Securities ownership
-
-### Payments (2 endpoints)
-- `payment_transactions_half_year` - Payment volumes & values
-- `retail_payment_transactions` - Retail payment statistics
-
-**Total: 17+ implemented endpoints** (easily extensible to all 70+ endpoints)
+This will show all 71 endpoints organized by category.
 
 ## Usage
 
