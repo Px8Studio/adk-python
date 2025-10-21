@@ -33,6 +33,31 @@ from typing import Any
 from . import config
 from .extractors import EXTRACTOR_REGISTRY, get_extractor, list_available_endpoints
 
+# Configure console to handle UTF-8 on Windows
+def setup_console_encoding():
+  """Configure console to handle UTF-8 on Windows."""
+  if sys.platform == 'win32':
+    try:
+      sys.stdout.reconfigure(encoding='utf-8')
+      sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+      import codecs
+      sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+      sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+
+setup_console_encoding()
+
+# Add emoji helper
+def safe_emoji(emoji: str) -> str:
+  """Return emoji or ASCII fallback for Windows console."""
+  emoji_map = {
+    '✅': '[SUCCESS]',
+    '❌': '[FAILED]',
+  }
+  if sys.platform == 'win32':
+    return emoji_map.get(emoji, emoji)
+  return emoji
+
 # Configure logging
 logging.basicConfig(
     level=config.LOG_LEVEL,
@@ -62,7 +87,7 @@ async def extract_endpoint(endpoint_name: str) -> dict[str, Any]:
         Extraction statistics
     """
     logger.info(f"\n{'=' * 70}")
-    logger.info(f"📊 EXTRACTING: {endpoint_name}")
+    logger.info(f"[EXTRACTING] {endpoint_name}")
     logger.info(f"{'=' * 70}\n")
     
     try:
@@ -71,7 +96,7 @@ async def extract_endpoint(endpoint_name: str) -> dict[str, Any]:
         return stats
     
     except Exception as exc:
-        logger.error(f"❌ Failed to extract {endpoint_name}: {exc}", exc_info=True)
+        logger.error(f"[FAILED] {endpoint_name}: {exc}", exc_info=True)
         return {"error": str(exc)}
 
 
@@ -151,7 +176,7 @@ async def extract_all() -> dict[str, Any]:
     overall_elapsed = (datetime.now() - overall_start).total_seconds()
     
     logger.info("\n" + "=" * 70)
-    logger.info("✅ FULL EXTRACTION COMPLETE")
+    logger.info(f"{safe_emoji('✅')} FULL EXTRACTION COMPLETE")
     logger.info(f"   Total time: {overall_elapsed:.2f}s ({overall_elapsed/60:.1f}m)")
     logger.info(f"   Output directory: {config.BRONZE_DIR}")
     

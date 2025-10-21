@@ -10,10 +10,11 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Optional, AsyncGenerator
 
 import pandas as pd
 from kiota_abstractions.request_adapter import RequestAdapter
@@ -25,6 +26,36 @@ import httpx
 from . import config
 
 logger = logging.getLogger(__name__)
+
+def setup_console_encoding():
+  """Configure console to handle UTF-8 on Windows."""
+  if sys.platform == 'win32':
+    try:
+      sys.stdout.reconfigure(encoding='utf-8')
+      sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+      # Python < 3.7
+      import codecs
+      sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+      sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+
+# Call at module level
+setup_console_encoding()
+
+# Replace emoji usage with ASCII fallbacks
+EMOJI_MAP = {
+  '🚀': '[START]',
+  '📊': '[FETCH]',
+  '✅': '[SUCCESS]',
+  '❌': '[ERROR]',
+  '⚠️': '[WARNING]',
+}
+
+def safe_emoji(emoji: str) -> str:
+  """Return emoji or ASCII fallback for Windows console."""
+  if sys.platform == 'win32':
+    return EMOJI_MAP.get(emoji, emoji)
+  return emoji
 
 
 class BaseExtractor(ABC):
@@ -107,11 +138,11 @@ class BaseExtractor(ABC):
             
             self._last_request_time = asyncio.get_event_loop().time()
     
-    async def close(self) -> None:
-        """Clean up resources."""
-        if self.request_adapter:
-            # Kiota adapter cleanup
-            await self.request_adapter.get_http_client().aclose()
+    async def close(self):
+        """Close the HTTP client connection."""
+        if self.request_adapter and hasattr(self.request_adapter, '_http_client'):
+            # Access the private _http_client attribute directly
+            await self.request_adapter._http_client.aclose()
             self.request_adapter = None
     
     def _add_metadata(self, record: dict[str, Any]) -> dict[str, Any]:
@@ -165,7 +196,7 @@ class BaseExtractor(ABC):
         """
         self.stats["start_time"] = datetime.now()
         
-        logger.info(f"🚀 Starting extraction: {self.get_output_filename()}")
+        logger.info(f"{safe_emoji('🚀')} Starting extraction: {self.get_output_filename()}")
         
         try:
             await self._init_client()
@@ -225,7 +256,7 @@ class BaseExtractor(ABC):
             return self.stats
         
         except Exception as exc:
-            logger.error(f"❌ Extraction failed: {exc}", exc_info=True)
+            logger.error(f"{safe_emoji('❌')} Extraction failed: {exc}", exc_info=True)
             raise
         
         finally:
@@ -244,36 +275,24 @@ class PaginatedExtractor(BaseExtractor):
     
     async def extract_from_endpoint(
         self,
-        endpoint_property: str,  # e.g., "exchange_rates_of_the_euro_and_gold_price_day"
-    ) -> AsyncIterator[dict[str, Any]]:
-        """
-        Extract all records from a paginated endpoint using Kiota client.
+        endpoint_path: str,
+        query_params: Optional[dict[str, Any]] = None,
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """Generic method to extract data from a DNB Statistics endpoint."""
+        # Import from the wrapper module that handles the hyphenated directory
+        from backend.clients.statistics_client import DnbStatisticsClient
         
-        Args:
-            endpoint_property: Property name on the DnbStatisticsClient
-        
-        Yields:
-            Individual records from the API
-        """
         await self._init_client()
-        
-        # Import here to avoid circular dependency
-        import sys
-        from pathlib import Path
-        backend_dir = Path(__file__).parent.parent.parent
-        sys.path.insert(0, str(backend_dir / "clients"))
-        
-        from dnb_statistics.dnb_statistics_client import DnbStatisticsClient
         
         client = DnbStatisticsClient(self.request_adapter)
         
         # Get the endpoint request builder
-        endpoint_builder = getattr(client, endpoint_property)
+        endpoint_builder = getattr(client, endpoint_path)
         if endpoint_builder is None:
-            raise ValueError(f"Unknown endpoint: {endpoint_property}")
+            raise ValueError(f"Unknown endpoint: {endpoint_path}")
         
         # Fetch first page to get total count
-        logger.info(f"📊 Fetching first page...")
+        logger.info(f"{safe_emoji('📊')} Fetching first page...")
         
         await self._rate_limit()
         
