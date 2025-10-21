@@ -12,7 +12,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host ""; Write-Host "==> Step 1/4: Running system diagnostics..." -ForegroundColor Cyan
+Write-Host ""; Write-Host "==> Step 1/6: Running system diagnostics..." -ForegroundColor Cyan
 
 if ($SkipDiagnostics) {
   Write-Host "[INFO] Skipping diagnostics due to flag." -ForegroundColor Yellow
@@ -67,17 +67,35 @@ try {
     } catch { return $true } # free
   }
 
-  $port8000Free = Test-PortFree -Port 8000
-  if ($port8000Free) {
-    Write-Host "[OK]  Port 8000 available" -ForegroundColor Green
-  } else {
-    Write-Host "[INFO] Port 8000 in use" -ForegroundColor Yellow
+  # Check essential ports
+  $portsToCheck = @{
+    8000 = "ADK Web Server"
+    5000 = "GenAI Toolbox"
+    16686 = "Jaeger UI"
+    4318 = "Jaeger OTLP"
   }
-  $port5000Free = Test-PortFree -Port 5000
-  if ($port5000Free) {
-    Write-Host "[OK]  Port 5000 available" -ForegroundColor Green
-  } else {
-    Write-Host "[INFO] Port 5000 in use" -ForegroundColor Yellow
+
+  foreach ($port in $portsToCheck.Keys) {
+    $portFree = Test-PortFree -Port $port
+    $service = $portsToCheck[$port]
+    if ($portFree) {
+      Write-Host "[OK]  Port $port available ($service)" -ForegroundColor Green
+    } else {
+      Write-Host "[INFO] Port $port in use ($service)" -ForegroundColor Yellow
+    }
+  }
+
+  # 5) Check Docker network
+  $networkName = "orkhon-network"
+  try {
+    $null = & docker network inspect $networkName 2>&1
+    if ($LASTEXITCODE -eq 0) {
+      Write-Host "[OK]  Docker network exists: $networkName" -ForegroundColor Green
+    } else {
+      Write-Host "[INFO] Docker network not found: $networkName (will be created)" -ForegroundColor Yellow
+    }
+  } catch {
+    Write-Host "[INFO] Could not check Docker network (Docker may not be running)" -ForegroundColor Yellow
   }
 
   Write-Host "[OK]  Diagnostics completed successfully" -ForegroundColor Green
