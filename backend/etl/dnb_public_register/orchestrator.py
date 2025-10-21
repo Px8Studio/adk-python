@@ -32,11 +32,13 @@ from typing import Any, Optional
 from . import config
 from .extractors import (
     AllPublicationsExtractor,
-    OrganizationsExtractor,
+    OrganizationDetailsExtractor,
+    OrganizationRelationNumbersExtractor,
+    PublicationDetailsExtractor,
     PublicationsSearchExtractor,
     RegisterArticlesExtractor,
     RegistersExtractor,
-    RegistrationsExtractor,
+    RegistrationActArticleNamesExtractor,
     SupportedLanguagesExtractor,
 )
 
@@ -86,6 +88,10 @@ async def extract_organizations(
     """
     Extract organizations for specified registers and languages.
     
+    Two-step process:
+    1. Get relation numbers (lightweight)
+    2. Get full organization details (heavy - with names, addresses, etc.)
+    
     Args:
         register_codes: List of register codes (or None for all)
         language_codes: List of language codes (or None for default)
@@ -115,22 +121,52 @@ async def extract_organizations(
     
     stats = {}
     
-    # Extract for each register x language combination
+    # Step 1: Extract relation numbers for each register
     for register_code in register_codes:
-        for language_code in language_codes:
-            key = f"{register_code}_{language_code}"
-            logger.info(f"\n🔍 Processing: {key}")
+        logger.info(f"\n🔢 Step 1: Getting relation numbers for {register_code}")
+        
+        relation_numbers_extractor = OrganizationRelationNumbersExtractor(
+            register_code=register_code
+        )
+        
+        try:
+            # Collect all relation numbers
+            relation_numbers = []
+            async for record in relation_numbers_extractor.extract():
+                if rel_num := record.get("relation_number"):
+                    relation_numbers.append(rel_num)
             
-            extractor = OrganizationsExtractor(
-                register_code=register_code,
-                language_code=language_code,
+            await relation_numbers_extractor.close()
+            
+            logger.info(
+                f"   Found {len(relation_numbers)} organizations in {register_code}"
             )
             
-            try:
-                stats[key] = await extractor.run()
-            except Exception as exc:
-                logger.error(f"Failed to extract {key}: {exc}")
-                stats[key] = {"error": str(exc)}
+            # Step 2: Get full details for these organizations (per language)
+            for language_code in language_codes:
+                key = f"details_{register_code}_{language_code}"
+                logger.info(
+                    f"\n🏢 Step 2: Getting full details for {register_code} "
+                    f"({language_code})"
+                )
+                
+                details_extractor = OrganizationDetailsExtractor(
+                    register_code=register_code,
+                    relation_numbers=relation_numbers,
+                    language_code=language_code,
+                )
+                
+                try:
+                    stats[key] = await details_extractor.run()
+                except Exception as exc:
+                    logger.error(f"Failed to extract {key}: {exc}")
+                    stats[key] = {"error": str(exc)}
+        
+        except Exception as exc:
+            logger.error(
+                f"Failed to get relation numbers for {register_code}: {exc}"
+            )
+            stats[f"relation_numbers_{register_code}"] = {"error": str(exc)}
     
     return stats
 
@@ -203,9 +239,13 @@ async def extract_registrations(
     register_codes: Optional[list[str]] = None,
     language_codes: Optional[list[str]] = None,
 ) -> dict[str, Any]:
-    """Extract registrations for specified registers."""
+    """
+    Extract registration act article names for specified registers.
+    
+    This gets the distinct list of act article names used in registrations.
+    """
     logger.info("\n" + "=" * 70)
-    logger.info("📝 REGISTRATIONS EXTRACTION")
+    logger.info("📝 REGISTRATIONS (ACT ARTICLE NAMES) EXTRACTION")
     logger.info("=" * 70 + "\n")
     
     if not register_codes:
@@ -225,10 +265,10 @@ async def extract_registrations(
     
     for register_code in register_codes:
         for language_code in language_codes:
-            key = f"registrations_{register_code}_{language_code}"
+            key = f"act_article_names_{register_code}_{language_code}"
             logger.info(f"\n🔍 Processing: {key}")
             
-            extractor = RegistrationsExtractor(
+            extractor = RegistrationActArticleNamesExtractor(
                 register_code=register_code,
                 language_code=language_code,
             )
