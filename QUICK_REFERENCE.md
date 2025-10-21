@@ -1,15 +1,42 @@
 # Orkhon Quick Reference Card
 
-## 🚀 One-Command Start
+## 🚀 One-Command Start (Full Stack)
 ```powershell
 cd C:\Users\rjjaf\_Projects\orkhon
 .\quick-start.ps1
+```
+
+**This starts:**
+- ✅ Docker network (orkhon-network)
+- ✅ GenAI Toolbox MCP Server (port 5000)
+- ✅ Jaeger Tracing (port 16686)
+- ✅ ADK Web Server (port 8000)
+- ✅ Opens Web UIs automatically
+
+**Advanced Options:**
+```powershell
+# Skip diagnostics
+.\quick-start.ps1 -SkipDiagnostics
+
+# Force recreate Docker containers
+.\quick-start.ps1 -ForceRecreate
+
+# Don't open web UIs automatically
+.\quick-start.ps1 -OpenUIs:$false
+
+# Increase wait time for services (default 60s)
+.\quick-start.ps1 -WaitSeconds 120
+
+# Restart existing containers
+.\quick-start.ps1 -RestartToolbox
 ```
 
 ## 🎯 Quick URLs
 - **ADK Web UI:** http://localhost:8000
 - **Toolbox UI:** http://localhost:5000/ui/
 - **Jaeger Tracing:** http://localhost:16686
+- **Toolbox API:** http://localhost:5000/api/toolsets
+- **Toolbox Health:** http://localhost:5000/health
 
 ## ⌨️ VS Code Tasks (Ctrl+Shift+P → Tasks: Run Task)
 - `🚀 Quick Start: Full Orkhon Stack` - Start everything
@@ -38,21 +65,35 @@ adk web --reload_agents --host=0.0.0.0 --port=8000 backend\adk\agents
 ```powershell
 # Stop ADK Web: Ctrl+C in its terminal
 
-# Stop Toolbox:
+# Stop all Docker services:
 cd backend\toolbox
 docker-compose -f docker-compose.dev.yml down
+
+# Or stop individual containers:
+docker stop orkhon-genai-toolbox-mcp orkhon-jaeger
 ```
 
 ## 🔍 Check Status
 ```powershell
-# Check containers
-docker ps --filter "name=orkhon-toolbox"
+# Check all Orkhon containers
+docker ps --filter "name=orkhon-"
+
+# Check container logs
+cd backend\toolbox
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Check specific service logs
+docker logs orkhon-genai-toolbox-mcp --tail=50
+docker logs orkhon-jaeger --tail=50
 
 # Check Toolbox health
-Invoke-WebRequest http://localhost:5000/ui/
+Invoke-WebRequest http://localhost:5000/health
 
 # Check ADK Web (when running)
 Invoke-WebRequest http://localhost:8000
+
+# Run diagnostics
+.\diagnose-setup.ps1
 ```
 
 ## 📝 Test Queries for dnb_agent
