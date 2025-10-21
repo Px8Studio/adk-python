@@ -67,7 +67,7 @@ class BaseExtractor(ABC):
     - HTTP client setup with authentication
     - Rate limiting
     - Output path management
-    - JSONL and Parquet writing
+    - Parquet writing
     - Error handling and retry logic
     """
     
@@ -158,14 +158,6 @@ class BaseExtractor(ABC):
         record["_etl_source"] = self.get_output_filename()
         return record
     
-    async def _write_jsonl(self, records: list[dict[str, Any]], path: Path) -> None:
-        """Write records to JSONL file (append mode)."""
-        path.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(path, "a", encoding="utf-8") as f:
-            for record in records:
-                f.write(json.dumps(record) + "\n")
-    
     async def _write_parquet(
         self,
         records: list[dict[str, Any]],
@@ -208,21 +200,14 @@ class BaseExtractor(ABC):
         try:
             await self._init_client()
             
-            # Prepare output paths
-            fetch_path = config.get_output_path(
-                "fetch",
-                self.get_category(),
-                self.get_output_filename(),
-            )
+            # Prepare output path
             bronze_path = config.get_output_path(
                 "bronze",
                 self.get_category(),
                 self.get_output_filename(),
             )
             
-            # Clear existing files (fresh extraction)
-            if fetch_path.exists():
-                fetch_path.unlink()
+            # Clear existing file (fresh extraction)
             if bronze_path.exists():
                 bronze_path.unlink()
             
@@ -237,7 +222,6 @@ class BaseExtractor(ABC):
                 
                 # Write batch when full
                 if len(batch) >= config.BATCH_SIZE:
-                    await self._write_jsonl(batch, fetch_path)
                     await self._write_parquet(batch, bronze_path, append=True)
                     
                     logger.info(
@@ -247,7 +231,6 @@ class BaseExtractor(ABC):
             
             # Write remaining records
             if batch:
-                await self._write_jsonl(batch, fetch_path)
                 await self._write_parquet(batch, bronze_path, append=True)
             
             self.stats["end_time"] = datetime.now()
@@ -257,7 +240,6 @@ class BaseExtractor(ABC):
                 f"{safe_emoji('✅')} Extraction complete: {self.stats['total_records']:,} records "
                 f"in {elapsed:.2f}s"
             )
-            logger.info(f"  JSONL: {fetch_path}")
             logger.info(f"  Parquet: {bronze_path}")
             
             return self.stats

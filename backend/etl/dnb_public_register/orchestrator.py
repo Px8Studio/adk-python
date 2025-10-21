@@ -30,6 +30,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+import pandas as pd
+
 from . import config
 from .extractors import (
     AllPublicationsExtractor,
@@ -398,24 +400,22 @@ async def extract_all() -> dict[str, Any]:
         # Read the output file to extract relation numbers
         output_file = (
             config.BRONZE_DIR / "publications" / 
-            f"all_publications_{config.DEFAULT_LANGUAGE.lower()}.jsonl"
+            f"all_publications_{config.DEFAULT_LANGUAGE.lower()}.parquet"
         )
         
         if output_file.exists():
             logger.info(f"\n📊 Reading publications output to track relation numbers...")
-            with open(output_file, 'r', encoding='utf-8') as f:
-                for line in f:
-                    try:
-                        record = json.loads(line)
-                        if rel_num := record.get("relation_number"):
-                            seen_relation_numbers.add(rel_num)
-                    except json.JSONDecodeError:
-                        continue
-            
-            logger.info(
-                f"   Tracked {len(seen_relation_numbers)} unique relation numbers "
-                "from Publications"
-            )
+            try:
+                df = pd.read_parquet(output_file)
+                if "relation_number" in df.columns:
+                    relation_numbers = df["relation_number"].dropna().unique()
+                    seen_relation_numbers.update(relation_numbers)
+                    logger.info(
+                        f"   Tracked {len(seen_relation_numbers)} unique relation numbers "
+                        "from Publications"
+                    )
+            except Exception as exc:
+                logger.warning(f"Failed to read relation numbers from Parquet: {exc}")
         
         return stats
     

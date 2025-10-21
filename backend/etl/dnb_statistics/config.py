@@ -171,7 +171,8 @@ def get_output_path(
     category_dir = base_dir / category
     category_dir.mkdir(parents=True, exist_ok=True)
     
-    extension = ".jsonl" if stage == "fetch" else ".parquet"
+    # Always use .parquet extension
+    extension = ".parquet"
     return category_dir / f"{filename}{extension}"
 
 

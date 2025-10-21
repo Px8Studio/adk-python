@@ -8,8 +8,7 @@ This pipeline:
 - ✅ Extracts data from **all DNB Statistics API endpoints** using the Kiota-generated client
 - ✅ Handles pagination automatically (up to 2000 records per page)
 - ✅ Applies rate limiting to stay under API limits
-- ✅ Saves raw data as **JSONL** (landing zone)
-- ✅ Converts to efficient **Parquet** format (analytics-ready)
+- ✅ Saves data in efficient **Parquet** format (analytics-ready)
 - ✅ Organizes data by logical categories
 
 ## Architecture
@@ -39,8 +38,6 @@ dnb_statistics/
 │   Pipeline  │
 └──────┬──────┘
        │
-       ├─► 0-fetch/     (Raw JSONL - landing zone)
-       │
        └─► 1-bronze/    (Clean Parquet - analytics-ready)
 ```
 
@@ -48,17 +45,6 @@ dnb_statistics/
 
 ```
 backend/data/
-├── 0-fetch/dnb_statistics/          # Raw API responses (JSONL)
-│   ├── market_data/
-│   │   ├── exchange_rates_day.jsonl
-│   │   ├── market_interest_rates_day.jsonl
-│   │   └── ...
-│   ├── macroeconomic/
-│   ├── financial_statements/
-│   ├── insurance_pensions/
-│   ├── investments/
-│   └── payments/
-│
 └── 1-bronze/dnb_statistics/         # Clean Parquet files
     ├── market_data/
     │   ├── exchange_rates_day.parquet
@@ -218,8 +204,8 @@ That's it! The orchestrator will automatically discover and run it.
 
 ### ✅ Data Quality
 - Adds ETL metadata to all records
-- Preserves raw responses in JSONL
 - Type-safe Parquet schema
+- Efficient columnar storage
 
 ### ✅ Monitoring & Logging
 - Real-time progress tracking
@@ -228,18 +214,13 @@ That's it! The orchestrator will automatically discover and run it.
 
 ## Output Format
 
-### JSONL (0-fetch)
-```json
-{"period":"2024-01","value":1.5,"_etl_timestamp":"2024-10-21T12:00:00","_etl_source":"exchange_rates_day"}
-{"period":"2024-02","value":1.6,"_etl_timestamp":"2024-10-21T12:00:00","_etl_source":"exchange_rates_day"}
-```
-
 ### Parquet (1-bronze)
 Columnar format optimized for analytics:
 - Efficient compression (5-10x smaller than JSON)
 - Fast filtering & aggregation
 - Schema enforcement
 - Compatible with Pandas, DuckDB, Spark, etc.
+- Includes ETL metadata: `_etl_timestamp`, `_etl_source`
 
 ## Performance
 
