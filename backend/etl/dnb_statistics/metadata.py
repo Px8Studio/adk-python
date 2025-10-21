@@ -117,17 +117,34 @@ class ExtractionMetadata:
         # Determine completeness status
         total_records = stats.get("total_records", 0)
         total_pages = stats.get("total_pages", 0)
+        metadata_info = stats.get("metadata", {}) or {}
+        page_size_zero_meta = metadata_info.get("page_size_zero") or {}
+        fallback_meta = metadata_info.get("fallback_page_1") or {}
+        used_fallback = stats.get("used_fallback", False)
         
-        # Heuristic: If we got exactly 2000 records in a single page,
-        # it might be truncated (API default limit)
         is_complete = True
-        completeness_notes = []
+        completeness_notes: list[str] = []
         
-        if total_records == 2000 and total_pages == 1:
-            is_complete = False
+        if page_size_zero_meta.get("has_more_pages"):
             completeness_notes.append(
-                "Dataset has exactly 2000 records - may be truncated at API limit"
+                "Initial pageSize=0 attempt reported additional pages"
             )
+            if not used_fallback:
+                is_complete = False
+        
+        fallback_has_more = fallback_meta.get("has_more_pages")
+        if fallback_has_more:
+            completeness_notes.append(
+                "Fallback pagination first page still indicates additional pages"
+            )
+            is_complete = False
+        
+        expected_total = fallback_meta.get("total_count") or page_size_zero_meta.get("total_count")
+        if expected_total and total_records and total_records != expected_total:
+            completeness_notes.append(
+                f"Record count mismatch (expected {expected_total:,}, got {total_records:,})"
+            )
+            is_complete = False
         
         # Check for failed pages
         failed_pages = stats.get("failed_pages", 0)
@@ -152,6 +169,8 @@ class ExtractionMetadata:
             "completeness_notes": completeness_notes,
             "status": "success" if "error" not in stats else "error",
             "error": stats.get("error"),
+            "used_fallback": used_fallback,
+            "metadata": metadata_info,
         }
         
         # Add to history (keep last 10 extractions)

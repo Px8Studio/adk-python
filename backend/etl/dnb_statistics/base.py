@@ -58,6 +58,10 @@ def safe_emoji(emoji: str) -> str:
   return emoji
 
 
+class IncompletePageSizeZeroError(RuntimeError):
+    """Raised when a pageSize=0 response reports additional pages."""
+
+
 class BaseExtractor(ABC):
     """
     Base class for all DNB Statistics data extractors.
@@ -78,6 +82,8 @@ class BaseExtractor(ABC):
             "failed_pages": 0,
             "start_time": None,
             "end_time": None,
+            "metadata": {},
+            "used_fallback": False,
         }
         self._rate_limiter = asyncio.Semaphore(config.RATE_LIMIT_CALLS)
         self._last_request_time = 0.0
@@ -184,6 +190,22 @@ class BaseExtractor(ABC):
             compression=config.PARQUET_COMPRESSION,
             index=False,
         )
+
+    def _capture_metadata(self, source: str, metadata_obj: Any) -> dict[str, Any]:
+        """Record response metadata details for diagnostics."""
+        info: dict[str, Any]
+        if metadata_obj is None:
+            info = {}
+        else:
+            info = {
+                "page": getattr(metadata_obj, "page", None),
+                "page_size": getattr(metadata_obj, "page_size", None),
+                "has_more_pages": getattr(metadata_obj, "has_more_pages", None),
+                "total_count": getattr(metadata_obj, "total_count", None),
+            }
+
+        self.stats.setdefault("metadata", {})[source] = info
+        return info
     
     async def run(self) -> dict[str, Any]:
         """
@@ -334,25 +356,33 @@ class PaginatedExtractor(BaseExtractor):
             # Check if we got records
             if hasattr(response, "records") and response.records:
                 record_count = len(response.records)
-                
-                # Check for potential truncation at 2000 records
-                if record_count == 2000:
-                    logger.warning(
-                        f"{safe_emoji('⚠️')} Got exactly 2000 records - likely truncated! "
-                        f"Switching to pagination to fetch all data..."
+
+                metadata_info = self._capture_metadata(
+                    "page_size_zero",
+                    getattr(response, "metadata", None),
+                )
+
+                has_more_pages = metadata_info.get("has_more_pages")
+                total_count = metadata_info.get("total_count")
+                page_size = metadata_info.get("page_size")
+
+                if metadata_info:
+                    logger.debug(
+                        "Metadata (pageSize=0 attempt): page=%s, page_size=%s, total_count=%s, has_more_pages=%s",
+                        metadata_info.get("page"),
+                        page_size,
+                        total_count,
+                        has_more_pages,
                     )
-                    
-                    # Don't yield the records yet - switch to pagination
-                    # to get the complete dataset
-                    self.stats["truncated_first_fetch"] = True
-                    
-                    # Fall back to pagination to get ALL records
-                    async for record in self._paginated_extraction(endpoint_builder, query_params):
-                        yield record
-                    
-                    return
+
+                if has_more_pages:
+                    raise IncompletePageSizeZeroError(
+                        "pageSize=0 response reports additional pages; refusing to proceed with partial dataset"
+                    )
                 
-                # Success - got all records
+                # Success - got all records with pageSize=0
+                # Note: The API with pageSize=0 returns ALL records in one shot.
+                # We trust the API response regardless of count.
                 logger.info(
                     f"{safe_emoji('✅')} Successfully fetched {record_count:,} records "
                     "in a single request!"
@@ -374,6 +404,7 @@ class PaginatedExtractor(BaseExtractor):
                 f"{safe_emoji('⚠️')} pageSize=0 failed: {exc}. "
                 f"Falling back to pagination with pageSize={config.FALLBACK_PAGE_SIZE}..."
             )
+            self.stats["used_fallback"] = True
             
             # Strategy 2: Fall back to traditional pagination
             async for record in self._paginated_extraction(endpoint_builder, query_params):
@@ -393,14 +424,14 @@ class PaginatedExtractor(BaseExtractor):
         
         await self._rate_limit()
         
-        # Configure request with fallback page size
+        # Configure request with fallback page size (not 0, but actual limit)
         config_obj = RequestConfiguration()
         config_obj.headers = HeadersCollection()
         config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
         config_obj.headers.try_add("Accept", "application/json")
         config_obj.query_parameters = {}
         config_obj.query_parameters["page"] = 1
-        config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE
+        config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000, not 0
         
         first_response = await endpoint_builder.get(config_obj)
         
@@ -410,7 +441,16 @@ class PaginatedExtractor(BaseExtractor):
         
         # Extract metadata
         metadata = first_response.metadata if hasattr(first_response, "metadata") else None
-        total_count = metadata.total_count if metadata and hasattr(metadata, "total_count") else 0
+        fallback_metadata = self._capture_metadata("fallback_page_1", metadata)
+        if fallback_metadata:
+            logger.debug(
+                "Metadata (fallback page 1): page=%s, page_size=%s, total_count=%s, has_more_pages=%s",
+                fallback_metadata.get("page"),
+                fallback_metadata.get("page_size"),
+                fallback_metadata.get("total_count"),
+                fallback_metadata.get("has_more_pages"),
+            )
+        total_count = getattr(metadata, "total_count", 0)
         
         # Check if first page has records
         first_page_records = []
@@ -446,7 +486,7 @@ class PaginatedExtractor(BaseExtractor):
                     config_obj.headers.try_add("Accept", "application/json")
                     config_obj.query_parameters = {}
                     config_obj.query_parameters["page"] = page_num
-                    config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
+                    config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000 for pagination
                     
                     response = await endpoint_builder.get(config_obj)
                     
@@ -463,7 +503,7 @@ class PaginatedExtractor(BaseExtractor):
                     logger.info(f"  Page {page_num}: {record_count} records")
                     
                     # If we got fewer records than page size, we're probably at the end
-                    if record_count < config.DEFAULT_PAGE_SIZE:
+                    if record_count < config.FALLBACK_PAGE_SIZE:
                         logger.info(
                             f"{safe_emoji('✅')} Last page (partial): {record_count} records"
                         )
@@ -480,13 +520,13 @@ class PaginatedExtractor(BaseExtractor):
             return
         
         # If we have total_count, use traditional pagination
-        total_pages = (total_count // config.DEFAULT_PAGE_SIZE) + (
-            1 if total_count % config.DEFAULT_PAGE_SIZE else 0
+        total_pages = (total_count // config.FALLBACK_PAGE_SIZE) + (
+            1 if total_count % config.FALLBACK_PAGE_SIZE else 0
         )
         
         logger.info(
             f"Total: {total_count:,} records across {total_pages} pages "
-            f"(pageSize={config.DEFAULT_PAGE_SIZE})"
+            f"(pageSize={config.FALLBACK_PAGE_SIZE})"
         )
         
         self.stats["total_pages"] = total_pages
@@ -509,7 +549,7 @@ class PaginatedExtractor(BaseExtractor):
                     config_obj.headers.try_add("Accept", "application/json")
                     config_obj.query_parameters = {}
                     config_obj.query_parameters["page"] = page_num
-                    config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
+                    config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000 for pagination
                     
                     response = await endpoint_builder.get(config_obj)
                     
