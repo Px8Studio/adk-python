@@ -115,7 +115,7 @@ class OrganizationRelationNumbersExtractor(PaginatedExtractor):
         return f"relation_numbers_{self.register_code.lower()}"
     
     async def extract(self) -> AsyncIterator[dict[str, Any]]:
-        """Extract relation numbers for this register."""
+        """Extract relation numbers for this register using paginated endpoint."""
         url = (
             f"{config.DNB_BASE_URL}/api/publicregister/"
             f"{self.register_code}/Organizations"
@@ -125,6 +125,7 @@ class OrganizationRelationNumbersExtractor(PaginatedExtractor):
             f"🔢 Extracting relation numbers: register={self.register_code}"
         )
         
+        # This endpoint returns OrganizationRelationNumbersView with pagination
         async for record in self.extract_paginated(
             url=url,
             record_key="relationNumbers",
@@ -188,22 +189,24 @@ class OrganizationDetailsExtractor(BaseExtractor):
                 f"Fetching {len(batch)} organizations..."
             )
             
-            # Build request with query parameters
-            query_params = type(
-                'QueryParams',
-                (),
-                {'relation_numbers': batch}
-            )()
-            
-            request_config = RequestConfiguration(
-                query_parameters=query_params
+            # Build request configuration with query parameters
+            request_config = RequestConfiguration()
+            request_config.query_parameters = (
+                client.api
+                .publicregister
+                .by_language_code_id(self.language_code)
+                .by_register_code(self.register_code)
+                .organizations
+                .OrganizationsRequestBuilderGetQueryParameters(
+                    relation_numbers=batch
+                )
             )
             
             # Use Kiota client
             result = await (
                 client.api
                 .publicregister
-                .by_language_code(self.language_code)
+                .by_language_code_id(self.language_code)
                 .by_register_code(self.register_code)
                 .organizations
                 .get(request_config)
@@ -223,48 +226,48 @@ class OrganizationDetailsExtractor(BaseExtractor):
         flattened = {
             "register_code": self.register_code,
             "language_code": self.language_code,
-            "relation_number": getattr(org, 'relation_number', None),
-            "chamber_of_commerce": getattr(org, 'chamber_of_commerce', None),
-            "branch_number": getattr(org, 'branch_number', None),
-            "legal_duration": getattr(org, 'legal_duration', None),
-            "statutory_place": getattr(org, 'statutory_place', None),
-            "statutory_country": getattr(org, 'statutory_country', None),
-            "rsin_code": getattr(org, 'rsin_code', None),
-            "lei_code": getattr(org, 'lei_code', None),
-            "is_in_liquidation": getattr(org, 'is_in_liquidation', None),
-            "date_of_liquidation": getattr(org, 'date_of_liquidation', None),
-            "is_main": getattr(org, 'is_main', None),
+            "relation_number": org.relation_number,
+            "chamber_of_commerce": org.chamber_of_commerce,
+            "branch_number": org.branch_number,
+            "legal_duration": org.legal_duration,
+            "statutory_place": org.statutory_place,
+            "statutory_country": org.statutory_country,
+            "rsin_code": org.rsin_code,
+            "lei_code": org.lei_code,
+            "is_in_liquidation": org.is_in_liquidation,
+            "date_of_liquidation": str(org.date_of_liquidation) if org.date_of_liquidation else None,
+            "is_main": org.is_main,
         }
         
         # Store complex nested data as JSON strings for Parquet
-        if hasattr(org, 'official_names') and org.official_names:
+        if org.official_names:
             flattened["official_names_json"] = json.dumps(
                 [self._serialize_name(n) for n in org.official_names]
             )
         
-        if hasattr(org, 'statutory_names') and org.statutory_names:
+        if org.statutory_names:
             flattened["statutory_names_json"] = json.dumps(
                 [self._serialize_name(n) for n in org.statutory_names]
             )
         
-        if hasattr(org, 'trade_names') and org.trade_names:
+        if org.trade_names:
             flattened["trade_names_json"] = json.dumps(
                 [self._serialize_name(n) for n in org.trade_names]
             )
         
-        if hasattr(org, 'contact_channels') and org.contact_channels:
+        if org.contact_channels:
             flattened["contact_channels_json"] = json.dumps(
                 [self._serialize_contact(c) for c in org.contact_channels]
             )
         
-        if hasattr(org, 'registrations') and org.registrations:
+        if org.registrations:
             flattened["registrations_json"] = json.dumps(
                 [self._serialize_registration(r) for r in org.registrations]
             )
         
-        if hasattr(org, 'classifications') and org.classifications:
+        if org.classifications:
             flattened["classifications_json"] = json.dumps(
-                [getattr(c, 'name', None) for c in org.classifications]
+                [c.name for c in org.classifications if c.name]
             )
         
         return flattened
@@ -272,35 +275,35 @@ class OrganizationDetailsExtractor(BaseExtractor):
     def _serialize_name(self, name_obj: Any) -> dict[str, Any]:
         """Serialize name object."""
         return {
-            "name": getattr(name_obj, 'name', None),
-            "validity_period_start_date": str(getattr(name_obj, 'validity_period_start_date', None)),
-            "validity_period_end_date": str(getattr(name_obj, 'validity_period_end_date', None)),
+            "name": name_obj.name,
+            "validity_period_start_date": str(name_obj.validity_period_start_date) if name_obj.validity_period_start_date else None,
+            "validity_period_end_date": str(name_obj.validity_period_end_date) if name_obj.validity_period_end_date else None,
         }
     
     def _serialize_contact(self, contact_obj: Any) -> dict[str, Any]:
         """Serialize contact channel object."""
         return {
-            "contact_channel_type": getattr(contact_obj, 'contact_channel_type', None),
-            "street": getattr(contact_obj, 'street', None),
-            "house_number": getattr(contact_obj, 'house_number', None),
-            "house_number_addition": getattr(contact_obj, 'house_number_addition', None),
-            "postal_code": getattr(contact_obj, 'postal_code', None),
-            "city": getattr(contact_obj, 'city', None),
-            "country_iso_code": getattr(contact_obj, 'country_iso_code', None),
-            "email_address": getattr(contact_obj, 'email_address', None),
-            "url": getattr(contact_obj, 'url', None),
-            "phone_number": getattr(contact_obj, 'phone_number', None),
+            "contact_channel_type": contact_obj.contact_channel_type,
+            "street": contact_obj.street,
+            "house_number": contact_obj.house_number,
+            "house_number_addition": contact_obj.house_number_addition,
+            "postal_code": contact_obj.postal_code,
+            "city": contact_obj.city,
+            "country_iso_code": contact_obj.country_iso_code,
+            "email_address": contact_obj.email_address,
+            "url": contact_obj.url,
+            "phone_number": contact_obj.phone_number,
         }
     
     def _serialize_registration(self, reg_obj: Any) -> dict[str, Any]:
         """Serialize registration object."""
         return {
-            "id": str(getattr(reg_obj, 'id', None)),
-            "act_article_name": getattr(reg_obj, 'act_article_name', None),
-            "act_article_code": getattr(reg_obj, 'act_article_code', None),
-            "validity_period_start_date": str(getattr(reg_obj, 'validity_period_start_date', None)),
-            "validity_period_end_date": str(getattr(reg_obj, 'validity_period_end_date', None)),
-            "registration_type": getattr(reg_obj, 'registration_type', None),
+            "id": str(reg_obj.id) if reg_obj.id else None,
+            "act_article_name": reg_obj.act_article_name,
+            "act_article_code": reg_obj.act_article_code,
+            "validity_period_start_date": str(reg_obj.validity_period_start_date) if reg_obj.validity_period_start_date else None,
+            "validity_period_end_date": str(reg_obj.validity_period_end_date) if reg_obj.validity_period_end_date else None,
+            "registration_type": reg_obj.registration_type,
         }
 
 
@@ -491,7 +494,7 @@ class PublicationDetailsExtractor(PaginatedExtractor):
             result = await (
                 client.api
                 .publicregister
-                .by_language_code(self.language_code)
+                .by_language_code_id(self.language_code)
                 .publications
                 .by_register_code(self.register_code)
                 .get(request_config)
@@ -509,27 +512,26 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                 yield {
                     "register_code": self.register_code,
                     "language_code": self.language_code,
-                    "publish_date": str(getattr(result, 'publish_date', None)),
-                    "relation_number": getattr(org, 'relation_number', None),
+                    "publish_date": str(result.publish_date) if result.publish_date else None,
+                    "relation_number": org.relation_number,
                     "organization_json": json.dumps(
                         self._serialize_org_summary(org)
                     ),
                 }
             
             # Check if more pages exist
-            metadata = getattr(result, 'metadata', None)
             has_more = (
-                metadata
-                and getattr(metadata, 'has_more_pages', False)
+                result._metadata
+                and result._metadata.has_more_pages
             )
             page += 1
     
     def _serialize_org_summary(self, org: Any) -> dict[str, Any]:
         """Serialize organization summary from publication."""
         return {
-            "relation_number": getattr(org, 'relation_number', None),
-            "chamber_of_commerce": getattr(org, 'chamber_of_commerce', None),
-            "is_main": getattr(org, 'is_main', None),
+            "relation_number": org.relation_number,
+            "chamber_of_commerce": org.chamber_of_commerce,
+            "is_main": org.is_main,
         }
 
 
@@ -576,7 +578,7 @@ class RegistrationActArticleNamesExtractor(BaseExtractor):
         result = await (
             client.api
             .publicregister
-            .by_language_code(self.language_code)
+            .by_language_code_id(self.language_code)
             .by_register_code(self.register_code)
             .registrations
             .act_article_names
@@ -593,7 +595,7 @@ class RegistrationActArticleNamesExtractor(BaseExtractor):
             yield {
                 "register_code": self.register_code,
                 "language_code": self.language_code,
-                "act_article_name": getattr(article, 'act_article_name', None),
+                "act_article_name": article.act_article_name,
             }
 
 
@@ -640,7 +642,7 @@ class RegisterArticlesExtractor(BaseExtractor):
         result = await (
             client.api
             .publicregister
-            .by_language_code(self.language_code)
+            .by_language_code_id(self.language_code)
             .by_register_code(self.register_code)
             .register_articles
             .get()
@@ -656,6 +658,6 @@ class RegisterArticlesExtractor(BaseExtractor):
             yield {
                 "register_code": self.register_code,
                 "language_code": self.language_code,
-                "act_article_code": getattr(article, 'act_article_code', None),
-                "act_article_name": getattr(article, 'act_article_name', None),
+                "act_article_code": article.act_article_code,
+                "act_article_name": article.act_article_name,
             }
