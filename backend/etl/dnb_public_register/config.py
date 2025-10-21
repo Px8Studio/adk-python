@@ -12,8 +12,9 @@ from typing import Final
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file in project root
+_project_root = Path(__file__).parent.parent.parent.parent
+load_dotenv(_project_root / ".env")
 
 # ==========================================
 # API Configuration
