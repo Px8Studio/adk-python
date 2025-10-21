@@ -441,6 +441,9 @@ class PaginatedExtractor(BaseExtractor):
     """
     Extract all records from a paginated endpoint.
     
+    Handles pagination by continuing to fetch pages until an empty response is received,
+    since the DNB API doesn't always provide reliable total count metadata.
+    
     Args:
         url: API endpoint URL
         page_size: Records per page
@@ -451,13 +454,12 @@ class PaginatedExtractor(BaseExtractor):
         Individual records
     """
     page = config.DEFAULT_START_PAGE
-    has_more = True
     
-    while has_more:
+    while True:
       response = await self.fetch_page(url, page, page_size, extra_params)
       
       if not response:
-        logger.warning(f"Failed to fetch page {page}, stopping pagination")
+        logger.warning(f"⚠️ Failed to fetch page {page}, stopping pagination")
         break
       
       # Extract records (API structure varies)
@@ -467,22 +469,42 @@ class PaginatedExtractor(BaseExtractor):
         if isinstance(response, list):
           records = response
         else:
-          logger.debug(f"No records found in response for page {page}")
+          logger.info(f"✅ No more records at page {page} - pagination complete")
           break
+      
+      record_count = len(records)
       
       for record in records:
         yield record
       
-      # Check pagination
+      # Check pagination metadata if available
       pagination = response.get("pagination", {})
-      total_pages = pagination.get("totalPages", 1)
+      total_pages = pagination.get("totalPages")
       
-      self.stats["total_pages"] = total_pages
+      if total_pages:
+        self.stats["total_pages"] = total_pages
+        logger.info(
+            f"📄 Page {page}/{total_pages}: "
+            f"{record_count} records ({self.stats['total_records'] + record_count} total)"
+        )
+        
+        # Stop if we've reached the last page
+        if page >= total_pages:
+          logger.info(f"✅ Reached last page {page}/{total_pages}")
+          break
+      else:
+        # No pagination metadata - rely on empty response detection
+        logger.info(
+            f"📄 Page {page}: {record_count} records "
+            f"({self.stats['total_records'] + record_count} total)"
+        )
+        
+        # If we got fewer records than page size, likely the last page
+        if record_count < page_size:
+          logger.info(
+              f"✅ Last page (partial): {record_count} records "
+              f"(less than pageSize={page_size})"
+          )
+          break
       
-      logger.info(
-          f"📄 Page {page}/{total_pages}: "
-          f"{len(records)} records ({self.stats['total_records']} total)"
-      )
-      
-      has_more = page < total_pages
       page += 1

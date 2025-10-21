@@ -147,7 +147,7 @@ async def extract_all() -> dict[str, Any]:
         Combined statistics from all extractions
     """
     logger.info("\n" + "=" * 70)
-    logger.info("🌍 FULL DNB STATISTICS EXTRACTION")
+    logger.info("FULL DNB STATISTICS EXTRACTION")
     logger.info("=" * 70 + "\n")
     
     endpoints = list_available_endpoints()

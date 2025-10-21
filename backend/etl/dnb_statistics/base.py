@@ -322,34 +322,93 @@ class PaginatedExtractor(BaseExtractor):
         metadata = first_response.metadata if hasattr(first_response, "metadata") else None
         total_count = metadata.total_count if metadata and hasattr(metadata, "total_count") else 0
         
-        if total_count == 0:
-            logger.warning("Total count is 0, using records from first page only")
-            # Yield records from first page
-            if hasattr(first_response, "records") and first_response.records:
-                for record in first_response.records:
-                    yield self._serialize_record(record)
+        # Check if first page has records
+        first_page_records = []
+        if hasattr(first_response, "records") and first_response.records:
+            first_page_records = first_response.records
+        
+        if not first_page_records:
+            logger.warning("No records in first page")
             return
         
+        # Since API doesn't provide total_count, we'll paginate until we get an empty page
+        if total_count == 0:
+            logger.warning(
+                f"{safe_emoji('⚠️')} Total count unavailable from API - "
+                "will fetch all pages until empty"
+            )
+            
+            # Yield records from first page
+            for record in first_page_records:
+                yield self._serialize_record(record)
+            
+            # Continue fetching pages until we get no records
+            page_num = 2
+            while True:
+                logger.info(f"Fetching page {page_num}...")
+                
+                await self._rate_limit()
+                
+                try:
+                    config_obj = RequestConfiguration()
+                    config_obj.headers = HeadersCollection()
+                    config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+                    config_obj.headers.try_add("Accept", "application/json")
+                    config_obj.query_parameters = {}
+                    config_obj.query_parameters["page"] = page_num
+                    config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
+                    
+                    response = await endpoint_builder.get(config_obj)
+                    
+                    if not response or not hasattr(response, "records") or not response.records:
+                        logger.info(
+                            f"{safe_emoji('✅')} Reached end of data at page {page_num - 1}"
+                        )
+                        break
+                    
+                    record_count = len(response.records)
+                    for record in response.records:
+                        yield self._serialize_record(record)
+                    
+                    logger.info(f"  Page {page_num}: {record_count} records")
+                    
+                    # If we got fewer records than page size, we're probably at the end
+                    if record_count < config.DEFAULT_PAGE_SIZE:
+                        logger.info(
+                            f"{safe_emoji('✅')} Last page (partial): {record_count} records"
+                        )
+                        break
+                    
+                    page_num += 1
+                    self.stats["total_pages"] = page_num
+                
+                except Exception as exc:
+                    logger.error(f"Failed to fetch page {page_num}: {exc}")
+                    self.stats["failed_pages"] += 1
+                    break
+            
+            return
+        
+        # If we have total_count, use traditional pagination
         total_pages = (total_count // config.DEFAULT_PAGE_SIZE) + (
             1 if total_count % config.DEFAULT_PAGE_SIZE else 0
         )
         
         logger.info(
-            f"📈 Total: {total_count:,} records across {total_pages} pages "
+            f"Total: {total_count:,} records across {total_pages} pages "
             f"(pageSize={config.DEFAULT_PAGE_SIZE})"
         )
         
         self.stats["total_pages"] = total_pages
         
         # Yield records from first page
-        if hasattr(first_response, "records") and first_response.records:
-            for record in first_response.records:
-                yield self._serialize_record(record)
+        for record in first_page_records:
+            yield self._serialize_record(record)
         
         # Fetch remaining pages
         if total_pages > 1:
             for page_num in range(2, total_pages + 1):
-                logger.info(f"⏳ Fetching page {page_num}/{total_pages}...")
+                logger.info(f"Fetching page {page_num}/{total_pages}...")
                 
                 await self._rate_limit()
                 
@@ -375,7 +434,7 @@ class PaginatedExtractor(BaseExtractor):
                 
                 # Progress update
                 progress = page_num / total_pages * 100
-                logger.info(f"✓ Progress: {progress:.1f}% ({page_num}/{total_pages} pages)")
+                logger.info(f"  ✓ Progress: {progress:.1f}% ({page_num}/{total_pages} pages)")
     
     def _serialize_record(self, record: Any) -> dict[str, Any]:
         """
