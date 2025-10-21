@@ -268,12 +268,18 @@ class PaginatedExtractor(BaseExtractor):
         self,
         endpoint_path: str,
         query_params: Optional[dict[str, Any]] = None,
+        from_date: Optional[str] = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Extract data from a DNB Statistics endpoint.
         
         Uses pageSize=0 to fetch all records in a single request (Statistics API feature).
-        Falls back to pagination if this fails.
+        Automatically switches to pagination if we hit the 2000 record limit.
+        
+        Args:
+            endpoint_path: Kiota client endpoint path
+            query_params: Additional query parameters
+            from_date: Optional date filter for incremental updates (ISO format: YYYY-MM-DD)
         """
         # Import from the wrapper module that handles the hyphenated directory
         from backend.clients.statistics_client import DnbStatisticsClient
@@ -288,10 +294,16 @@ class PaginatedExtractor(BaseExtractor):
             raise ValueError(f"Unknown endpoint: {endpoint_path}")
         
         # Strategy 1: Try to fetch ALL records at once with pageSize=0
-        logger.info(
-            f"{safe_emoji('�')} Fetching ALL records with pageSize=0 "
-            "(Statistics API feature)..."
-        )
+        if from_date:
+            logger.info(
+                f"{safe_emoji('📊')} Fetching records from {from_date} onwards "
+                "(incremental update)..."
+            )
+        else:
+            logger.info(
+                f"{safe_emoji('📊')} Fetching ALL records with pageSize=0 "
+                "(Statistics API feature)..."
+            )
         
         await self._rate_limit()
         
@@ -304,6 +316,14 @@ class PaginatedExtractor(BaseExtractor):
         config_obj.query_parameters["page"] = 1
         config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE  # 0 = all records
         
+        # Add date filter if provided (for incremental updates)
+        if from_date:
+            config_obj.query_parameters["fromDate"] = from_date
+        
+        # Add any additional query params
+        if query_params:
+            config_obj.query_parameters.update(query_params)
+        
         try:
             response = await endpoint_builder.get(config_obj)
             
@@ -314,6 +334,25 @@ class PaginatedExtractor(BaseExtractor):
             # Check if we got records
             if hasattr(response, "records") and response.records:
                 record_count = len(response.records)
+                
+                # Check for potential truncation at 2000 records
+                if record_count == 2000:
+                    logger.warning(
+                        f"{safe_emoji('⚠️')} Got exactly 2000 records - likely truncated! "
+                        f"Switching to pagination to fetch all data..."
+                    )
+                    
+                    # Don't yield the records yet - switch to pagination
+                    # to get the complete dataset
+                    self.stats["truncated_first_fetch"] = True
+                    
+                    # Fall back to pagination to get ALL records
+                    async for record in self._paginated_extraction(endpoint_builder, query_params):
+                        yield record
+                    
+                    return
+                
+                # Success - got all records
                 logger.info(
                     f"{safe_emoji('✅')} Successfully fetched {record_count:,} records "
                     "in a single request!"
@@ -324,6 +363,7 @@ class PaginatedExtractor(BaseExtractor):
                     yield self._serialize_record(record)
                 
                 self.stats["total_pages"] = 1
+                self.stats["is_complete"] = True
                 return
             else:
                 logger.warning("No records in response")
@@ -336,12 +376,13 @@ class PaginatedExtractor(BaseExtractor):
             )
             
             # Strategy 2: Fall back to traditional pagination
-            async for record in self._paginated_extraction(endpoint_builder):
+            async for record in self._paginated_extraction(endpoint_builder, query_params):
                 yield record
     
     async def _paginated_extraction(
         self,
         endpoint_builder,
+        query_params: Optional[dict[str, Any]] = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """
         Fallback pagination strategy if pageSize=0 doesn't work.

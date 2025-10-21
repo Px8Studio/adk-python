@@ -32,6 +32,7 @@ from typing import Any
 
 from . import config
 from .extractors import EXTRACTOR_REGISTRY, get_extractor, list_available_endpoints
+from .metadata import ExtractionMetadata
 
 # Configure console to handle UTF-8 on Windows
 def setup_console_encoding():
@@ -76,12 +77,13 @@ logger = logging.getLogger(__name__)
 # Extraction Workflows
 # ==========================================
 
-async def extract_endpoint(endpoint_name: str) -> dict[str, Any]:
+async def extract_endpoint(endpoint_name: str, metadata: ExtractionMetadata) -> dict[str, Any]:
     """
     Extract data from a single endpoint.
     
     Args:
         endpoint_name: Name of the endpoint to extract
+        metadata: Metadata manager for tracking extraction history
     
     Returns:
         Extraction statistics
@@ -93,11 +95,38 @@ async def extract_endpoint(endpoint_name: str) -> dict[str, Any]:
     try:
         extractor = get_extractor(endpoint_name)
         stats = await extractor.run()
+        
+        # Update metadata with extraction results
+        metadata.update_extraction(
+            endpoint_name=endpoint_name,
+            stats=stats,
+            category=extractor.get_category(),
+            filename=extractor.get_output_filename(),
+        )
+        
         return stats
     
     except Exception as exc:
         logger.error(f"[FAILED] {endpoint_name}: {exc}", exc_info=True)
-        return {"error": str(exc)}
+        
+        # Record failure in metadata
+        failure_stats = {
+            "error": str(exc),
+            "start_time": datetime.now(),
+            "end_time": datetime.now(),
+            "total_records": 0,
+            "total_pages": 0,
+            "failed_pages": 1,
+        }
+        
+        metadata.update_extraction(
+            endpoint_name=endpoint_name,
+            stats=failure_stats,
+            category="unknown",
+            filename=endpoint_name,
+        )
+        
+        return failure_stats
 
 
 async def extract_by_category(category: str) -> dict[str, Any]:
@@ -113,6 +142,9 @@ async def extract_by_category(category: str) -> dict[str, Any]:
     logger.info(f"\n{'=' * 70}")
     logger.info(f"📁 CATEGORY EXTRACTION: {category}")
     logger.info(f"{'=' * 70}\n")
+    
+    # Initialize metadata tracker
+    metadata = ExtractionMetadata()
     
     # Find all endpoints in this category
     endpoints = []
@@ -133,7 +165,7 @@ async def extract_by_category(category: str) -> dict[str, Any]:
     # Extract each endpoint
     all_stats = {}
     for endpoint_name in endpoints:
-        stats = await extract_endpoint(endpoint_name)
+        stats = await extract_endpoint(endpoint_name, metadata)
         all_stats[endpoint_name] = stats
     
     return all_stats
@@ -150,6 +182,9 @@ async def extract_all() -> dict[str, Any]:
     logger.info("FULL DNB STATISTICS EXTRACTION")
     logger.info("=" * 70 + "\n")
     
+    # Initialize metadata tracker
+    metadata = ExtractionMetadata()
+    
     endpoints = list_available_endpoints()
     
     logger.info(f"Total endpoints to extract: {len(endpoints)}")
@@ -165,7 +200,7 @@ async def extract_all() -> dict[str, Any]:
         logger.info(f"\n[{i}/{len(endpoints)}] Processing: {endpoint_name}")
         
         try:
-            stats = await extract_endpoint(endpoint_name)
+            stats = await extract_endpoint(endpoint_name, metadata)
             all_stats[endpoint_name] = stats
         except Exception as exc:
             logger.error(f"Failed to process {endpoint_name}: {exc}")
@@ -193,6 +228,20 @@ async def extract_all() -> dict[str, Any]:
                 logger.warning(f"     • {ep}: {stats['error']}")
     
     logger.info("=" * 70 + "\n")
+    
+    # Show metadata summary
+    logger.info("\n" + metadata.generate_summary_report())
+    
+    # Warn about incomplete datasets
+    incomplete = metadata.get_incomplete_endpoints()
+    if incomplete:
+        logger.warning(f"\n{safe_emoji('⚠️')} WARNING: {len(incomplete)} endpoint(s) may have incomplete data:")
+        for item in incomplete:
+            logger.warning(f"  • {item['endpoint']}: {item['total_records']:,} records")
+            for note in item.get('notes', []):
+                logger.warning(f"    - {note}")
+    
+    return all_stats
     
     return all_stats
 
