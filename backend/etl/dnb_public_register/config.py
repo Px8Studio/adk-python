@@ -53,7 +53,10 @@ FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_public_register"
 # ==========================================
 
 # Pagination settings
-DEFAULT_PAGE_SIZE: Final[int] = 25  # DNB API max
+# Public Register API has a MAXIMUM of 25 records per page - cannot fetch all at once.
+# Must use pagination loops to retrieve all data.
+# See: https://api.dnb.nl/publicdata/v1 - pageSize parameter docs (max: 25)
+DEFAULT_PAGE_SIZE: Final[int] = 25  # DNB API max (enforced by API)
 DEFAULT_START_PAGE: Final[int] = 1
 
 # Request settings

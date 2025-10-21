@@ -399,7 +399,11 @@ class PaginatedExtractor(BaseExtractor):
   """
   Base extractor for paginated endpoints.
   
-  Automatically handles pagination with configurable page size.
+  The Public Register API has a MAXIMUM of 25 records per page and does NOT support
+  fetching all records at once (unlike the Statistics API). Therefore, we MUST
+  use pagination loops to retrieve all data.
+  
+  Automatically handles pagination with configurable page size (max 25).
   """
   
   async def fetch_page(

@@ -54,7 +54,11 @@ FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_statistics"
 # ==========================================
 
 # Pagination settings
-DEFAULT_PAGE_SIZE: Final[int] = 2000  # DNB API max
+# Statistics API supports pageSize=0 to fetch ALL records in a single request!
+# This is much more efficient than paginating through thousands of pages.
+# See: https://api.dnb.nl/statisticsdata/v2024100101 - pageSize parameter docs
+DEFAULT_PAGE_SIZE: Final[int] = 0  # 0 = fetch all records at once (API feature)
+FALLBACK_PAGE_SIZE: Final[int] = 2000  # Fallback if pageSize=0 fails
 DEFAULT_START_PAGE: Final[int] = 1
 
 # Request settings

@@ -253,12 +253,15 @@ class BaseExtractor(ABC):
 
 class PaginatedExtractor(BaseExtractor):
     """
-    Extractor for paginated DNB Statistics endpoints using Kiota client.
+    Extractor for DNB Statistics endpoints using Kiota client.
+    
+    The Statistics API supports pageSize=0 to fetch ALL records in a single request,
+    which is much more efficient than pagination. This is the default behavior.
     
     Handles:
-    - Automatic pagination with page/pageSize parameters
-    - Parallel page fetching with rate limiting
-    - Progress tracking
+    - Single-request extraction with pageSize=0 (default)
+    - Fallback to pagination if needed
+    - Rate limiting and progress tracking
     """
     
     async def extract_from_endpoint(
@@ -266,7 +269,12 @@ class PaginatedExtractor(BaseExtractor):
         endpoint_path: str,
         query_params: Optional[dict[str, Any]] = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
-        """Generic method to extract data from a DNB Statistics endpoint."""
+        """
+        Extract data from a DNB Statistics endpoint.
+        
+        Uses pageSize=0 to fetch all records in a single request (Statistics API feature).
+        Falls back to pagination if this fails.
+        """
         # Import from the wrapper module that handles the hyphenated directory
         from backend.clients.statistics_client import DnbStatisticsClient
         
@@ -279,19 +287,79 @@ class PaginatedExtractor(BaseExtractor):
         if endpoint_builder is None:
             raise ValueError(f"Unknown endpoint: {endpoint_path}")
         
-        # Fetch first page to get total count
-        logger.info(f"{safe_emoji('📊')} Fetching first page...")
+        # Strategy 1: Try to fetch ALL records at once with pageSize=0
+        logger.info(
+            f"{safe_emoji('�')} Fetching ALL records with pageSize=0 "
+            "(Statistics API feature)..."
+        )
         
         await self._rate_limit()
         
-        # Configure request with pagination and authentication header
+        # Configure request with pageSize=0 to get all records
         config_obj = RequestConfiguration()
         config_obj.headers = HeadersCollection()
         config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
         config_obj.headers.try_add("Accept", "application/json")
         config_obj.query_parameters = {}
         config_obj.query_parameters["page"] = 1
-        config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
+        config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE  # 0 = all records
+        
+        try:
+            response = await endpoint_builder.get(config_obj)
+            
+            if not response:
+                logger.warning("No data returned from endpoint")
+                return
+            
+            # Check if we got records
+            if hasattr(response, "records") and response.records:
+                record_count = len(response.records)
+                logger.info(
+                    f"{safe_emoji('✅')} Successfully fetched {record_count:,} records "
+                    "in a single request!"
+                )
+                
+                # Yield all records
+                for record in response.records:
+                    yield self._serialize_record(record)
+                
+                self.stats["total_pages"] = 1
+                return
+            else:
+                logger.warning("No records in response")
+                return
+                
+        except Exception as exc:
+            logger.warning(
+                f"{safe_emoji('⚠️')} pageSize=0 failed: {exc}. "
+                f"Falling back to pagination with pageSize={config.FALLBACK_PAGE_SIZE}..."
+            )
+            
+            # Strategy 2: Fall back to traditional pagination
+            async for record in self._paginated_extraction(endpoint_builder):
+                yield record
+    
+    async def _paginated_extraction(
+        self,
+        endpoint_builder,
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        """
+        Fallback pagination strategy if pageSize=0 doesn't work.
+        
+        This method implements traditional page-by-page fetching.
+        """
+        logger.info(f"{safe_emoji('📊')} Using fallback pagination strategy...")
+        
+        await self._rate_limit()
+        
+        # Configure request with fallback page size
+        config_obj = RequestConfiguration()
+        config_obj.headers = HeadersCollection()
+        config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+        config_obj.headers.try_add("Accept", "application/json")
+        config_obj.query_parameters = {}
+        config_obj.query_parameters["page"] = 1
+        config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE
         
         first_response = await endpoint_builder.get(config_obj)
         
