@@ -315,7 +315,7 @@ async def main():
             for endpoint_name in args.endpoints:
                 if endpoint_name not in EXTRACTOR_REGISTRY:
                     logger.error(
-                        f"❌ Unknown endpoint: {endpoint_name}\n"
+                        f"{safe_emoji('❌')} Unknown endpoint: {endpoint_name}\n"
                         f"   Available: {', '.join(list_available_endpoints())}"
                     )
                     continue
@@ -329,11 +329,11 @@ async def main():
             sys.exit(1)
     
     except KeyboardInterrupt:
-        logger.warning("\n⚠️  Extraction interrupted by user")
+        logger.warning(f"\n{safe_emoji('⚠️')} Extraction interrupted by user")
         sys.exit(130)
     
     except Exception as exc:
-        logger.error(f"\n❌ Extraction failed: {exc}", exc_info=True)
+        logger.error(f"\n{safe_emoji('❌')} Extraction failed: {exc}", exc_info=True)
         sys.exit(1)
 
 

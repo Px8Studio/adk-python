@@ -21,6 +21,7 @@ from kiota_abstractions.request_adapter import RequestAdapter
 from kiota_http.httpx_request_adapter import HttpxRequestAdapter
 from kiota_abstractions.authentication import AnonymousAuthenticationProvider
 from kiota_abstractions.base_request_configuration import RequestConfiguration
+from kiota_abstractions.headers_collection import HeadersCollection
 import httpx
 
 from . import config
@@ -107,18 +108,24 @@ class BaseExtractor(ABC):
         if self.request_adapter is not None:
             return
         
-        # Create HTTP client with DNB API key
+        # Debug: Verify API key is loaded
+        if not config.DNB_API_KEY:
+            logger.error(f"{safe_emoji('❌')} DNB_API_KEY is empty! Check your .env file.")
+            raise ValueError("DNB_API_KEY not configured")
+        
+        logger.debug(f"Using DNB API key: {config.DNB_API_KEY[:8]}...{config.DNB_API_KEY[-4:]}")
+        
+        # Create HTTP client
         http_client = httpx.AsyncClient(
-            headers={
-                "Ocp-Apim-Subscription-Key": config.DNB_API_KEY,
-                "Accept": "application/json",
-            },
             timeout=config.REQUEST_TIMEOUT,
         )
         
-        # Create Kiota request adapter
+        # Create Kiota request adapter with authentication provider
         auth_provider = AnonymousAuthenticationProvider()
-        self.request_adapter = HttpxRequestAdapter(auth_provider, http_client)
+        self.request_adapter = HttpxRequestAdapter(auth_provider)
+        self.request_adapter._http_client = http_client
+        
+        # Set base URL - required for Kiota client
         self.request_adapter.base_url = config.DNB_BASE_URL
     
     async def _rate_limit(self) -> None:
@@ -247,11 +254,11 @@ class BaseExtractor(ABC):
             elapsed = (self.stats["end_time"] - self.stats["start_time"]).total_seconds()
             
             logger.info(
-                f"✅ Extraction complete: {self.stats['total_records']:,} records "
+                f"{safe_emoji('✅')} Extraction complete: {self.stats['total_records']:,} records "
                 f"in {elapsed:.2f}s"
             )
-            logger.info(f"  📄 JSONL: {fetch_path}")
-            logger.info(f"  📊 Parquet: {bronze_path}")
+            logger.info(f"  JSONL: {fetch_path}")
+            logger.info(f"  Parquet: {bronze_path}")
             
             return self.stats
         
@@ -296,8 +303,11 @@ class PaginatedExtractor(BaseExtractor):
         
         await self._rate_limit()
         
-        # Configure request with pagination
+        # Configure request with pagination and authentication header
         config_obj = RequestConfiguration()
+        config_obj.headers = HeadersCollection()
+        config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+        config_obj.headers.try_add("Accept", "application/json")
         config_obj.query_parameters = {}
         config_obj.query_parameters["page"] = 1
         config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
@@ -345,6 +355,9 @@ class PaginatedExtractor(BaseExtractor):
                 
                 try:
                     config_obj = RequestConfiguration()
+                    config_obj.headers = HeadersCollection()
+                    config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+                    config_obj.headers.try_add("Accept", "application/json")
                     config_obj.query_parameters = {}
                     config_obj.query_parameters["page"] = page_num
                     config_obj.query_parameters["pageSize"] = config.DEFAULT_PAGE_SIZE
@@ -372,17 +385,37 @@ class PaginatedExtractor(BaseExtractor):
             record: Kiota model object
         
         Returns:
-            Dictionary representation
+            Dictionary representation with all values JSON-serializable
         """
+        def make_serializable(obj):
+            """Convert object to JSON-serializable format."""
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            elif isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [make_serializable(item) for item in obj]
+            elif hasattr(obj, "__dict__"):
+                return {k: make_serializable(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+            else:
+                return obj
+        
         if hasattr(record, "to_dict"):
-            return record.to_dict()
+            result = record.to_dict()
+            result = make_serializable(result)
         elif hasattr(record, "__dict__"):
             # Convert object attributes to dict
             result = {}
             for key, value in record.__dict__.items():
                 if not key.startswith("_"):
-                    result[key] = value
-            return result
+                    result[key] = make_serializable(value)
         else:
             # Already a dict or primitive
-            return record
+            result = make_serializable(record)
+        
+        # Remove Kiota-specific metadata fields that cause Parquet issues
+        if isinstance(result, dict):
+            result.pop("additional_data", None)
+            result.pop("backing_store", None)
+        
+        return result
