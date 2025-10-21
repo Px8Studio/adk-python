@@ -47,7 +47,9 @@ class RegistersExtractor(BaseExtractor):
         client = DnbPublicRegisterClient(self.request_adapter)
         
         logger.info("📋 Fetching all registers...")
-        registers = await client.api.publicregister.registers.get()
+        registers = await self.call_api_with_retry(
+            lambda: client.api.publicregister.registers.get()
+        )
         
         if not registers:
             logger.warning("No registers found")
@@ -78,7 +80,9 @@ class SupportedLanguagesExtractor(BaseExtractor):
         client = DnbPublicRegisterClient(self.request_adapter)
         
         logger.info("🌐 Fetching supported languages...")
-        languages = await client.api.publicregister.supported_languages.get()
+        languages = await self.call_api_with_retry(
+            lambda: client.api.publicregister.supported_languages.get()
+        )
         
         if not languages:
             logger.warning("No languages found")
@@ -202,14 +206,16 @@ class OrganizationDetailsExtractor(BaseExtractor):
                 )
             )
             
-            # Use Kiota client
-            result = await (
-                client.api
-                .publicregister
-                .by_language_code_id(self.language_code)
-                .by_register_code(self.register_code)
-                .organizations
-                .get(request_config)
+            # Use Kiota client with rate limiting and retry
+            result = await self.call_api_with_retry(
+                lambda: (
+                    client.api
+                    .publicregister
+                    .by_language_code_id(self.language_code)
+                    .by_register_code(self.register_code)
+                    .organizations
+                    .get(request_config)
+                )
             )
             
             if not result or not result.organizations:
@@ -491,13 +497,15 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                 query_parameters=query_params
             )
             
-            result = await (
-                client.api
-                .publicregister
-                .by_language_code_id(self.language_code)
-                .publications
-                .by_register_code(self.register_code)
-                .get(request_config)
+            result = await self.call_api_with_retry(
+                lambda: (
+                    client.api
+                    .publicregister
+                    .by_language_code_id(self.language_code)
+                    .publications
+                    .by_register_code(self.register_code)
+                    .get(request_config)
+                )
             )
             
             if not result or not result.organizations:
@@ -575,14 +583,16 @@ class RegistrationActArticleNamesExtractor(BaseExtractor):
             f"register={self.register_code}, lang={self.language_code}"
         )
         
-        result = await (
-            client.api
-            .publicregister
-            .by_language_code_id(self.language_code)
-            .by_register_code(self.register_code)
-            .registrations
-            .act_article_names
-            .get()
+        result = await self.call_api_with_retry(
+            lambda: (
+                client.api
+                .publicregister
+                .by_language_code_id(self.language_code)
+                .by_register_code(self.register_code)
+                .registrations
+                .act_article_names
+                .get()
+            )
         )
         
         if not result:
@@ -639,13 +649,15 @@ class RegisterArticlesExtractor(BaseExtractor):
             f"register={self.register_code}, lang={self.language_code}"
         )
         
-        result = await (
-            client.api
-            .publicregister
-            .by_language_code_id(self.language_code)
-            .by_register_code(self.register_code)
-            .register_articles
-            .get()
+        result = await self.call_api_with_retry(
+            lambda: (
+                client.api
+                .publicregister
+                .by_language_code_id(self.language_code)
+                .by_register_code(self.register_code)
+                .register_articles
+                .get()
+            )
         )
         
         if not result:

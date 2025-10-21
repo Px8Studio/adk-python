@@ -216,6 +216,70 @@ class BaseExtractor(ABC):
       self.stats["failed_pages"] += 1
       return None
   
+  async def call_api_with_retry(
+      self,
+      api_call_func,
+      retry_count: int = 0,
+  ):
+    """
+    Execute Kiota API call with rate limiting and retry logic.
+    
+    Args:
+        api_call_func: Async function that makes the API call
+        retry_count: Current retry attempt
+    
+    Returns:
+        API response or raises exception if all retries failed
+    """
+    await self.rate_limiter.acquire()
+    self.stats["api_calls"] += 1
+    
+    try:
+      return await api_call_func()
+    
+    except Exception as exc:
+      # Check if it's a rate limit error (429)
+      if hasattr(exc, 'response_status_code') and exc.response_status_code == 429:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        logger.warning(
+            f"⏳ Rate limited (429), waiting {wait_time:.1f}s... "
+            f"(retry {retry_count + 1}/{config.MAX_RETRIES})"
+        )
+        await asyncio.sleep(wait_time)
+        
+        if retry_count < config.MAX_RETRIES:
+          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+        else:
+          logger.error(f"❌ Max retries exceeded for rate limit")
+          raise
+      
+      # Check if it's a server error (500+)
+      elif hasattr(exc, 'response_status_code') and exc.response_status_code >= 500:
+        if retry_count < config.MAX_RETRIES:
+          wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+          logger.warning(
+              f"Server error {exc.response_status_code}, "
+              f"retrying in {wait_time:.1f}s..."
+          )
+          await asyncio.sleep(wait_time)
+          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+        else:
+          logger.error(f"❌ Max retries exceeded for server error")
+          raise
+      
+      # For other errors, retry a few times
+      elif retry_count < config.MAX_RETRIES:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        logger.warning(
+            f"API call failed: {exc}, retrying in {wait_time:.1f}s..."
+        )
+        await asyncio.sleep(wait_time)
+        return await self.call_api_with_retry(api_call_func, retry_count + 1)
+      
+      # All retries exhausted
+      logger.error(f"❌ API call failed after {retry_count + 1} attempts: {exc}")
+      raise
+  
   def add_etl_metadata(self, record: dict[str, Any]) -> dict[str, Any]:
     """
     Add ETL metadata fields to a record.
