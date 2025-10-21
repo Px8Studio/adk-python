@@ -90,6 +90,85 @@
         "clear": true
       }
     },
+    // ============================================================
+    // ETL - DNB Statistics
+    // ============================================================
+    {
+      "label": "ETL: DNB Statistics - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ETL: DNB Statistics - List Endpoints",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ETL - DNB Public Register
+    // ============================================================
+    {
+      "label": "ETL: DNB Public Register - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_public_register.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
     {
       "label": "DNB PR: Invoke publications_search (OK)",
       "type": "shell",
