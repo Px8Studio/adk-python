@@ -34,9 +34,34 @@ from pathlib import Path
 from google.adk.agents import LlmAgent as Agent
 
 # Import specialized DNB agents
+# Use absolute imports so ADK's module loader (which adds the agents dir to sys.path)
+# can resolve sibling packages reliably.
 from api_agents.dnb_echo.agent import dnb_echo_agent  # type: ignore
 from api_agents.dnb_statistics.agent import dnb_statistics_agent  # type: ignore
-from api_agents.dnb_public_register.agent import dnb_public_register_agent  # type: ignore
+from api_agents.dnb_public_register.agent import (
+    dnb_public_register_agent,
+)  # type: ignore
+
+# Optional: OpenAPI-native variants (runtime tool generation)
+USE_OPENAPI_VARIANTS = os.getenv("DNB_COORDINATOR_USE_OPENAPI", "0") in ("1", "true", "True")
+if USE_OPENAPI_VARIANTS:
+    try:
+        from api_agents.dnb_openapi.agent import (
+            dnb_openapi_echo_agent,
+            dnb_openapi_statistics_agent,
+            dnb_openapi_public_register_agent,
+        )  # type: ignore
+        _OPENAPI_ECHO = dnb_openapi_echo_agent
+        _OPENAPI_STATS = dnb_openapi_statistics_agent
+        _OPENAPI_PR = dnb_openapi_public_register_agent
+    except ImportError:  # Silently fall back to standard agents if OpenAPI variants unavailable
+        _OPENAPI_ECHO = None
+        _OPENAPI_STATS = None
+        _OPENAPI_PR = None
+else:
+    _OPENAPI_ECHO = None
+    _OPENAPI_STATS = None
+    _OPENAPI_PR = None
 
 # Model configuration
 MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
@@ -44,28 +69,40 @@ MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
 # Load instructions
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
-  INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
+    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-  INSTRUCTION = """You coordinate DNB API operations across three specialized domains:
+    INSTRUCTION = (
+        "You coordinate DNB API operations across three specialized domains:\n\n"
+        "1. **Echo API** (dnb_echo_agent):\n"
+        "   - Connectivity tests, health checks, API availability\n"
+        "   - Use for: \"test DNB connection\", \"is DNB API up?\"\n\n"
+        "2. **Statistics API** (dnb_statistics_agent):\n"
+        "   - Economic datasets, exchange rates, financial statistics\n"
+        "   - Use for: \"get exchange rates\", \"pension fund data\", \"balance of payments\"\n\n"
+        "3. **Public Register API** (dnb_public_register_agent):\n"
+        "   - License searches, registration data, regulatory info\n"
+        "   - Use for: \"find licenses\", \"search institutions\", \"regulatory data\"\n"
+        "   - IMPORTANT: This agent will automatically discover valid register codes\n"
+        "   - Common registers: WFTAF (financial services), Wft (various financial categories)\n"
+        "   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes\n\n"
+        "Route to the appropriate specialist based on user request.\n"
+        "If multiple specialists needed, coordinate execution.\n"
+        "Provide clear, structured summaries."
+    )
 
-1. **Echo API** (dnb_echo_agent):
-   - Connectivity tests, health checks, API availability
-   - Use for: "test DNB connection", "is DNB API up?"
+def _clone_for_coordinator(agent: Agent) -> Agent:
+    """Creates an isolated copy so agents can appear in multiple trees."""
 
-2. **Statistics API** (dnb_statistics_agent):
-   - Economic datasets, exchange rates, financial statistics
-   - Use for: "get exchange rates", "pension fund data", "balance of payments"
+    return agent.clone()
 
-3. **Public Register API** (dnb_public_register_agent):
-   - License searches, registration data, regulatory info
-   - Use for: "find licenses", "search institutions", "regulatory data"
-   - IMPORTANT: This agent will automatically discover valid register codes
-   - Common registers: WFTAF (financial services), Wft (various financial categories)
-   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes
 
-Route to the appropriate specialist based on user request.
-If multiple specialists needed, coordinate execution.
-Provide clear, structured summaries."""
+_delegated_echo_agent = _clone_for_coordinator(_OPENAPI_ECHO or dnb_echo_agent)
+_delegated_statistics_agent = _clone_for_coordinator(
+    _OPENAPI_STATS or dnb_statistics_agent
+)
+_delegated_public_register_agent = _clone_for_coordinator(
+    _OPENAPI_PR or dnb_public_register_agent
+)
 
 dnb_coordinator_agent = Agent(
     name="dnb_coordinator",
@@ -77,9 +114,9 @@ dnb_coordinator_agent = Agent(
     ),
     instruction=INSTRUCTION,
     sub_agents=[
-        dnb_echo_agent,
-        dnb_statistics_agent,
-        dnb_public_register_agent,
+        _delegated_echo_agent,
+        _delegated_statistics_agent,
+        _delegated_public_register_agent,
     ],
     output_key="dnb_coordinator_response",
 )

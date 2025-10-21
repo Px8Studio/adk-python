@@ -28,7 +28,7 @@ import os
 import logging
 from typing import Any, Dict, Optional
 
-from google.adk import Agent
+from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 from google.adk.tools.function_tool import FunctionTool
 from google.adk.tools.base_tool import BaseTool

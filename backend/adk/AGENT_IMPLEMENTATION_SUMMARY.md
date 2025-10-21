@@ -6,18 +6,19 @@
 
 ## 📊 Current Situation
 
-### ✅ What You Have
-- Working DNB agent with 3 sub-agents (echo, statistics, public register)
-- Functional coordinator pattern using `sub_agents`
-- ToolboxToolset integration with MCP server
-- OpenTelemetry tracing
+### ✅ Completed Foundation
+- Root coordinator (`root_agent`) routes to domain-specific coordinators.
+- `dnb_coordinator` delegates to echo/statistics/public-register specialists.
+- Specialized agents now follow ADK import/style guidance and keep shared
+   Toolbox toolsets.
+- Workflow scaffolds (`data_pipeline`, `parallel_fetcher`) are available for
+   reuse when orchestration needs them.
 
-### ⚠️ What's Missing
-- **Scalability**: DNB-centric naming prevents adding non-DNB agents
-- **Hierarchy**: Single-level structure (no root coordinator)
-- **Efficiency**: All LLM agents (no workflow agents for deterministic tasks)
-- **A2A Readiness**: No agent-to-agent network preparation
-- **Best Practices**: Not following ADK multi-agent patterns
+### 🚧 Still In Progress
+- Integrate workflow agents into real orchestrations (parallel/sequence flows).
+- Add non-DNB coordinators (e.g., Google, data processing, utilities).
+- Finish A2A readiness (agent cards, server config) and document usage.
+- Expand automated tests and smoke flows that target the new hierarchy.
 
 ---
 
@@ -90,12 +91,12 @@ root_agent (Root Coordinator)
    # Should route: root_agent → dnb_coordinator → dnb_echo_agent
    ```
 
-**Deliverables:**
-- ✅ New directory structure
-- ✅ Working root_agent agent
-- ✅ Refactored dnb_coordinator
-- ✅ Migrated specialized agents
-- ✅ Basic routing tested
+**Deliverables (status):**
+- [x] New directory structure
+- [x] Working `root_agent`
+- [x] Refactored `dnb_coordinator`
+- [x] Migrated DNB specialized agents
+- [x] Basic routing smoke tested (`adk run root_agent ...`)
 
 **Estimated Time:** 1-2 days
 
@@ -125,11 +126,11 @@ root_agent (Root Coordinator)
    - Show state passing between agents
    - Document in README
 
-**Deliverables:**
-- ✅ Sequential workflow agent
-- ✅ Parallel workflow agent
-- ✅ Integrated workflows in coordinator
-- ✅ State management examples
+**Deliverables (status):**
+- [x] Sequential workflow agent scaffold (`workflows/data_pipeline`)
+- [x] Parallel workflow agent scaffold (`workflows/parallel_fetcher`)
+- [ ] Coordinator wiring that invokes workflow agents
+- [ ] Documented state-passing examples in README/handbook
 
 **Estimated Time:** 2-3 days
 
@@ -167,11 +168,11 @@ root_agent (Root Coordinator)
    - How to expose new agents
    - Security considerations
 
-**Deliverables:**
-- ✅ Agent cards for main agents
-- ✅ A2A server configuration
-- ✅ Working A2A endpoints
-- ✅ A2A documentation
+**Deliverables (status):**
+- [ ] Agent cards for all exposed agents (only `root_agent` exists today)
+- [ ] A2A server configuration checked into repo
+- [ ] Smoke-tested A2A endpoints
+- [ ] User-facing A2A operations guide
 
 **Estimated Time:** 2-3 days
 
@@ -201,10 +202,10 @@ root_agent (Root Coordinator)
    - Artifact management
    - Context caching
 
-**Deliverables:**
-- ✅ Google Search integration
-- ✅ Custom specialized agents
-- ✅ Advanced ADK features
+**Deliverables (status):**
+- [ ] Google Search integration
+- [ ] Custom specialized agents (rate limiting, caching, recovery)
+- [ ] Advanced ADK features (memory, guardrails, artifacts, caching)
 
 **Estimated Time:** Ongoing
 
@@ -288,7 +289,7 @@ root_agent (Root Coordinator)
   - Example request flows
   - Observability
 
-### 3. AGENT_IMPLEMENTATION_EXAMPLES.md (This File)
+### 3. AGENT_IMPLEMENTATION_EXAMPLES.md
 - **What**: Complete code templates for all agent types
 - **Use**: Copy-paste implementation
 - **Sections**:
@@ -311,19 +312,20 @@ root_agent (Root Coordinator)
 - [ ] Backup existing agents
 - [ ] Decide: Gradual vs Clean Slate migration
 
-### Implementation Steps
-- [ ] Create new directory structure
-- [ ] Implement `root_agent/agent.py`
-- [ ] Implement `root_agent/__init__.py`
-- [ ] Create `root_agent/instructions.txt`
-- [ ] Implement `api_coordinators/dnb_coordinator/agent.py`
-- [ ] Implement `api_coordinators/dnb_coordinator/__init__.py`
-- [ ] Create `dnb_coordinator/instructions.txt`
-- [ ] Copy/refactor `dnb_echo` to `api_agents/dnb_echo`
-- [ ] Copy/refactor `dnb_statistics` to `api_agents/dnb_statistics`
-- [ ] Copy/refactor `dnb_public_register` to `api_agents/dnb_public_register`
-- [ ] Update all `__init__.py` files with proper exports
-- [ ] Update variable names (add `_agent` suffix)
+### Implementation Steps (Current Status)
+- [x] Create new directory structure
+- [x] Implement `root_agent/agent.py`
+- [x] Implement `root_agent/__init__.py`
+- [x] Create `root_agent/instructions.txt`
+- [x] Implement `api_coordinators/dnb_coordinator/agent.py`
+- [x] Implement `api_coordinators/dnb_coordinator/__init__.py`
+- [x] Create `dnb_coordinator/instructions.txt`
+- [x] Copy/refactor `dnb_echo` to `api_agents/dnb_echo`
+- [x] Copy/refactor `dnb_statistics` to `api_agents/dnb_statistics`
+- [x] Copy/refactor `dnb_public_register` to `api_agents/dnb_public_register`
+- [x] Update all `__init__.py` files with proper exports
+- [x] Update variable names (add `_agent` suffix)
+- [x] Add `workflows/` folder with `data_pipeline` and `parallel_fetcher` scaffolds
 
 ### Testing
 - [ ] Test `root_agent` individually: `adk run root_agent -q "Hello"`
@@ -333,6 +335,23 @@ root_agent (Root Coordinator)
 - [ ] Test multiple queries in ADK Web UI
 - [ ] Verify state management works
 - [ ] Check Jaeger traces for complete flow
+
+### Status Snapshot (as of now)
+- Root coordinator and DNB coordinator are implemented and wired via `sub_agents`.
+- Specialized DNB agents (echo, statistics, public register) are implemented; statistics agent uses standard ToolboxToolset for stability.
+- Placeholder `api_agents/google_search/agent.py` exists (to be implemented later).
+- Workflow scaffolds (`workflows/data_pipeline` and `workflows/parallel_fetcher`) are added for Phase 2.
+
+### Next Incremental Step
+1) Run quick smoke tests:
+   - `adk run root_agent -q "Test DNB connection"` (expect echo specialist)
+   - `adk run root_agent -q "Get latest exchange rates from DNB"` (expect statistics)
+   - `adk run root_agent -q "Search DNB public register for WFTAF publications"` (expect public register)
+2) Capture trace screenshots/logs for each path and attach to the project wiki for
+   regression reference.
+3) Plan the workflow integration spike: document how `parallel_fetcher` should be
+   invoked for multi-API fan-out and identify any tooling gaps (e.g., shared
+   state schema).
 
 ### Documentation
 - [ ] Update `QUICK_REFERENCE.md` with new agent names
@@ -559,7 +578,7 @@ api_agent = Agent(name="dnb_api", ...)  # Unclear role
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: 2025-01-19*  
+*Document Version: 1.1*  
+*Last Updated: 2025-10-19*  
 *Author: AI Architecture Assistant*  
 *Project: Orkhon Multi-Agent Platform*

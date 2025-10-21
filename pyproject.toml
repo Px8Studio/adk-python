@@ -13,7 +13,23 @@ langgraph = "^0.6.10"
 google-adk = "^1.16.0"
 uv = "^0.9.3"
 toolbox-core = "^0.5.2"
+# Kiota dependencies for HTTP clients
+microsoft-kiota-abstractions = "^1.7.0"
+microsoft-kiota-http = "^1.7.0"
+microsoft-kiota-serialization-json = "^1.7.0"
+microsoft-kiota-serialization-text = "^1.7.0"
+microsoft-kiota-serialization-form = "^1.7.0"
+microsoft-kiota-serialization-multipart = "^1.7.0"
+httpx = "^0.28.1"
+sqlalchemy = "^2.0.44"
+psycopg2-binary = "^2.9.11"
+pandas = "^2.3.3"
+pyarrow = "^21.0.0"
+python-dotenv = "^1.0.0"
 
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.14.1"
 
 [build-system]
 requires = ["poetry-core"]

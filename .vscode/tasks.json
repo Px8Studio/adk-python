@@ -26,6 +26,150 @@
       }
     },
     {
+      "label": "ADK: Smoke Test dnb_openapi_agent (env-driven)",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_echo",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='echo'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_statistics",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='statistics'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_public-register",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='public-register'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ETL - DNB Statistics
+    // ============================================================
+    {
+      "label": "ETL: DNB Statistics - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ETL: DNB Statistics - List Endpoints",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ETL - DNB Public Register
+    // ============================================================
+    {
+      "label": "ETL: DNB Public Register - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_public_register.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
       "label": "DNB PR: Invoke publications_search (OK)",
       "type": "shell",
       "command": "Invoke-RestMethod",
@@ -181,6 +325,46 @@
         "panel": "dedicated"
       },
       "group": "test"
+    },
+    // ============================================================
+    // Git - Upstream Sync
+    // ============================================================
+    {
+      "label": "🔄 Git: Sync All Upstream Repos",
+      "type": "shell",
+      "command": "${workspaceFolder}/sync-upstream-repos.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 Git: Sync All Upstream Repos (Dry Run)",
+      "type": "shell",
+      "command": "${workspaceFolder}/sync-upstream-repos.ps1",
+      "args": ["-DryRun"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
     },
     // ============================================================
     // Server Management - Development
