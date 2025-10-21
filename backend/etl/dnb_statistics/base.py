@@ -191,11 +191,51 @@ class BaseExtractor(ABC):
             index=False,
         )
 
+    def _resolve_metadata(self, response: Any) -> Any:
+        """Locate the metadata payload on the API response object."""
+        if response is None:
+            return None
+
+        # Kiota models expose the metadata dataclass via `_metadata`.
+        meta_obj = getattr(response, "_metadata", None)
+        if meta_obj is not None:
+            return meta_obj
+
+        # Fallback to a public attribute just in case future versions rename it.
+        meta_obj = getattr(response, "metadata", None)
+        if meta_obj is not None:
+            return meta_obj
+
+        # Some generators tuck metadata inside `additional_data`.
+        additional = getattr(response, "additional_data", None)
+        if isinstance(additional, dict):
+            return additional.get("_metadata") or additional.get("metadata")
+
+        return None
+
     def _capture_metadata(self, source: str, metadata_obj: Any) -> dict[str, Any]:
         """Record response metadata details for diagnostics."""
-        info: dict[str, Any]
+        info: dict[str, Any] = {}
+
         if metadata_obj is None:
             info = {}
+        elif isinstance(metadata_obj, dict):
+            # Support raw dict payloads (e.g. additional_data)
+            info = {
+                "page": metadata_obj.get("page"),
+                "page_size": (
+                    metadata_obj.get("page_size")
+                    or metadata_obj.get("pageSize")
+                ),
+                "has_more_pages": (
+                    metadata_obj.get("has_more_pages")
+                    or metadata_obj.get("hasMorePages")
+                ),
+                "total_count": (
+                    metadata_obj.get("total_count")
+                    or metadata_obj.get("totalCount")
+                ),
+            }
         else:
             info = {
                 "page": getattr(metadata_obj, "page", None),
@@ -357,9 +397,10 @@ class PaginatedExtractor(BaseExtractor):
             if hasattr(response, "records") and response.records:
                 record_count = len(response.records)
 
+                metadata_obj = self._resolve_metadata(response)
                 metadata_info = self._capture_metadata(
                     "page_size_zero",
-                    getattr(response, "metadata", None),
+                    metadata_obj,
                 )
 
                 has_more_pages = metadata_info.get("has_more_pages")
@@ -440,8 +481,11 @@ class PaginatedExtractor(BaseExtractor):
             return
         
         # Extract metadata
-        metadata = first_response.metadata if hasattr(first_response, "metadata") else None
-        fallback_metadata = self._capture_metadata("fallback_page_1", metadata)
+        metadata_obj = self._resolve_metadata(first_response)
+        fallback_metadata = self._capture_metadata(
+            "fallback_page_1",
+            metadata_obj,
+        )
         if fallback_metadata:
             logger.debug(
                 "Metadata (fallback page 1): page=%s, page_size=%s, total_count=%s, has_more_pages=%s",
@@ -450,7 +494,8 @@ class PaginatedExtractor(BaseExtractor):
                 fallback_metadata.get("total_count"),
                 fallback_metadata.get("has_more_pages"),
             )
-        total_count = getattr(metadata, "total_count", 0)
+
+        total_count = fallback_metadata.get("total_count", 0)
         
         # Check if first page has records
         first_page_records = []
