@@ -38,7 +38,6 @@ from .extractors import (
     OrganizationDetailsExtractor,
     OrganizationRelationNumbersExtractor,
     PublicationDetailsExtractor,
-    PublicationsSearchExtractor,
     RegisterArticlesExtractor,
     RegistersExtractor,
     RegistrationActArticleNamesExtractor,
@@ -253,7 +252,7 @@ async def extract_publications(
             key = f"publications_{register_code}_{language_code}"
             logger.info(f"\n🔍 Processing: {key}")
             
-            extractor = PublicationsSearchExtractor(
+            extractor = PublicationDetailsExtractor(
                 register_code=register_code,
                 language_code=language_code,
             )
@@ -382,11 +381,10 @@ async def extract_all() -> dict[str, Any]:
     all_stats["metadata"] = await extract_metadata()
     
     # 2. Publications + Organizations in parallel with deduplication
-    logger.info("\n[2/4] Extracting publications and organizations (parallel)...")
+    logger.info("\n[2/4] Extracting publications and organizations...")
     logger.info("=" * 70)
-    logger.info("🔄 Running Publications and Organizations extraction in parallel")
-    logger.info("   Publications will extract all data from search endpoint")
-    logger.info("   Organizations will fill gaps not found in Publications")
+    logger.info("� Publications will page via the direct /Publications/{register} endpoint")
+    logger.info("🏢 Organizations will backfill relation numbers not present in publications")
     logger.info("=" * 70 + "\n")
     
     # Track relation numbers from publications for deduplication
@@ -419,45 +417,39 @@ async def extract_all() -> dict[str, Any]:
         
         return stats
     
-    # Run Publications and Organizations in parallel
-    parallel_start = datetime.now()
-    
-    publications_stats, organizations_stats = await asyncio.gather(
-        extract_publications_with_tracking(),
-        extract_organizations(exclude_relation_numbers=None),  # Will update after pubs
-        return_exceptions=True,
-    )
-    
-    parallel_elapsed = (datetime.now() - parallel_start).total_seconds()
-    
-    # Handle results
-    if isinstance(publications_stats, Exception):
-        logger.error(f"❌ Publications extraction failed: {publications_stats}")
-        all_stats["publications"] = {"error": str(publications_stats)}
+    publications_start = datetime.now()
+    try:
+        publications_stats = await extract_publications_with_tracking()
+    except Exception as exc:
+        logger.error(f"❌ Publications extraction failed: {exc}")
+        all_stats["publications"] = {"error": str(exc)}
+        publications_stats = None
     else:
         all_stats["publications"] = publications_stats
+        pub_elapsed = (datetime.now() - publications_start).total_seconds()
+        logger.info(
+            f"\n✅ Publications extraction finished in {pub_elapsed:.2f}s "
+            f"({pub_elapsed/60:.1f}m)"
+        )
     
-    if isinstance(organizations_stats, Exception):
-        logger.error(f"❌ Organizations extraction failed: {organizations_stats}")
-        all_stats["organizations"] = {"error": str(organizations_stats)}
+    exclude_relation_numbers = seen_relation_numbers if seen_relation_numbers else None
+    if exclude_relation_numbers:
+        logger.info(
+            f"\n🔄 Running Organizations extraction excluding "
+            f"{len(exclude_relation_numbers)} relation numbers identified via publications"
+        )
+    else:
+        logger.info("\n🏢 Running Organizations extraction (full register sweep)...")
+    
+    try:
+        organizations_stats = await extract_organizations(
+            exclude_relation_numbers=exclude_relation_numbers
+        )
+    except Exception as exc:
+        logger.error(f"❌ Organizations extraction failed: {exc}")
+        all_stats["organizations"] = {"error": str(exc)}
     else:
         all_stats["organizations"] = organizations_stats
-    
-    logger.info(
-        f"\n✅ Parallel extraction completed in {parallel_elapsed:.2f}s "
-        f"({parallel_elapsed/60:.1f}m)"
-    )
-    
-    # Now run organizations again with deduplication (gap-filling)
-    if len(seen_relation_numbers) > 0:
-        logger.info(
-            f"\n🔄 Running gap-filling Organizations extraction "
-            f"(excluding {len(seen_relation_numbers)} already-seen orgs)..."
-        )
-        gap_fill_stats = await extract_organizations(
-            exclude_relation_numbers=seen_relation_numbers
-        )
-        all_stats["organizations_gap_fill"] = gap_fill_stats
     
     # 3. Registrations
     logger.info("\n[3/4] Extracting registrations...")

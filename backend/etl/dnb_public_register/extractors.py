@@ -404,7 +404,7 @@ class AllPublicationsExtractor(BaseExtractor):
     
     This is a convenience wrapper that:
     1. Discovers all registers
-    2. Runs PublicationsSearchExtractor for each
+    2. Runs PublicationDetailsExtractor for each
     3. Combines results
     """
     
@@ -435,7 +435,7 @@ class AllPublicationsExtractor(BaseExtractor):
         for register_code in register_codes:
             logger.info(f"\n🔍 Processing register: {register_code}")
             
-            extractor = PublicationsSearchExtractor(
+            extractor = PublicationDetailsExtractor(
                 register_code=register_code,
                 language_code=self.language_code,
             )
@@ -497,6 +497,10 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                 query_parameters=query_params
             )
             
+            page_context = (
+                f"register={self.register_code}, page={page}, "
+                f"pageSize={config.DEFAULT_PAGE_SIZE}"
+            )
             result = await self.call_api_with_retry(
                 lambda: (
                     client.api
@@ -505,7 +509,8 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                     .publications
                     .by_register_code(self.register_code)
                     .get(request_config)
-                )
+                ),
+                context=page_context,
             )
             
             if not result or not result.organizations:

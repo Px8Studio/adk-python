@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -19,6 +20,7 @@ import httpx
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from kiota_abstractions.api_error import APIError
 from kiota_abstractions.request_adapter import RequestAdapter
 from kiota_http.httpx_request_adapter import HttpxRequestAdapter
 from kiota_abstractions.authentication import AnonymousAuthenticationProvider
@@ -80,6 +82,35 @@ class RateLimiter:
       logger.debug(f"Rate limit refilled: {self.tokens} tokens")
 
 
+_SHARED_RATE_LIMITER = RateLimiter()
+
+
+def _extract_retry_after_seconds(
+  headers: Optional[Any],
+  body: Optional[str],
+) -> Optional[float]:
+  """Parse Retry-After hint from headers or response text."""
+  header_value: Optional[str] = None
+  if headers is not None:
+    try:
+      header_value = headers.get("Retry-After") or headers.get("retry-after")
+    except AttributeError:
+      if isinstance(headers, dict):
+        header_value = headers.get("Retry-After") or headers.get("retry-after")
+  if header_value:
+    header_value = header_value.strip()
+    if header_value.isdigit():
+      return float(header_value)
+  if body:
+    match = re.search(r"try again in\s+(\d+)\s*seconds", body, re.IGNORECASE)
+    if match:
+      try:
+        return float(match.group(1))
+      except ValueError:
+        return None
+  return None
+
+
 # ==========================================
 # Base Extractor
 # ==========================================
@@ -97,7 +128,7 @@ class BaseExtractor(ABC):
   """
   
   def __init__(self):
-    self.rate_limiter = RateLimiter()
+    self.rate_limiter = _SHARED_RATE_LIMITER
     self.http_client = httpx.AsyncClient(
         timeout=config.REQUEST_TIMEOUT,
         headers={
@@ -155,10 +186,10 @@ class BaseExtractor(ABC):
     pass
   
   async def fetch_with_retry(
-      self,
-      url: str,
-      params: Optional[dict[str, Any]] = None,
-      retry_count: int = 0,
+    self,
+    url: str,
+    params: Optional[dict[str, Any]] = None,
+    retry_count: int = 0,
   ) -> Optional[dict[str, Any]]:
     """
     Fetch from API with retry logic and rate limiting.
@@ -182,15 +213,40 @@ class BaseExtractor(ABC):
     except httpx.HTTPStatusError as exc:
       if exc.response.status_code == 429:  # Rate limit
         wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            exc.response.headers,
+            exc.response.text,
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
         logger.warning(
-            f"Rate limited (429), waiting {wait_time:.1f}s... "
-            f"(retry {retry_count + 1}/{config.MAX_RETRIES})"
+            "Rate limited (429), waiting %.1fs... (retry %d/%d)%s",
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
         )
         await asyncio.sleep(wait_time)
         
         if retry_count < config.MAX_RETRIES:
           return await self.fetch_with_retry(url, params, retry_count + 1)
+        logger.error("❌ Max retries exceeded for rate limit (HTTP client)")
+        self.stats["failed_pages"] += 1
+        return None
       
+      elif exc.response.status_code == 400:
+        response_body = exc.response.text or ""
+        if len(response_body) > 300:
+          response_body = response_body[:297] + "..."
+        logger.warning(
+            "⚠️ DNB API rejected request (400) for %s with params=%s. "
+            "Treating as warning so extraction can continue. Response: %s",
+            url,
+            params or {},
+            response_body,
+        )
+        self.stats["failed_pages"] += 1
+        return None
       elif exc.response.status_code >= 500:  # Server error
         if retry_count < config.MAX_RETRIES:
           wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
@@ -217,9 +273,10 @@ class BaseExtractor(ABC):
       return None
   
   async def call_api_with_retry(
-      self,
-      api_call_func,
-      retry_count: int = 0,
+    self,
+    api_call_func,
+    retry_count: int = 0,
+    context: Optional[str] = None,
   ):
     """
     Execute Kiota API call with rate limiting and retry logic.
@@ -237,18 +294,122 @@ class BaseExtractor(ABC):
     try:
       return await api_call_func()
     
-    except Exception as exc:
-      # Check if it's a rate limit error (429)
-      if hasattr(exc, 'response_status_code') and exc.response_status_code == 429:
+    except APIError as exc:
+      status = exc.response_status_code or 0
+      message = exc.message or getattr(exc, "primary_message", None) or str(exc).strip()
+      details = getattr(exc, "error_message", None)
+      context_suffix = f" ({context})" if context else ""
+      
+      if status == 429:
         wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            exc.response_headers,
+            message,
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
         logger.warning(
-            f"⏳ Rate limited (429), waiting {wait_time:.1f}s... "
-            f"(retry {retry_count + 1}/{config.MAX_RETRIES})"
+            "⏳ Rate limited (429)%s, waiting %.1fs... (retry %d/%d)%s",
+            context_suffix,
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
         )
         await asyncio.sleep(wait_time)
         
         if retry_count < config.MAX_RETRIES:
-          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
+        logger.error("❌ Max retries exceeded for rate limit")
+        raise
+      
+      if status >= 500:
+        if retry_count < config.MAX_RETRIES:
+          wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+          logger.warning(
+              f"Server error {status}{context_suffix}, "
+              f"retrying in {wait_time:.1f}s..."
+          )
+          await asyncio.sleep(wait_time)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
+        logger.error("❌ Max retries exceeded for server error")
+        raise
+      
+      if status == 400:
+        self.stats["failed_pages"] += 1
+        warning_parts = [
+            "⚠️ DNB API returned 400 Bad Request",
+            context_suffix.strip(),
+        ]
+        warning_message = " ".join(part for part in warning_parts if part)
+        extra = f" Message: {message}" if message else ""
+        if details:
+          extra += f" | Details: {details}"
+        logger.warning(
+            "%s. Treating as warning so extraction can continue. "
+            "If this persists, raise the spec mismatch with DNB.",
+            f"{warning_message}{extra}",
+        )
+        return None
+      
+      if retry_count < config.MAX_RETRIES:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        logger.warning(
+            "API call failed%s: %s, retrying in %.1fs...",
+            context_suffix,
+            message,
+            wait_time,
+        )
+        await asyncio.sleep(wait_time)
+        return await self.call_api_with_retry(
+            api_call_func,
+            retry_count + 1,
+            context=context,
+        )
+      
+      logger.error(
+          "❌ API call failed after %d attempts%s: %s",
+          retry_count + 1,
+          context_suffix,
+          message,
+      )
+      raise
+    
+    except Exception as exc:
+      # Check if it's a rate limit error (429)
+      context_suffix = f" ({context})" if context else ""
+      if hasattr(exc, 'response_status_code') and exc.response_status_code == 429:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            getattr(exc, 'response_headers', None),
+            getattr(exc, 'message', None) or str(exc),
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
+        logger.warning(
+            "⏳ Rate limited (429)%s, waiting %.1fs... (retry %d/%d)%s",
+            context_suffix,
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
+        )
+        await asyncio.sleep(wait_time)
+        
+        if retry_count < config.MAX_RETRIES:
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
         else:
           logger.error(f"❌ Max retries exceeded for rate limit")
           raise
@@ -262,7 +423,11 @@ class BaseExtractor(ABC):
               f"retrying in {wait_time:.1f}s..."
           )
           await asyncio.sleep(wait_time)
-          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
         else:
           logger.error(f"❌ Max retries exceeded for server error")
           raise
@@ -274,7 +439,11 @@ class BaseExtractor(ABC):
             f"API call failed: {exc}, retrying in {wait_time:.1f}s..."
         )
         await asyncio.sleep(wait_time)
-        return await self.call_api_with_retry(api_call_func, retry_count + 1)
+        return await self.call_api_with_retry(
+            api_call_func,
+            retry_count + 1,
+            context=context,
+        )
       
       # All retries exhausted
       logger.error(f"❌ API call failed after {retry_count + 1} attempts: {exc}")
