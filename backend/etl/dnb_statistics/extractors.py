@@ -8,7 +8,7 @@ The Kiota-generated client provides type-safe access to all endpoints.
 from __future__ import annotations
 
 import logging
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, ClassVar
 
 from .base import PaginatedExtractor
 from . import config
@@ -16,15 +16,59 @@ from . import config
 logger = logging.getLogger(__name__)
 
 
+class CategoryExtractor(PaginatedExtractor):
+    """Base extractor that exposes category and optional subcategory."""
+
+    CATEGORY: ClassVar[str] = "other"
+    SUBCATEGORY: ClassVar[str | None] = None
+
+    def get_category(self) -> str:
+        return self.CATEGORY
+
+    def get_subcategory(self) -> str | None:
+        return self.SUBCATEGORY
+
+
+class MarketDataExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "market_data"
+
+
+class MacroeconomicExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "macroeconomic"
+
+
+class FinancialStatementsExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "financial_statements"
+
+
+class InsurancePensionsExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "insurance_pensions"
+
+
+class InvestmentsExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "investments"
+
+
+class LoansMortgagesExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "loans_mortgages"
+
+
+class PaymentsExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "payments"
+
+
+class OtherExtractor(CategoryExtractor):
+    CATEGORY: ClassVar[str] = "other"
+
+
 # ==========================================
 # Market Data Extractors
 # ==========================================
 
-class ExchangeRatesDayExtractor(PaginatedExtractor):
+class ExchangeRatesDayExtractor(MarketDataExtractor):
     """Extract daily exchange rates of the euro and gold price."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "exchange_rates"
     
     def get_output_filename(self) -> str:
         return "exchange_rates_day"
@@ -36,11 +80,10 @@ class ExchangeRatesDayExtractor(PaginatedExtractor):
             yield record
 
 
-class ExchangeRatesMonthExtractor(PaginatedExtractor):
+class ExchangeRatesMonthExtractor(MarketDataExtractor):
     """Extract monthly exchange rates of the euro and gold price."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "exchange_rates"
     
     def get_output_filename(self) -> str:
         return "exchange_rates_month"
@@ -52,11 +95,10 @@ class ExchangeRatesMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class ExchangeRatesQuarterExtractor(PaginatedExtractor):
+class ExchangeRatesQuarterExtractor(MarketDataExtractor):
     """Extract quarterly exchange rates of the euro and gold price."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "exchange_rates"
     
     def get_output_filename(self) -> str:
         return "exchange_rates_quarter"
@@ -68,11 +110,10 @@ class ExchangeRatesQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class MarketInterestRatesDayExtractor(PaginatedExtractor):
+class MarketInterestRatesDayExtractor(MarketDataExtractor):
     """Extract daily market interest rates."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "interest_rates"
     
     def get_output_filename(self) -> str:
         return "market_interest_rates_day"
@@ -84,11 +125,10 @@ class MarketInterestRatesDayExtractor(PaginatedExtractor):
             yield record
 
 
-class MarketInterestRatesMonthExtractor(PaginatedExtractor):
+class MarketInterestRatesMonthExtractor(MarketDataExtractor):
     """Extract monthly market interest rates."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "interest_rates"
     
     def get_output_filename(self) -> str:
         return "market_interest_rates_month"
@@ -100,11 +140,10 @@ class MarketInterestRatesMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class ECBInterestRatesExtractor(PaginatedExtractor):
+class ECBInterestRatesExtractor(MarketDataExtractor):
     """Extract European Central Bank interest rates."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "interest_rates"
     
     def get_output_filename(self) -> str:
         return "ecb_interest_rates"
@@ -116,11 +155,10 @@ class ECBInterestRatesExtractor(PaginatedExtractor):
             yield record
 
 
-class ExchangeRatesYearAverageExtractor(PaginatedExtractor):
+class ExchangeRatesYearAverageExtractor(MarketDataExtractor):
     """Extract yearly average exchange rates of the euro and gold price."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "exchange_rates"
     
     def get_output_filename(self) -> str:
         return "exchange_rates_year_average"
@@ -132,11 +170,10 @@ class ExchangeRatesYearAverageExtractor(PaginatedExtractor):
             yield record
 
 
-class ExchangeRatesYearEndExtractor(PaginatedExtractor):
+class ExchangeRatesYearEndExtractor(MarketDataExtractor):
     """Extract year-end exchange rates of the euro and gold price."""
-    
-    def get_category(self) -> str:
-        return "market_data"
+
+    SUBCATEGORY: ClassVar[str | None] = "exchange_rates"
     
     def get_output_filename(self) -> str:
         return "exchange_rates_year_end"
@@ -152,11 +189,10 @@ class ExchangeRatesYearEndExtractor(PaginatedExtractor):
 # Macroeconomic Extractors
 # ==========================================
 
-class BalanceOfPaymentsQuarterExtractor(PaginatedExtractor):
+class BalanceOfPaymentsQuarterExtractor(MacroeconomicExtractor):
     """Extract quarterly balance of payments data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "balance_of_payments"
     
     def get_output_filename(self) -> str:
         return "balance_of_payments_quarter"
@@ -168,11 +204,10 @@ class BalanceOfPaymentsQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class BalanceOfPaymentsYearExtractor(PaginatedExtractor):
+class BalanceOfPaymentsYearExtractor(MacroeconomicExtractor):
     """Extract yearly balance of payments data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "balance_of_payments"
     
     def get_output_filename(self) -> str:
         return "balance_of_payments_year"
@@ -184,11 +219,10 @@ class BalanceOfPaymentsYearExtractor(PaginatedExtractor):
             yield record
 
 
-class MacroeconomicScoreboardQuarterExtractor(PaginatedExtractor):
+class MacroeconomicScoreboardQuarterExtractor(MacroeconomicExtractor):
     """Extract quarterly macroeconomic scoreboard data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "macroeconomic_scoreboard"
     
     def get_output_filename(self) -> str:
         return "macroeconomic_scoreboard_quarter"
@@ -200,11 +234,10 @@ class MacroeconomicScoreboardQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class MacroeconomicScoreboardYearExtractor(PaginatedExtractor):
+class MacroeconomicScoreboardYearExtractor(MacroeconomicExtractor):
     """Extract yearly macroeconomic scoreboard data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "macroeconomic_scoreboard"
     
     def get_output_filename(self) -> str:
         return "macroeconomic_scoreboard_year"
@@ -216,11 +249,10 @@ class MacroeconomicScoreboardYearExtractor(PaginatedExtractor):
             yield record
 
 
-class NetExternalAssetsQuarterExtractor(PaginatedExtractor):
+class NetExternalAssetsQuarterExtractor(MacroeconomicExtractor):
     """Extract quarterly net external assets data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "net_external_assets"
     
     def get_output_filename(self) -> str:
         return "net_external_assets_quarter"
@@ -232,11 +264,10 @@ class NetExternalAssetsQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class NetExternalAssetsYearExtractor(PaginatedExtractor):
+class NetExternalAssetsYearExtractor(MacroeconomicExtractor):
     """Extract yearly net external assets data."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "net_external_assets"
     
     def get_output_filename(self) -> str:
         return "net_external_assets_year"
@@ -248,11 +279,10 @@ class NetExternalAssetsYearExtractor(PaginatedExtractor):
             yield record
 
 
-class GeographicalFDIIncomeExtractor(PaginatedExtractor):
+class GeographicalFDIIncomeExtractor(MacroeconomicExtractor):
     """Extract geographical distribution of inward and outward FDI income."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "fdi_income"
     
     def get_output_filename(self) -> str:
         return "geographical_fdi_income"
@@ -264,11 +294,10 @@ class GeographicalFDIIncomeExtractor(PaginatedExtractor):
             yield record
 
 
-class KeyIndicatorsMonetaryStatsMonthExtractor(PaginatedExtractor):
+class KeyIndicatorsMonetaryStatsMonthExtractor(MacroeconomicExtractor):
     """Extract monthly key indicators of monetary statistics."""
-    
-    def get_category(self) -> str:
-        return "macroeconomic"
+
+    SUBCATEGORY: ClassVar[str | None] = "monetary_indicators"
     
     def get_output_filename(self) -> str:
         return "key_indicators_monetary_stats_month"
@@ -284,11 +313,10 @@ class KeyIndicatorsMonetaryStatsMonthExtractor(PaginatedExtractor):
 # Financial Statements Extractors
 # ==========================================
 
-class DNBBalanceSheetMonthExtractor(PaginatedExtractor):
+class DNBBalanceSheetMonthExtractor(FinancialStatementsExtractor):
     """Extract monthly balance sheet of De Nederlandsche Bank."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "dnb"
     
     def get_output_filename(self) -> str:
         return "dnb_balance_sheet_month"
@@ -300,11 +328,10 @@ class DNBBalanceSheetMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class MFIBalanceSheetMonthExtractor(PaginatedExtractor):
+class MFIBalanceSheetMonthExtractor(FinancialStatementsExtractor):
     """Extract monthly balance sheet of Dutch MFIs (not including DNB)."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "mfis_banks"
     
     def get_output_filename(self) -> str:
         return "mfi_balance_sheet_month"
@@ -316,11 +343,10 @@ class MFIBalanceSheetMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class FinancialDataIndividualBanksHalfYearExtractor(PaginatedExtractor):
+class FinancialDataIndividualBanksHalfYearExtractor(FinancialStatementsExtractor):
     """Extract half-yearly financial data of individual banks."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "mfis_banks"
     
     def get_output_filename(self) -> str:
         return "financial_data_individual_banks_half_year"
@@ -332,11 +358,10 @@ class FinancialDataIndividualBanksHalfYearExtractor(PaginatedExtractor):
             yield record
 
 
-class MFIHouseholdInterestRatesMonthExtractor(PaginatedExtractor):
+class MFIHouseholdInterestRatesMonthExtractor(FinancialStatementsExtractor):
     """Extract monthly MFI household deposits and loans interest rates."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "mfis_banks"
     
     def get_output_filename(self) -> str:
         return "mfi_household_interest_rates_month"
@@ -348,11 +373,10 @@ class MFIHouseholdInterestRatesMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class OtherFinancialIntermediariesBalanceSheetGeographyExtractor(PaginatedExtractor):
+class OtherFinancialIntermediariesBalanceSheetGeographyExtractor(FinancialStatementsExtractor):
     """Extract quarterly balance sheet of other financial intermediaries by geography."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "other_fi_balance_sheet_geography_quarter"
@@ -364,11 +388,10 @@ class OtherFinancialIntermediariesBalanceSheetGeographyExtractor(PaginatedExtrac
             yield record
 
 
-class OtherFinancialIntermediariesBalanceSheetExtractor(PaginatedExtractor):
+class OtherFinancialIntermediariesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of other financial intermediaries."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "other_fi_balance_sheet"
@@ -380,11 +403,10 @@ class OtherFinancialIntermediariesBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class FinanceCompaniesBalanceSheetExtractor(PaginatedExtractor):
+class FinanceCompaniesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of finance companies."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "finance_companies_balance_sheet"
@@ -396,11 +418,10 @@ class FinanceCompaniesBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class SpecialisedFinancialInstitutionsBalanceSheetExtractor(PaginatedExtractor):
+class SpecialisedFinancialInstitutionsBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of specialised financial institutions."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "specialised_fi_balance_sheet"
@@ -412,11 +433,10 @@ class SpecialisedFinancialInstitutionsBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class SecuritiesDerivativesTradersBalanceSheetExtractor(PaginatedExtractor):
+class SecuritiesDerivativesTradersBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of securities and derivatives traders."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "securities_derivatives_traders_balance_sheet"
@@ -428,11 +448,10 @@ class SecuritiesDerivativesTradersBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class SecuritisationVehiclesBalanceSheetExtractor(PaginatedExtractor):
+class SecuritisationVehiclesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of securitisation vehicles."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "other_financial_intermediaries"
     
     def get_output_filename(self) -> str:
         return "securitisation_vehicles_balance_sheet"
@@ -444,11 +463,10 @@ class SecuritisationVehiclesBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class FinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
+class FinancialAuxiliariesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of financial auxiliaries."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "financial_auxiliaries"
     
     def get_output_filename(self) -> str:
         return "financial_auxiliaries_balance_sheet"
@@ -460,11 +478,10 @@ class FinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class FinancialAuxiliariesBalanceSheetGeographyExtractor(PaginatedExtractor):
+class FinancialAuxiliariesBalanceSheetGeographyExtractor(FinancialStatementsExtractor):
     """Extract quarterly balance sheet of financial auxiliaries by geography."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "financial_auxiliaries"
     
     def get_output_filename(self) -> str:
         return "financial_auxiliaries_balance_sheet_geography_quarter"
@@ -476,11 +493,10 @@ class FinancialAuxiliariesBalanceSheetGeographyExtractor(PaginatedExtractor):
             yield record
 
 
-class HeadOfficesFinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
+class HeadOfficesFinancialAuxiliariesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of head offices of financial auxiliaries."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "financial_auxiliaries"
     
     def get_output_filename(self) -> str:
         return "head_offices_financial_auxiliaries_balance_sheet"
@@ -492,11 +508,10 @@ class HeadOfficesFinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class OtherFinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
+class OtherFinancialAuxiliariesBalanceSheetExtractor(FinancialStatementsExtractor):
     """Extract balance sheet of other financial auxiliaries."""
-    
-    def get_category(self) -> str:
-        return "financial_statements"
+
+    SUBCATEGORY: ClassVar[str | None] = "financial_auxiliaries"
     
     def get_output_filename(self) -> str:
         return "other_financial_auxiliaries_balance_sheet"
@@ -512,11 +527,10 @@ class OtherFinancialAuxiliariesBalanceSheetExtractor(PaginatedExtractor):
 # Insurance & Pensions Extractors
 # ==========================================
 
-class PensionFundsBalanceSheetExtractor(PaginatedExtractor):
+class PensionFundsBalanceSheetExtractor(InsurancePensionsExtractor):
     """Extract pension funds balance sheet data."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "pension_funds_balance_sheet"
@@ -528,11 +542,10 @@ class PensionFundsBalanceSheetExtractor(PaginatedExtractor):
             yield record
 
 
-class InsuranceCorpsBalanceSheetQuarterExtractor(PaginatedExtractor):
+class InsuranceCorpsBalanceSheetQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly insurance corporations balance sheet data."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "insurance_corps_balance_sheet_quarter"
@@ -544,11 +557,10 @@ class InsuranceCorpsBalanceSheetQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class InsuranceCorpsAssetsDomesticCountersectorExtractor(PaginatedExtractor):
+class InsuranceCorpsAssetsDomesticCountersectorExtractor(InsurancePensionsExtractor):
     """Extract quarterly insurance corporation assets by domestic countersector."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "insurance_corps_assets_domestic_countersector_quarter"
@@ -560,11 +572,10 @@ class InsuranceCorpsAssetsDomesticCountersectorExtractor(PaginatedExtractor):
             yield record
 
 
-class InsuranceCorpsAssetsGeographyExtractor(PaginatedExtractor):
+class InsuranceCorpsAssetsGeographyExtractor(InsurancePensionsExtractor):
     """Extract quarterly insurance corporation assets by geography."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "insurance_corps_assets_geography_quarter"
@@ -576,11 +587,10 @@ class InsuranceCorpsAssetsGeographyExtractor(PaginatedExtractor):
             yield record
 
 
-class InsurersCashFlowQuarterExtractor(PaginatedExtractor):
+class InsurersCashFlowQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly insurers cash flow statement."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "insurers_cash_flow_quarter"
@@ -592,11 +602,10 @@ class InsurersCashFlowQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class SummaryInsuranceCorpsByTypeQuarterExtractor(PaginatedExtractor):
+class SummaryInsuranceCorpsByTypeQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly summary balance sheet of insurance corporations by type."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "summary_insurance_corps_by_type_quarter"
@@ -608,11 +617,10 @@ class SummaryInsuranceCorpsByTypeQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class LifeInsurersPremiumsClaimsCostsQuarterExtractor(PaginatedExtractor):
+class LifeInsurersPremiumsClaimsCostsQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly premiums, claims and costs by line of business of life insurers."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "life_insurers_premiums_claims_costs_quarter"
@@ -624,11 +632,10 @@ class LifeInsurersPremiumsClaimsCostsQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class LifeInsurersPremiumsClaimsCostsYearExtractor(PaginatedExtractor):
+class LifeInsurersPremiumsClaimsCostsYearExtractor(InsurancePensionsExtractor):
     """Extract yearly premiums, claims and costs by line of business of life insurers."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "life_insurers_premiums_claims_costs_year"
@@ -640,11 +647,10 @@ class LifeInsurersPremiumsClaimsCostsYearExtractor(PaginatedExtractor):
             yield record
 
 
-class NonLifeInsurersPremiumsClaimsCostsQuarterExtractor(PaginatedExtractor):
+class NonLifeInsurersPremiumsClaimsCostsQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly premiums, claims and costs by line of business of non-life insurers."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "non_life_insurers_premiums_claims_costs_quarter"
@@ -656,11 +662,10 @@ class NonLifeInsurersPremiumsClaimsCostsQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class NonLifeInsurersPremiumsClaimsCostsYearExtractor(PaginatedExtractor):
+class NonLifeInsurersPremiumsClaimsCostsYearExtractor(InsurancePensionsExtractor):
     """Extract yearly premiums, claims and costs by line of business of non-life insurers."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "insurers"
     
     def get_output_filename(self) -> str:
         return "non_life_insurers_premiums_claims_costs_year"
@@ -672,11 +677,10 @@ class NonLifeInsurersPremiumsClaimsCostsYearExtractor(PaginatedExtractor):
             yield record
 
 
-class IndividualPensionFundDataQuarterExtractor(PaginatedExtractor):
+class IndividualPensionFundDataQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly individual pension fund data."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "individual_pension_fund_data_quarter"
@@ -688,11 +692,10 @@ class IndividualPensionFundDataQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class PensionFundsAssetsDomesticCountersectorExtractor(PaginatedExtractor):
+class PensionFundsAssetsDomesticCountersectorExtractor(InsurancePensionsExtractor):
     """Extract quarterly pension funds assets by domestic countersector."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "pension_funds_assets_domestic_countersector_quarter"
@@ -704,11 +707,10 @@ class PensionFundsAssetsDomesticCountersectorExtractor(PaginatedExtractor):
             yield record
 
 
-class PensionFundsAssetsGeographyExtractor(PaginatedExtractor):
+class PensionFundsAssetsGeographyExtractor(InsurancePensionsExtractor):
     """Extract quarterly pension funds assets by geographical area."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "pension_funds_assets_geography_quarter"
@@ -720,11 +722,10 @@ class PensionFundsAssetsGeographyExtractor(PaginatedExtractor):
             yield record
 
 
-class PensionFundsBalanceSheetLookThroughExtractor(PaginatedExtractor):
+class PensionFundsBalanceSheetLookThroughExtractor(InsurancePensionsExtractor):
     """Extract quarterly pension funds balance sheet including look-through participation."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "pension_funds_balance_sheet_look_through_quarter"
@@ -736,11 +737,10 @@ class PensionFundsBalanceSheetLookThroughExtractor(PaginatedExtractor):
             yield record
 
 
-class PensionFundsCashFlowQuarterExtractor(PaginatedExtractor):
+class PensionFundsCashFlowQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly pension funds cash flow statement."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "pension_funds_cash_flow_quarter"
@@ -752,11 +752,10 @@ class PensionFundsCashFlowQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class SummaryPensionFundsByTypeQuarterExtractor(PaginatedExtractor):
+class SummaryPensionFundsByTypeQuarterExtractor(InsurancePensionsExtractor):
     """Extract quarterly summary balance sheet of pension funds by type."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "summary_pension_funds_by_type_quarter"
@@ -768,11 +767,10 @@ class SummaryPensionFundsByTypeQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class NominalIRTSPensionFundsZeroCouponExtractor(PaginatedExtractor):
+class NominalIRTSPensionFundsZeroCouponExtractor(InsurancePensionsExtractor):
     """Extract nominal IRTS for pension funds zero coupon."""
-    
-    def get_category(self) -> str:
-        return "insurance_pensions"
+
+    SUBCATEGORY: ClassVar[str | None] = "pension_funds"
     
     def get_output_filename(self) -> str:
         return "nominal_irts_pension_funds_zero_coupon"
@@ -788,11 +786,10 @@ class NominalIRTSPensionFundsZeroCouponExtractor(PaginatedExtractor):
 # Investments & Securities Extractors
 # ==========================================
 
-class DutchHouseholdSavingsMonthExtractor(PaginatedExtractor):
+class DutchHouseholdSavingsMonthExtractor(InvestmentsExtractor):
     """Extract monthly Dutch household savings data."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "household_positions"
     
     def get_output_filename(self) -> str:
         return "dutch_household_savings_month"
@@ -804,11 +801,10 @@ class DutchHouseholdSavingsMonthExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchSecuritiesHoldingsByHolderExtractor(PaginatedExtractor):
+class DutchSecuritiesHoldingsByHolderExtractor(InvestmentsExtractor):
     """Extract Dutch securities holdings by sector of the holder."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_by_sector"
     
     def get_output_filename(self) -> str:
         return "dutch_securities_holdings_by_holder"
@@ -820,11 +816,10 @@ class DutchSecuritiesHoldingsByHolderExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchDebtSecuritiesHoldingsByHolderExtractor(PaginatedExtractor):
+class DutchDebtSecuritiesHoldingsByHolderExtractor(InvestmentsExtractor):
     """Extract Dutch debt securities holdings by sector of the holder."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_by_sector"
     
     def get_output_filename(self) -> str:
         return "dutch_debt_securities_holdings_by_holder"
@@ -836,11 +831,10 @@ class DutchDebtSecuritiesHoldingsByHolderExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchFundUnitHoldingsByHolderExtractor(PaginatedExtractor):
+class DutchFundUnitHoldingsByHolderExtractor(InvestmentsExtractor):
     """Extract Dutch fund unit holdings by sector of the holder."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_by_sector"
     
     def get_output_filename(self) -> str:
         return "dutch_fund_unit_holdings_by_holder"
@@ -852,11 +846,10 @@ class DutchFundUnitHoldingsByHolderExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchGovernmentPaperHoldingsExtractor(PaginatedExtractor):
+class DutchGovernmentPaperHoldingsExtractor(InvestmentsExtractor):
     """Extract Dutch government paper holdings."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_geography"
     
     def get_output_filename(self) -> str:
         return "dutch_government_paper_holdings"
@@ -868,11 +861,10 @@ class DutchGovernmentPaperHoldingsExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchListedSharesHoldingsByHolderExtractor(PaginatedExtractor):
+class DutchListedSharesHoldingsByHolderExtractor(InvestmentsExtractor):
     """Extract Dutch listed shares holdings by sector of the holder."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_by_sector"
     
     def get_output_filename(self) -> str:
         return "dutch_listed_shares_holdings_by_holder"
@@ -884,11 +876,10 @@ class DutchListedSharesHoldingsByHolderExtractor(PaginatedExtractor):
             yield record
 
 
-class DutchSecuritiesHoldingsByGeographyExtractor(PaginatedExtractor):
+class DutchSecuritiesHoldingsByGeographyExtractor(InvestmentsExtractor):
     """Extract Dutch securities holdings by sector of the holder by geography."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "holdings_geography"
     
     def get_output_filename(self) -> str:
         return "dutch_securities_holdings_by_geography"
@@ -900,11 +891,10 @@ class DutchSecuritiesHoldingsByGeographyExtractor(PaginatedExtractor):
             yield record
 
 
-class NetDepositsInvestmentFundsQuarterExtractor(PaginatedExtractor):
+class NetDepositsInvestmentFundsQuarterExtractor(InvestmentsExtractor):
     """Extract quarterly net deposits in investment funds by sector of the holder."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "fund_flows"
     
     def get_output_filename(self) -> str:
         return "net_deposits_investment_funds_quarter"
@@ -916,11 +906,10 @@ class NetDepositsInvestmentFundsQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class InvestmentsByHouseholdsAEXSharesExtractor(PaginatedExtractor):
+class InvestmentsByHouseholdsAEXSharesExtractor(InvestmentsExtractor):
     """Extract investments by Dutch households in individual AEX shares."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "household_positions"
     
     def get_output_filename(self) -> str:
         return "investments_by_households_aex_shares"
@@ -932,11 +921,10 @@ class InvestmentsByHouseholdsAEXSharesExtractor(PaginatedExtractor):
             yield record
 
 
-class InvestmentsByHouseholdsSecuritiesByCategoryExtractor(PaginatedExtractor):
+class InvestmentsByHouseholdsSecuritiesByCategoryExtractor(InvestmentsExtractor):
     """Extract investments by Dutch households in securities by instrument category."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "household_positions"
     
     def get_output_filename(self) -> str:
         return "investments_by_households_securities_by_category"
@@ -948,11 +936,10 @@ class InvestmentsByHouseholdsSecuritiesByCategoryExtractor(PaginatedExtractor):
             yield record
 
 
-class Top25InvestmentsHouseholdsInvestmentFundsExtractor(PaginatedExtractor):
+class Top25InvestmentsHouseholdsInvestmentFundsExtractor(InvestmentsExtractor):
     """Extract the 25 largest investments by Dutch households in individual investment funds."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "household_positions"
     
     def get_output_filename(self) -> str:
         return "top25_investments_households_investment_funds"
@@ -964,11 +951,10 @@ class Top25InvestmentsHouseholdsInvestmentFundsExtractor(PaginatedExtractor):
             yield record
 
 
-class Top25InvestmentsListedSharesExtractor(PaginatedExtractor):
+class Top25InvestmentsListedSharesExtractor(InvestmentsExtractor):
     """Extract the 25 largest investments in individual listed shares."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "household_positions"
     
     def get_output_filename(self) -> str:
         return "top25_investments_listed_shares"
@@ -980,11 +966,10 @@ class Top25InvestmentsListedSharesExtractor(PaginatedExtractor):
             yield record
 
 
-class HoldingBondsSustainabilityBySectorExtractor(PaginatedExtractor):
+class HoldingBondsSustainabilityBySectorExtractor(InvestmentsExtractor):
     """Extract holding of bonds by type of sustainability characteristic by sector."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "sustainable_finance"
     
     def get_output_filename(self) -> str:
         return "holding_bonds_sustainability_by_sector"
@@ -996,11 +981,10 @@ class HoldingBondsSustainabilityBySectorExtractor(PaginatedExtractor):
             yield record
 
 
-class HoldingGreenBondsWithAssuranceExtractor(PaginatedExtractor):
+class HoldingGreenBondsWithAssuranceExtractor(InvestmentsExtractor):
     """Extract holding of green bonds with external assurance by sector."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "sustainable_finance"
     
     def get_output_filename(self) -> str:
         return "holding_green_bonds_with_assurance"
@@ -1012,11 +996,10 @@ class HoldingGreenBondsWithAssuranceExtractor(PaginatedExtractor):
             yield record
 
 
-class IssuanceBondsSustainabilityBySectorExtractor(PaginatedExtractor):
+class IssuanceBondsSustainabilityBySectorExtractor(InvestmentsExtractor):
     """Extract issuance of bonds by type of sustainability characteristic by sector."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "sustainable_finance"
     
     def get_output_filename(self) -> str:
         return "issuance_bonds_sustainability_by_sector"
@@ -1028,11 +1011,10 @@ class IssuanceBondsSustainabilityBySectorExtractor(PaginatedExtractor):
             yield record
 
 
-class IssuanceGreenBondsWithAssuranceExtractor(PaginatedExtractor):
+class IssuanceGreenBondsWithAssuranceExtractor(InvestmentsExtractor):
     """Extract issuance of green bonds with external assurance by sector."""
-    
-    def get_category(self) -> str:
-        return "investments"
+
+    SUBCATEGORY: ClassVar[str | None] = "sustainable_finance"
     
     def get_output_filename(self) -> str:
         return "issuance_green_bonds_with_assurance"
@@ -1048,11 +1030,10 @@ class IssuanceGreenBondsWithAssuranceExtractor(PaginatedExtractor):
 # Loans & Mortgages Extractors
 # ==========================================
 
-class LoansByTypeSecuritisationQuarterExtractor(PaginatedExtractor):
+class LoansByTypeSecuritisationQuarterExtractor(LoansMortgagesExtractor):
     """Extract quarterly loans by type and securitisation type."""
-    
-    def get_category(self) -> str:
-        return "loans_mortgages"
+
+    SUBCATEGORY: ClassVar[str | None] = "securitisation"
     
     def get_output_filename(self) -> str:
         return "loans_by_type_securitisation_quarter"
@@ -1064,11 +1045,10 @@ class LoansByTypeSecuritisationQuarterExtractor(PaginatedExtractor):
             yield record
 
 
-class ResidentialMortgagesBySectorExtractor(PaginatedExtractor):
+class ResidentialMortgagesBySectorExtractor(LoansMortgagesExtractor):
     """Extract residential mortgage loans provided to households by sector."""
-    
-    def get_category(self) -> str:
-        return "loans_mortgages"
+
+    SUBCATEGORY: ClassVar[str | None] = "mortgages"
     
     def get_output_filename(self) -> str:
         return "residential_mortgages_by_sector"
@@ -1080,11 +1060,10 @@ class ResidentialMortgagesBySectorExtractor(PaginatedExtractor):
             yield record
 
 
-class ResidentialMortgagesInstitutionalInvestorsQuarterExtractor(PaginatedExtractor):
+class ResidentialMortgagesInstitutionalInvestorsQuarterExtractor(LoansMortgagesExtractor):
     """Extract quarterly residential mortgages provided by Dutch institutional investors."""
-    
-    def get_category(self) -> str:
-        return "loans_mortgages"
+
+    SUBCATEGORY: ClassVar[str | None] = "mortgages"
     
     def get_output_filename(self) -> str:
         return "residential_mortgages_institutional_investors_quarter"
@@ -1100,11 +1079,10 @@ class ResidentialMortgagesInstitutionalInvestorsQuarterExtractor(PaginatedExtrac
 # Payments Extractors
 # ==========================================
 
-class PaymentTransactionsHalfYearExtractor(PaginatedExtractor):
+class PaymentTransactionsHalfYearExtractor(PaymentsExtractor):
     """Extract half-yearly payment transactions data."""
-    
-    def get_category(self) -> str:
-        return "payments"
+
+    SUBCATEGORY: ClassVar[str | None] = "transactions"
     
     def get_output_filename(self) -> str:
         return "payment_transactions_half_year"
@@ -1116,11 +1094,10 @@ class PaymentTransactionsHalfYearExtractor(PaginatedExtractor):
             yield record
 
 
-class RetailPaymentTransactionsExtractor(PaginatedExtractor):
+class RetailPaymentTransactionsExtractor(PaymentsExtractor):
     """Extract retail payment transactions data."""
-    
-    def get_category(self) -> str:
-        return "payments"
+
+    SUBCATEGORY: ClassVar[str | None] = "transactions"
     
     def get_output_filename(self) -> str:
         return "retail_payment_transactions"
@@ -1132,11 +1109,10 @@ class RetailPaymentTransactionsExtractor(PaginatedExtractor):
             yield record
 
 
-class InfrastructureDomesticPaymentsHalfYearExtractor(PaginatedExtractor):
+class InfrastructureDomesticPaymentsHalfYearExtractor(PaymentsExtractor):
     """Extract half-yearly infrastructure domestic payments in units."""
-    
-    def get_category(self) -> str:
-        return "payments"
+
+    SUBCATEGORY: ClassVar[str | None] = "infrastructure"
     
     def get_output_filename(self) -> str:
         return "infrastructure_domestic_payments_half_year"
@@ -1148,11 +1124,10 @@ class InfrastructureDomesticPaymentsHalfYearExtractor(PaginatedExtractor):
             yield record
 
 
-class InfrastructureRetailPaymentsUnitsExtractor(PaginatedExtractor):
+class InfrastructureRetailPaymentsUnitsExtractor(PaymentsExtractor):
     """Extract infrastructure of domestic retail payments units."""
-    
-    def get_category(self) -> str:
-        return "payments"
+
+    SUBCATEGORY: ClassVar[str | None] = "infrastructure"
     
     def get_output_filename(self) -> str:
         return "infrastructure_retail_payments_units"
@@ -1168,11 +1143,8 @@ class InfrastructureRetailPaymentsUnitsExtractor(PaginatedExtractor):
 # Other Extractors
 # ==========================================
 
-class StatutoryInterestRateHalfYearExtractor(PaginatedExtractor):
+class StatutoryInterestRateHalfYearExtractor(OtherExtractor):
     """Extract half-yearly statutory interest rate."""
-    
-    def get_category(self) -> str:
-        return "other"
     
     def get_output_filename(self) -> str:
         return "statutory_interest_rate_half_year"

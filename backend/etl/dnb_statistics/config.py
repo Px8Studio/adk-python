@@ -145,6 +145,8 @@ def get_output_path(
     stage: str,  # 'fetch', 'bronze', 'silver', 'gold'
     category: str,  # From ENDPOINT_CATEGORIES
     filename: str,
+    *,
+    subcategory: str | None = None,
 ) -> Path:
     """
     Generate standardized output path for data files.
@@ -153,6 +155,12 @@ def get_output_path(
         stage: Data processing stage ('fetch', 'bronze', 'silver', 'gold')
         category: Data category
         filename: File name (without extension)
+    
+    Args:
+        stage: Data processing stage ('fetch', 'bronze', 'silver', 'gold')
+        category: Data category
+        filename: File name (without extension)
+        subcategory: Optional nested directory under the category
     
     Returns:
         Full path to output file
@@ -174,10 +182,15 @@ def get_output_path(
     
     category_dir = base_dir / category
     category_dir.mkdir(parents=True, exist_ok=True)
+
+    target_dir = category_dir
+    if subcategory:
+        target_dir = category_dir / subcategory
+        target_dir.mkdir(parents=True, exist_ok=True)
     
     # Always use .parquet extension
     extension = ".parquet"
-    return category_dir / f"{filename}{extension}"
+    return target_dir / f"{filename}{extension}"
 
 
 def categorize_endpoint(endpoint_name: str) -> str:

@@ -90,6 +90,7 @@ class ExtractionMetadata:
         stats: dict[str, Any],
         category: str,
         filename: str,
+        subcategory: str | None = None,
     ) -> None:
         """
         Update metadata for a completed extraction.
@@ -99,6 +100,7 @@ class ExtractionMetadata:
             stats: Extraction statistics from the extractor
             category: Data category
             filename: Output filename
+            subcategory: Optional nested category for storage grouping
         """
         # Ensure endpoints dict exists
         if "endpoints" not in self.data:
@@ -108,11 +110,15 @@ class ExtractionMetadata:
         if endpoint_name not in self.data["endpoints"]:
             self.data["endpoints"][endpoint_name] = {
                 "category": category,
+                "subcategory": subcategory,
                 "filename": filename,
                 "extraction_history": [],
             }
         
         endpoint_meta = self.data["endpoints"][endpoint_name]
+        endpoint_meta["category"] = category
+        if subcategory is not None:
+            endpoint_meta["subcategory"] = subcategory
         
         # Determine completeness status
         total_records = stats.get("total_records", 0)

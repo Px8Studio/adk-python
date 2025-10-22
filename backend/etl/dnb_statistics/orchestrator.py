@@ -102,6 +102,7 @@ async def extract_endpoint(endpoint_name: str, metadata: ExtractionMetadata) -> 
             stats=stats,
             category=extractor.get_category(),
             filename=extractor.get_output_filename(),
+            subcategory=extractor.get_subcategory(),
         )
         
         return stats

@@ -98,6 +98,10 @@ class BaseExtractor(ABC):
         """Return the base filename (without extension)."""
         pass
     
+    def get_subcategory(self) -> str | None:
+        """Optional subcategory for nested output directories."""
+        return None
+
     @abstractmethod
     async def extract(self) -> AsyncIterator[dict[str, Any]]:
         """
@@ -266,6 +270,7 @@ class BaseExtractor(ABC):
                 "bronze",
                 self.get_category(),
                 self.get_output_filename(),
+                subcategory=self.get_subcategory(),
             )
             
             # Clear existing file (fresh extraction)
