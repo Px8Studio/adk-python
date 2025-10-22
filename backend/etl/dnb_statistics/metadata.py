@@ -119,10 +119,20 @@ class ExtractionMetadata:
         total_pages = stats.get("total_pages", 0)
         metadata_info = stats.get("metadata", {}) or {}
         page_size_zero_meta = metadata_info.get("page_size_zero") or {}
-        fallback_meta = metadata_info.get("fallback_page_1") or {}
+        fallback_last_meta = (
+            metadata_info.get("fallback_last_page")
+            or metadata_info.get("fallback_page_last")
+            or metadata_info.get("fallback_page_1")
+            or {}
+        )
         used_fallback = stats.get("used_fallback", False)
+        expected_total = (
+            metadata_info.get("fallback_expected_total")
+            or fallback_last_meta.get("total_count")
+            or page_size_zero_meta.get("total_count")
+        )
         
-        is_complete = True
+        is_complete = stats.get("is_complete", True)
         completeness_notes: list[str] = []
         
         if page_size_zero_meta.get("has_more_pages"):
@@ -132,19 +142,23 @@ class ExtractionMetadata:
             if not used_fallback:
                 is_complete = False
         
-        fallback_has_more = fallback_meta.get("has_more_pages")
+        fallback_has_more = fallback_last_meta.get("has_more_pages")
         if fallback_has_more:
             completeness_notes.append(
-                "Fallback pagination first page still indicates additional pages"
+                "Fallback pagination reported additional pages after final fetch"
             )
             is_complete = False
         
-        expected_total = fallback_meta.get("total_count") or page_size_zero_meta.get("total_count")
         if expected_total and total_records and total_records != expected_total:
             completeness_notes.append(
                 f"Record count mismatch (expected {expected_total:,}, got {total_records:,})"
             )
             is_complete = False
+        elif not expected_total and fallback_last_meta:
+            expected_remaining = fallback_last_meta.get("has_more_pages")
+            if expected_remaining:
+                completeness_notes.append("API did not report total_count; has_more_pages remains true")
+                is_complete = False
         
         # Check for failed pages
         failed_pages = stats.get("failed_pages", 0)

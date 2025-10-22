@@ -286,7 +286,7 @@ class BaseExtractor(ABC):
                     await self._write_parquet(batch, bronze_path, append=True)
                     
                     logger.info(
-                        f"  ✓ Processed {self.stats['total_records']:,} records"
+                        f"  {safe_emoji('✅')} Processed {self.stats['total_records']:,} records"
                     )
                     batch.clear()
             
@@ -456,160 +456,167 @@ class PaginatedExtractor(BaseExtractor):
         endpoint_builder,
         query_params: Optional[dict[str, Any]] = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
-        """
-        Fallback pagination strategy if pageSize=0 doesn't work.
-        
-        This method implements traditional page-by-page fetching.
-        """
-        logger.info(f"{safe_emoji('📊')} Using fallback pagination strategy...")
-        
-        await self._rate_limit()
-        
-        # Configure request with fallback page size (not 0, but actual limit)
-        config_obj = RequestConfiguration()
-        config_obj.headers = HeadersCollection()
-        config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
-        config_obj.headers.try_add("Accept", "application/json")
-        config_obj.query_parameters = {}
-        config_obj.query_parameters["page"] = 1
-        config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000, not 0
-        
-        first_response = await endpoint_builder.get(config_obj)
-        
-        if not first_response:
-            logger.warning("No data returned from endpoint")
-            return
-        
-        # Extract metadata
-        metadata_obj = self._resolve_metadata(first_response)
-        fallback_metadata = self._capture_metadata(
-            "fallback_page_1",
-            metadata_obj,
-        )
-        if fallback_metadata:
-            logger.debug(
-                "Metadata (fallback page 1): page=%s, page_size=%s, total_count=%s, has_more_pages=%s",
-                fallback_metadata.get("page"),
-                fallback_metadata.get("page_size"),
-                fallback_metadata.get("total_count"),
-                fallback_metadata.get("has_more_pages"),
-            )
+            """Fallback pagination when the pageSize=0 shortcut is unavailable."""
 
-        total_count = fallback_metadata.get("total_count", 0)
-        
-        # Check if first page has records
-        first_page_records = []
-        if hasattr(first_response, "records") and first_response.records:
-            first_page_records = first_response.records
-        
-        if not first_page_records:
-            logger.warning("No records in first page")
-            return
-        
-        # Since API doesn't provide total_count, we'll paginate until we get an empty page
-        if total_count == 0:
-            logger.warning(
-                f"{safe_emoji('⚠️')} Total count unavailable from API - "
-                "will fetch all pages until empty"
-            )
-            
-            # Yield records from first page
-            for record in first_page_records:
-                yield self._serialize_record(record)
-            
-            # Continue fetching pages until we get no records
-            page_num = 2
+            logger.info(f"{safe_emoji('📊')} Using fallback pagination strategy...")
+
+            await self._rate_limit()
+
+            initial_config = RequestConfiguration()
+            initial_config.headers = HeadersCollection()
+            initial_config.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+            initial_config.headers.try_add("Accept", "application/json")
+            initial_config.query_parameters = {}
+            initial_config.query_parameters["page"] = 1
+            initial_config.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE
+
+            if query_params:
+                initial_config.query_parameters.update(query_params)
+
+            try:
+                response = await endpoint_builder.get(initial_config)
+            except Exception as exc:
+                logger.error(f"Failed to fetch page 1: {exc}")
+                self.stats["failed_pages"] += 1
+                return
+
+            if not response:
+                logger.warning("No data returned from endpoint")
+                return
+
+            metadata_obj = self._resolve_metadata(response)
+            current_metadata = self._capture_metadata("fallback_page_1", metadata_obj) or {}
+            if current_metadata:
+                logger.debug(
+                    "Metadata (fallback page 1): page=%s, page_size=%s, total_count=%s, has_more_pages=%s",
+                    current_metadata.get("page"),
+                    current_metadata.get("page_size"),
+                    current_metadata.get("total_count"),
+                    current_metadata.get("has_more_pages"),
+                )
+
+            expected_total = current_metadata.get("total_count") or 0
+            reported_page_size = current_metadata.get("page_size") or config.FALLBACK_PAGE_SIZE
+            estimated_pages = 0
+
+            if expected_total:
+                estimated_pages = (expected_total + reported_page_size - 1) // reported_page_size
+                logger.info(
+                    f"Total: {expected_total:,} records across {estimated_pages} pages "
+                    f"(pageSize={reported_page_size})"
+                )
+            else:
+                logger.warning(
+                    f"{safe_emoji('⚠️')} Total count unavailable from API - "
+                    "will fetch all pages until empty"
+                )
+
+            metadata_snapshot = self.stats.setdefault("metadata", {})
+            metadata_snapshot["fallback_expected_total"] = expected_total
+            metadata_snapshot["fallback_reported_page_size"] = reported_page_size
+
+            records_emitted = 0
+            page_index = 0
+            last_metadata = current_metadata
+
             while True:
-                logger.info(f"Fetching page {page_num}...")
-                
+                records = []
+                if hasattr(response, "records") and response.records:
+                    records = response.records
+
+                if not records:
+                    if page_index == 0:
+                        logger.warning("No records in first page")
+                    else:
+                        logger.info(
+                            f"{safe_emoji('✅')} Reached end of data at page {page_index}"
+                        )
+                    break
+
+                page_index += 1
+                self.stats["total_pages"] = page_index
+
+                for record in records:
+                    if expected_total and records_emitted >= expected_total:
+                        break
+                    yield self._serialize_record(record)
+                    records_emitted += 1
+
+                last_metadata = current_metadata or {}
+                self._capture_metadata("fallback_last_page", last_metadata)
+                metadata_snapshot["fallback_records_emitted"] = records_emitted
+
+                progress_marker = safe_emoji('✅')
+                if expected_total:
+                    progress = min(100.0, records_emitted / expected_total * 100)
+                    logger.info(
+                        f"  {progress_marker} Progress: {progress:.1f}% ({records_emitted:,}/{expected_total:,} records)"
+                    )
+                else:
+                    logger.info(
+                        f"  {progress_marker} Processed {records_emitted:,} records so far"
+                    )
+
+                if expected_total and records_emitted >= expected_total:
+                    if last_metadata.get("has_more_pages"):
+                        logger.info(
+                            "Reached expected total of %s records; stopping despite has_more_pages=True",
+                            f"{expected_total:,}",
+                        )
+                    break
+
+                if not last_metadata.get("has_more_pages"):
+                    break
+
+                next_page = page_index + 1
+                if expected_total and estimated_pages:
+                    logger.info(f"Fetching page {next_page}/{estimated_pages}...")
+                else:
+                    logger.info(f"Fetching page {next_page}...")
+
                 await self._rate_limit()
-                
+
+                next_config = RequestConfiguration()
+                next_config.headers = HeadersCollection()
+                next_config.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
+                next_config.headers.try_add("Accept", "application/json")
+                next_config.query_parameters = {}
+                next_config.query_parameters["page"] = next_page
+                next_config.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE
+
+                if query_params:
+                    next_config.query_parameters.update(query_params)
+
                 try:
-                    config_obj = RequestConfiguration()
-                    config_obj.headers = HeadersCollection()
-                    config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
-                    config_obj.headers.try_add("Accept", "application/json")
-                    config_obj.query_parameters = {}
-                    config_obj.query_parameters["page"] = page_num
-                    config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000 for pagination
-                    
-                    response = await endpoint_builder.get(config_obj)
-                    
-                    if not response or not hasattr(response, "records") or not response.records:
-                        logger.info(
-                            f"{safe_emoji('✅')} Reached end of data at page {page_num - 1}"
-                        )
-                        break
-                    
-                    record_count = len(response.records)
-                    for record in response.records:
-                        yield self._serialize_record(record)
-                    
-                    logger.info(f"  Page {page_num}: {record_count} records")
-                    
-                    # If we got fewer records than page size, we're probably at the end
-                    if record_count < config.FALLBACK_PAGE_SIZE:
-                        logger.info(
-                            f"{safe_emoji('✅')} Last page (partial): {record_count} records"
-                        )
-                        break
-                    
-                    page_num += 1
-                    self.stats["total_pages"] = page_num
-                
+                    response = await endpoint_builder.get(next_config)
                 except Exception as exc:
-                    logger.error(f"Failed to fetch page {page_num}: {exc}")
+                    logger.error(f"Failed to fetch page {next_page}: {exc}")
                     self.stats["failed_pages"] += 1
                     break
-            
-            return
-        
-        # If we have total_count, use traditional pagination
-        total_pages = (total_count // config.FALLBACK_PAGE_SIZE) + (
-            1 if total_count % config.FALLBACK_PAGE_SIZE else 0
-        )
-        
-        logger.info(
-            f"Total: {total_count:,} records across {total_pages} pages "
-            f"(pageSize={config.FALLBACK_PAGE_SIZE})"
-        )
-        
-        self.stats["total_pages"] = total_pages
-        
-        # Yield records from first page
-        for record in first_page_records:
-            yield self._serialize_record(record)
-        
-        # Fetch remaining pages
-        if total_pages > 1:
-            for page_num in range(2, total_pages + 1):
-                logger.info(f"Fetching page {page_num}/{total_pages}...")
-                
-                await self._rate_limit()
-                
-                try:
-                    config_obj = RequestConfiguration()
-                    config_obj.headers = HeadersCollection()
-                    config_obj.headers.try_add("Ocp-Apim-Subscription-Key", config.DNB_API_KEY)
-                    config_obj.headers.try_add("Accept", "application/json")
-                    config_obj.query_parameters = {}
-                    config_obj.query_parameters["page"] = page_num
-                    config_obj.query_parameters["pageSize"] = config.FALLBACK_PAGE_SIZE  # Use 2000 for pagination
-                    
-                    response = await endpoint_builder.get(config_obj)
-                    
-                    if response and hasattr(response, "records") and response.records:
-                        for record in response.records:
-                            yield self._serialize_record(record)
-                
-                except Exception as exc:
-                    logger.error(f"Failed to fetch page {page_num}: {exc}")
-                    self.stats["failed_pages"] += 1
-                    continue
-                
-                # Progress update
-                progress = page_num / total_pages * 100
-                logger.info(f"  ✓ Progress: {progress:.1f}% ({page_num}/{total_pages} pages)")
+
+                if not response:
+                    logger.info(
+                        f"{safe_emoji('✅')} Reached end of data at page {page_index}"
+                    )
+                    break
+
+                metadata_obj = self._resolve_metadata(response)
+                current_metadata = self._capture_metadata(
+                    f"fallback_page_{next_page}",
+                    metadata_obj,
+                ) or {}
+
+            if expected_total and records_emitted < expected_total:
+                logger.warning(
+                    f"{safe_emoji('⚠️')} Expected {expected_total:,} records but only received {records_emitted:,}"
+                )
+
+            metadata_snapshot["fallback_last_page_has_more"] = last_metadata.get("has_more_pages") if last_metadata else None
+
+            if records_emitted and last_metadata and not last_metadata.get("has_more_pages"):
+                if not expected_total or records_emitted == expected_total:
+                    self.stats["is_complete"] = True
+
     
     def _serialize_record(self, record: Any) -> dict[str, Any]:
         """
