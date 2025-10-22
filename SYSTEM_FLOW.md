@@ -1,20 +1,54 @@
 # Orkhon Quick-Start: Complete System Flow
 
+This document outlines the complete system flow for the Orkhon project, from a single startup command to a fully operational, multi-service development environment.
+
 ## 🎯 One Command to Start Everything
+
+The entire stack can be launched with a single command from your PowerShell terminal.
 
 ```powershell
 .\quick-start.ps1
 ```
 
-## 📊 System Architecture
+This script automates diagnostics, Docker setup, service health checks, and launching the ADK web server.
+
+## 🏛️ Conceptual Architecture: The "Tools-First" Approach
+
+Before diving into the operational flow, it's important to understand the "why" behind Orkhon's design. GenAI Toolbox sits at the centre of Orkhon’s “tools-first” agent architecture. Think of it as the contract between language models, tool/business logic, and surrounding infrastructure. Here is how the major ecosystems connect.
+
+### Core Building Blocks
+
+- **OpenAPI → Toolbox → Agents:** Domain APIs (e.g., DNB) live as OpenAPI specs. `openapi-mcp-codegen` or ADK’s `OpenAPIToolset` converts them into structured tools. The generated YAML under `config/` defines each tool’s HTTP method, params, authentication, and docs. ADK agents then import those toolsets and expose them to the LLM.
+
+- **Model Context Protocol (MCP):** GenAI Toolbox is an MCP server. MCP is a model/tool interop standard backed by Google, LangChain, Microsoft, and others. MCP defines capabilities (tools, resources, prompts) and communications. Toolbox implements the protocol so any MCP-aware agent (ADK, LangChain, Semantic Kernel, etc.) can auto-discover and call tools without bespoke glue code.
+
+- **ADK Agents:** Google’s Agent Development Kit (ADK) wraps Gemini models, prompt instructions, memory, and tool orchestration. In Orkhon, the root agent routes requests, coordinator agents choose between “standard” toolbox tools or experimental OpenAPI tools, and API-specific agents invoke the DNB toolsets. The ADK runtime handles function-calling, structured responses, retries, logging, and evaluation hooks.
+
+### Where the Big Players Show Up
+
+- **Google:** Supplies Gemini models and ADK (agents, runners, OpenAPI ingestion). `google.adk` packages in `.venv` are used everywhere – from the FastAPI web server under `adk` to the ETL pipelines referencing ADK’s tooling.
+
+- **LangChain:** While Orkhon isn’t running LangChain pipelines directly, MCP is equally supported by LangChain’s LangGraph/LCEL stack. That means the same Toolbox server you use with ADK could be consumed by a LangChain agent simply by registering an MCP client. This is how the ecosystems align: tooling is shared even if orchestration differs.
+
+- **Microsoft:** MCP grew out of the VS Code Copilot ecosystem. VS Code now treats MCP servers as “tool providers” that Copilot or inline chats can call. Microsoft’s Semantic Kernel is adding MCP support too. So Orkhon’s toolbox can be plugged into both Gemini-based agents (ADK) and Microsoft-first stacks (Copilot, Semantic Kernel) with no new adapters.
+
+### Why This Partnership Matters
+
+- **Shared standards** mean you describe a tool once (OpenAPI → YAML) and reuse it everywhere. Gemini/ADK, LangChain, Copilot, or custom agents can all call the same MCP endpoint.
+- **Authentication and rate-limiting are centralized.** Toolbox inserts headers like `Ocp-Apim-Subscription-Key` and enforces retry/backoff policies so individual agents don’t need bespoke code.
+- **Observability comes for free.** Every call passes through Toolbox, giving you Jaeger traces, logs, and metrics regardless of which LLM client triggered it.
+
+## 📊 System Startup Flow
+
+The `quick-start.ps1` script executes the following sequence to bring the full stack online.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     USER COMMAND                            │
 │              .\quick-start.ps1                             │
 └────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
+                                           │
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 1: System Diagnostics (diagnose-setup.ps1)          │
 │  • Docker CLI installed?                                   │
@@ -23,16 +57,16 @@
 │  • Ports available? (8000, 5000, 16686, 4318)            │
 │  • Docker network exists?                                  │
 └────────────────────────┬────────────────────────────────────┘
-                         │ [OK] All checks passed
-                         ▼
+                                           │ [OK] All checks passed
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 2: Docker Network Management                         │
 │  • Check if orkhon-network exists                          │
 │  • Create if missing                                       │
 │  • Verify connectivity                                     │
 └────────────────────────┬────────────────────────────────────┘
-                         │ [OK] Network ready
-                         ▼
+                                           │ [OK] Network ready
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 3: Start Docker Stack                                │
 │  ┌──────────────────────────────────────────────────────┐  │
@@ -52,22 +86,22 @@
 │         ▼                               ▼                  │
 │    [HEALTHY]                        [READY]                │
 └────────────────────────┬────────────────────────────────────┘
-                         │ [OK] All services ready
-                         ▼
+                                           │ [OK] All services ready
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 4: Open Web UIs (Automatic)                          │
 │  • Opens: http://localhost:5000/ui/  (Toolbox)            │
 │  • Opens: http://localhost:16686     (Jaeger)             │
 └────────────────────────┬────────────────────────────────────┘
-                         │ [OK] UIs opened
-                         ▼
+                                           │ [OK] UIs opened
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 5: Verify Python Environment                         │
 │  • Check .venv/Scripts/Activate.ps1 exists                │
 │  • Prepare for ADK Web startup                             │
 └────────────────────────┬────────────────────────────────────┘
-                         │ [OK] Environment ready
-                         ▼
+                                           │ [OK] Environment ready
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  STEP 6: Start ADK Web Server                              │
 │  • Load .env configuration                                 │
@@ -75,8 +109,8 @@
 │  • Run: adk web --reload_agents --port 8000               │
 │  • Listen on 0.0.0.0:8000                                  │
 └────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
+                                           │
+                                           ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              🎉 FULL STACK RUNNING                          │
 │                                                             │
@@ -97,13 +131,15 @@
 
 ## 🔄 Data Flow During Operation
 
+Once running, a typical request flows through the system as follows:
+
 ```
 ┌──────────────┐
 │   User       │
 │  (Browser)   │
 └──────┬───────┘
-       │ HTTP Request
-       ▼
+          │ HTTP Request
+          ▼
 ┌──────────────────────────┐
 │   ADK Web Server         │
 │   http://localhost:8000  │
@@ -112,9 +148,9 @@
 │   • Tool Orchestration   │
 │   • Session Management   │
 └──────┬───────────────────┘
-       │ Tool Invocation
-       │ (via ToolboxClient)
-       ▼
+          │ Tool Invocation
+          │ (via ToolboxClient)
+          ▼
 ┌───────────────────────────────────────┐
 │   GenAI Toolbox MCP Server            │
 │   http://localhost:5000               │
@@ -124,10 +160,10 @@
 │   • Request validation                │
 │   • OpenTelemetry tracing             │
 └──────┬────────────────────┬───────────┘
-       │                    │
-       │ API Calls          │ Traces (OTLP)
-       │                    │
-       ▼                    ▼
+          │                    │
+          │ API Calls          │ Traces (OTLP)
+          │                    │
+          ▼                    ▼
 ┌──────────────┐    ┌──────────────────┐
 │  DNB APIs    │    │  Jaeger          │
 │              │    │  http://16686    │
@@ -140,15 +176,17 @@
 
 ## 🎛️ Health Check Mechanism
 
+The startup script actively probes services to ensure they are ready before proceeding.
+
 ```
 ┌────────────────────────────────────────┐
 │   quick-start.ps1                      │
 │   Step 3: Service Health Checks        │
 └────────────────┬───────────────────────┘
-                 │
-        ┌────────┴────────┐
-        │                 │
-        ▼                 ▼
+                             │
+              ┌────────┴────────┐
+              │                 │
+              ▼                 ▼
 ┌────────────────┐  ┌──────────────────┐
 │   Jaeger       │  │   Toolbox        │
 │                │  │                  │
@@ -158,22 +196,24 @@
 │                │  │  • /api/toolset/ │
 │                │  │  • /ui/          │
 └────┬───────────┘  └────┬─────────────┘
-     │                   │
-     │ HTTP GET          │ HTTP GET
-     │ (2s timeout)      │ (2s timeout)
-     │                   │
-     ▼                   ▼
+        │                   │
+        │ HTTP GET          │ HTTP GET
+        │ (2s timeout)      │ (2s timeout)
+        │                   │
+        ▼                   ▼
 ┌─────────┐         ┌──────────┐
 │ 200 OK  │         │  200 OK  │
 └────┬────┘         └────┬─────┘
-     │                   │
-     └─────────┬─────────┘
-               │
-               ▼
-     [OK] All services ready!
+        │                   │
+        └─────────┬─────────┘
+                        │
+                        ▼
+        [OK] All services ready!
 ```
 
 ## 📈 Startup Timeline
+
+A typical startup sequence takes approximately 30-60 seconds.
 
 ```
 Time    Step    Action                          Status
@@ -199,7 +239,7 @@ Time    Step    Action                          Status
 0:22    4       ✓ UIs opened                    [OK]
 
 0:22    5       Check Python venv               Checking...
-0:22    5       ✓ venv found                    [OK]
+0.22    5       ✓ venv found                    [OK]
 
 0:22    6       Load .env config                Loading...
 0:23    6       Activate venv                   Activating...
@@ -215,24 +255,24 @@ Total Time: ~30-60 seconds (depending on system)
 
 ```
 User presses Ctrl+C
-       │
-       ▼
+          │
+          ▼
 ┌──────────────────┐
 │  ADK Web Server  │──► Stops immediately
 └──────────────────┘
-       │
-       ▼
+          │
+          ▼
 ┌─────────────────────────────────────┐
 │  Docker Services Continue Running   │
 │  • GenAI Toolbox: still at :5000    │
 │  • Jaeger: still at :16686          │
 └─────────────────────────────────────┘
-       │
-       │ User can:
-       ├─► Restart ADK Web: .\quick-start.ps1
-       ├─► Stop Docker: cd backend\toolbox
-       │                docker-compose down
-       └─► View logs:   docker logs <container>
+          │
+          │ User can:
+          ├─► Restart ADK Web: .\quick-start.ps1
+          ├─► Stop Docker: cd backend\toolbox
+          │                docker-compose down
+          └─► View logs:   docker logs <container>
 ```
 
 ## 🔧 Service Dependencies
@@ -241,34 +281,35 @@ User presses Ctrl+C
 ┌──────────────────┐
 │  Docker Desktop  │ (Must be running first)
 └────────┬─────────┘
-         │
-         ▼
+               │
+               ▼
 ┌──────────────────┐
 │  Docker Network  │ (orkhon-network)
 └────────┬─────────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
+               │
+       ┌────┴────┐
+       ▼         ▼
 ┌────────┐  ┌────────────┐
 │ Jaeger │  │  Toolbox   │ (Both start in parallel)
 └────┬───┘  └─────┬──────┘
-     │            │
-     │◄───OTLP────┤ (Toolbox sends traces to Jaeger)
-     │            │
-     └─────┬──────┘
-           │ Both must be healthy before...
-           ▼
-     ┌──────────┐
-     │ ADK Web  │ (Connects to Toolbox via HTTP)
-     └──────────┘
+        │            │
+        │◄───OTLP────┤ (Toolbox sends traces to Jaeger)
+        │            │
+        └─────┬──────┘
+                 │ Both must be healthy before...
+                 ▼
+        ┌──────────┐
+        │ ADK Web  │ (Connects to Toolbox via HTTP)
+        └──────────┘
 ```
 
 ## 🎯 Success Indicators
 
 ### Terminal Output
+You'll know the system is ready when you see this banner in your terminal:
 ```powershell
 ========================================================
-            ADK Web Server Starting...
+                     ADK Web Server Starting...
 
   Full Stack Running:
   • ADK Web:     http://localhost:8000
@@ -281,6 +322,7 @@ User presses Ctrl+C
 ```
 
 ### Docker Status
+You can verify the backend services are running with `docker ps`:
 ```powershell
 PS> docker ps --filter "name=orkhon-"
 NAMES                                    STATUS
@@ -289,30 +331,39 @@ orkhon-toolbox-dev-jaeger-1             Up 2 minutes (healthy)
 ```
 
 ### Service Health
+All primary UIs should return a `200 OK` status:
 ```powershell
 ✓ http://localhost:8000      → ADK Web (200 OK)
 ✓ http://localhost:5000/ui/  → Toolbox UI (200 OK)
 ✓ http://localhost:16686     → Jaeger UI (200 OK)
 ```
 
-## 🚀 Ready to Use!
+## 🚀 Ready to Build!
 
 Once you see the "Full Stack Running" message, you can:
 
-1. **Browse Toolbox UI** → http://localhost:5000/ui/
-   - See all 82 DNB tools
-   - Test tools interactively
-   - View tool schemas
+1.  **Browse Toolbox UI** → http://localhost:5000/ui/
+       - See all 82 DNB tools
+       - Test tools interactively
+       - View tool schemas
 
-2. **Access ADK Web** → http://localhost:8000
-   - Interact with AI agents
-   - Run agent workflows
-   - Test agent capabilities
+2.  **Access ADK Web** → http://localhost:8000
+       - Interact with AI agents
+       - Run agent workflows
+       - Test agent capabilities
 
-3. **Monitor Traces** → http://localhost:16686
-   - View distributed traces
-   - Analyze performance
-   - Debug tool invocations
+3.  **Monitor Traces** → http://localhost:16686
+       - View distributed traces
+       - Analyze performance
+       - Debug tool invocations
+
+### Tips for Deeper Development
+
+1.  **Define once, reuse widely.** Keep specs in `apis/`, run `openapi-mcp-codegen` to refresh YAML, and immediately get the new tool in Toolbox, ADK, or LangChain clients.
+2.  **Use MCP clients for cross-ecosystem use.** Want to test with LangChain or Copilot? Point them to the Toolbox MCP endpoint (`http://localhost:5000`) and they’ll see the same tool catalog ADK uses.
+3.  **Handle rate limits early.** Build backoff/retry policies into Toolbox (or your generated clients) and surface friendly errors from agents. That keeps conversational flows from collapsing on 429 responses.
+4.  **Trace everything.** With Jaeger already wired, tag your tool configs and agent flows so you can inspect every request end-to-end when something fails.
+5.  **Leverage ADK’s abstractions.** Use runner decorators, evaluation hooks, or memory providers to extend the agents. ADK is designed for those integrations and plays nicely with MCP.
 
 ---
 
