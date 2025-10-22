@@ -47,17 +47,37 @@ class RateLimiter:
       calls_per_period: int = config.RATE_LIMIT_CALLS,
       period_seconds: float = config.RATE_LIMIT_PERIOD,
       buffer_factor: float = config.RATE_LIMIT_BUFFER,
+      min_delay: float = config.MIN_DELAY_BETWEEN_CALLS,
   ):
-    # Apply safety buffer (e.g., 30 calls → 25 calls)
+    # Apply safety buffer (e.g., 30 calls → 20 calls with 1.5x buffer)
     self.max_calls = int(calls_per_period / buffer_factor)
     self.period = period_seconds
+    self.min_delay = min_delay  # Minimum delay between consecutive calls
     self.tokens = self.max_calls
     self.last_refill = time.monotonic()
+    self.last_request_time = 0.0
     self.lock = asyncio.Lock()
+    
+    logger.info(
+        f"⏱️  Rate limiter initialized: "
+        f"{self.max_calls} calls/{period_seconds}s "
+        f"(min {min_delay}s between calls)"
+    )
   
   async def acquire(self) -> None:
-    """Wait until a token is available, then consume it."""
+    """Wait until a token is available AND minimum delay has passed."""
     async with self.lock:
+      # First, enforce minimum delay between calls
+      now = time.monotonic()
+      elapsed_since_last = now - self.last_request_time
+      if elapsed_since_last < self.min_delay:
+        wait_for_delay = self.min_delay - elapsed_since_last
+        logger.debug(
+            f"Enforcing minimum delay: waiting {wait_for_delay:.2f}s..."
+        )
+        await asyncio.sleep(wait_for_delay)
+      
+      # Then, check token bucket
       await self._refill()
       
       while self.tokens <= 0:
@@ -70,6 +90,7 @@ class RateLimiter:
         await self._refill()
       
       self.tokens -= 1
+      self.last_request_time = time.monotonic()
   
   async def _refill(self) -> None:
     """Refill tokens based on elapsed time."""
@@ -610,74 +631,119 @@ class PaginatedExtractor(BaseExtractor):
       page_size: int = config.DEFAULT_PAGE_SIZE,
       extra_params: Optional[dict[str, Any]] = None,
       record_key: str = "records",
+      checkpoint_id: Optional[str] = None,
   ) -> AsyncIterator[dict[str, Any]]:
     """
-    Extract all records from a paginated endpoint.
+    Extract all records from a paginated endpoint with checkpoint support.
     
     Handles pagination by continuing to fetch pages until an empty response is received,
     since the DNB API doesn't always provide reliable total count metadata.
+    
+    Supports resuming from checkpoints for long-running extractions.
     
     Args:
         url: API endpoint URL
         page_size: Records per page
         extra_params: Additional query parameters
         record_key: JSON key containing records (default: 'records')
+        checkpoint_id: Optional checkpoint identifier for resume capability
     
     Yields:
         Individual records
     """
-    page = config.DEFAULT_START_PAGE
+    from .checkpoint import ExtractionCheckpoint
     
-    while True:
-      response = await self.fetch_page(url, page, page_size, extra_params)
+    # Setup checkpoint if requested
+    checkpoint = None
+    start_page = config.DEFAULT_START_PAGE
+    
+    if checkpoint_id:
+      checkpoint = ExtractionCheckpoint(config.CHECKPOINT_DIR, checkpoint_id)
+      saved_state = checkpoint.load()
       
-      if not response:
-        logger.warning(f"⚠️ Failed to fetch page {page}, stopping pagination")
-        break
-      
-      # Extract records (API structure varies)
-      records = response.get(record_key, [])
-      if not records:
-        # Try alternative structures
-        if isinstance(response, list):
-          records = response
-        else:
-          logger.info(f"✅ No more records at page {page} - pagination complete")
-          break
-      
-      record_count = len(records)
-      
-      for record in records:
-        yield record
-      
-      # Check pagination metadata if available
-      pagination = response.get("pagination", {})
-      total_pages = pagination.get("totalPages")
-      
-      if total_pages:
-        self.stats["total_pages"] = total_pages
+      if saved_state:
+        start_page = saved_state.get("last_page", 0) + 1
+        prev_records = saved_state.get("total_records", 0)
         logger.info(
-            f"📄 Page {page}/{total_pages}: "
-            f"{record_count} records ({self.stats['total_records'] + record_count} total)"
+            f"📍 Resuming from checkpoint: page {start_page} "
+            f"({prev_records:,} records already extracted)"
         )
+    
+    page = start_page
+    
+    try:
+      while True:
+        response = await self.fetch_page(url, page, page_size, extra_params)
         
-        # Stop if we've reached the last page
-        if page >= total_pages:
-          logger.info(f"✅ Reached last page {page}/{total_pages}")
+        if not response:
+          logger.warning(f"⚠️ Failed to fetch page {page}, stopping pagination")
           break
-      else:
-        # No pagination metadata - rely on empty response detection
-        logger.info(
-            f"📄 Page {page}: {record_count} records "
-            f"({self.stats['total_records'] + record_count} total)"
-        )
         
-        # If we got fewer records than page size, likely the last page
-        if record_count < page_size:
+        # Extract records (API structure varies)
+        records = response.get(record_key, [])
+        if not records:
+          # Try alternative structures
+          if isinstance(response, list):
+            records = response
+          else:
+            logger.info(f"✅ No more records at page {page} - pagination complete")
+            break
+        
+        record_count = len(records)
+        
+        for record in records:
+          yield record
+        
+        # Save checkpoint after successful page
+        if checkpoint:
+          checkpoint.save({
+              "last_page": page,
+              "total_records": self.stats["total_records"],
+              "url": url,
+          })
+        
+        # Check pagination metadata if available
+        pagination = response.get("pagination", {})
+        total_pages = pagination.get("totalPages")
+        
+        if total_pages:
+          self.stats["total_pages"] = total_pages
+          progress_pct = (page / total_pages) * 100
           logger.info(
-              f"✅ Last page (partial): {record_count} records "
-              f"(less than pageSize={page_size})"
+              f"📄 Page {page}/{total_pages} ({progress_pct:.1f}%): "
+              f"{record_count} records ({self.stats['total_records'] + record_count} total)"
           )
-          break
+          
+          # Stop if we've reached the last page
+          if page >= total_pages:
+            logger.info(f"✅ Reached last page {page}/{total_pages}")
+            break
+        else:
+          # No pagination metadata - rely on empty response detection
+          logger.info(
+              f"📄 Page {page}: {record_count} records "
+              f"({self.stats['total_records'] + record_count} total)"
+          )
+          
+          # If we got fewer records than page size, likely the last page
+          if record_count < page_size:
+            logger.info(
+                f"✅ Last page (partial): {record_count} records "
+                f"(less than pageSize={page_size})"
+            )
+            break
+        
+        page += 1
       
-      page += 1
+      # Clear checkpoint on successful completion
+      if checkpoint:
+        checkpoint.clear()
+    
+    except Exception as exc:
+      # Save checkpoint on error for resume
+      if checkpoint:
+        logger.warning(
+            f"⚠️ Extraction interrupted at page {page} - "
+            "checkpoint saved for resume"
+        )
+      raise

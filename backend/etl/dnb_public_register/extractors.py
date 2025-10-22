@@ -129,10 +129,14 @@ class OrganizationRelationNumbersExtractor(PaginatedExtractor):
             f"🔢 Extracting relation numbers: register={self.register_code}"
         )
         
+        # Create checkpoint ID for this extraction
+        checkpoint_id = f"relation_numbers_{self.register_code.lower()}"
+        
         # This endpoint returns OrganizationRelationNumbersView with pagination
         async for record in self.extract_paginated(
             url=url,
             record_key="relationNumbers",
+            checkpoint_id=checkpoint_id,
         ):
             yield {
                 "register_code": self.register_code,
@@ -381,9 +385,18 @@ class PublicationsSearchExtractor(PaginatedExtractor):
             f"article={self.act_article_name or 'all'}"
         )
         
+        # Create checkpoint ID for this extraction
+        checkpoint_id = (
+            f"publications_search_{self.register_code.lower()}_"
+            f"{self.language_code.lower()}"
+        )
+        if self.organization_name:
+            checkpoint_id += f"_{self.organization_name.lower()[:20]}"
+        
         async for record in self.extract_paginated(
             url=url,
             extra_params=extra_params,
+            checkpoint_id=checkpoint_id,
         ):
             # Flatten nested structures for Parquet
             yield {

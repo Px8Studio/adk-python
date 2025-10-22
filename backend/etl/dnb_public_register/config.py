@@ -64,13 +64,19 @@ REQUEST_TIMEOUT: Final[float] = 30.0  # seconds
 MAX_RETRIES: Final[int] = 3
 RETRY_BACKOFF_FACTOR: Final[float] = 2.0  # Exponential backoff
 
-# Rate limiting (DNB allows 30 calls/minute)
-RATE_LIMIT_CALLS: Final[int] = 30
+# Rate limiting - Public Register specific (more conservative than Statistics API)
+# Public Register requires heavy pagination (~5000+ API calls per full extraction)
+# vs Statistics API which supports bulk fetch (~100 calls total)
+RATE_LIMIT_CALLS: Final[int] = 30  # DNB API limit
 RATE_LIMIT_PERIOD: Final[float] = 60.0  # seconds
-RATE_LIMIT_BUFFER: Final[float] = 1.2  # Safety margin (20% slower)
+RATE_LIMIT_BUFFER: Final[float] = 1.5  # Safety margin (50% slower) - more conservative
+MIN_DELAY_BETWEEN_CALLS: Final[float] = 2.5  # Minimum seconds between API calls
 
 # Parallel processing
 MAX_CONCURRENT_REQUESTS: Final[int] = 5  # Stay under rate limit
+
+# Checkpoint configuration
+CHECKPOINT_DIR: Final[Path] = DATA_ROOT / "checkpoints" / "dnb_public_register"
 
 # ==========================================
 # Language & Register Codes

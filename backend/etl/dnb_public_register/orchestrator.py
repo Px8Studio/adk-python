@@ -131,8 +131,15 @@ async def extract_organizations(
     
     stats = {}
     
+    # Track overall progress
+    total_registers = len(register_codes)
+    logger.info(f"\n📊 Processing {total_registers} registers...")
+    
     # Step 1: Extract relation numbers for each register
-    for register_code in register_codes:
+    for i, register_code in enumerate(register_codes, 1):
+        logger.info(f"\n{'='*70}")
+        logger.info(f"[{i}/{total_registers}] Processing Register: {register_code}")
+        logger.info(f"{'='*70}")
         logger.info(f"\n🔢 Step 1: Getting relation numbers for {register_code}")
         
         relation_numbers_extractor = OrganizationRelationNumbersExtractor(
