@@ -11,9 +11,11 @@ The Orkhon backend provides a complete infrastructure for building AI agents tha
 
 ```
 backend/
-├── adk/           # Agent Development Kit - LangGraph agents
-├── agentbox/      # OpenAPI → Toolbox conversion utilities
-├── apis/          # DNB API specifications and generated code
+├── adk/           # Agent Development Kit - Multi-agent system with ADK
+├── open-api-box/  # OpenAPI → Toolbox conversion utilities
+├── apis/          # DNB API specifications and OpenAPI specs
+├── clients/       # Kiota-generated DNB API clients
+├── etl/           # ETL pipelines for DNB data extraction
 └── toolbox/       # GenAI Toolbox MCP server (Docker-based)
 ```
 
@@ -91,41 +93,47 @@ python simple_dnb_agent.py
 
 ### 🤖 `/adk` - Agent Development Kit
 
-Contains LangGraph-based AI agents that use the GenAI Toolbox.
+Contains Google ADK-based multi-agent system that uses the GenAI Toolbox.
 
 **Key Files:**
-- `simple_dnb_agent.py` - Example agent using DNB tools
+- `agents/root_agent/` - Root coordinator agent
+- `agents/api_coordinators/` - Domain-specific coordinators (DNB, etc.)
+- `agents/api_agents/` - Specialized API agents (echo, statistics, public register)
+- `simple_dnb_agent.py` - Standalone LangGraph example using DNB tools
+- `run_dnb_openapi_agent.py` - Script to run the multi-agent system
 - `simple_agent.ipynb` - Jupyter notebook for interactive development
-- `scripts/` - Helper scripts for agent development
 
-**Learn More:** See [Agent Development Guide](adk/README.md)
+**Learn More:** See Agent Implementation docs in `adk/AGENT_*.md` files
 
 ---
 
-### 🔧 `/agentbox` - OpenAPI Conversion Tools
+### 🔧 `/open-api-box` - OpenAPI Conversion Tools
 
 Utilities to convert OpenAPI specifications into GenAI Toolbox tool definitions.
 
 **Key Features:**
-- Converts OpenAPI 3.x specs → `tools.yaml` format
-- Generates 84+ tools from DNB API specifications
+- Converts OpenAPI 3.x specs → YAML tool format
+- Generates 87+ tools from DNB API specifications
 - Validates tool schemas and parameters
+- Supports both dev and prod environments
 
 **Usage:**
 ```powershell
-cd backend/agentbox
-python openapi_to_toolbox.py convert --all
+cd backend/open-api-box
+python openapi_toolbox.py convert --all
 ```
 
-**Output:** Generated tools are placed in `backend/toolbox/config/dev/` and `backend/toolbox/config/prod/`
+**Output:** Generated tools are placed in:
+- `backend/toolbox/config/dev/` (numbered YAML files like `10-dnb-echo.generated.yaml`)
+- `backend/toolbox/config/prod/` (same structure for production)
 
-**Learn More:** See [OpenAPI Conversion Guide](agentbox/README.md)
+**Learn More:** Uses the upstream `openapi-mcp-codegen` project for conversion logic
 
 ---
 
-### 🌐 `/apis/dnb` - DNB API Integration
+### 🌐 `/apis` - DNB API Specifications
 
-DNB (De Nederlandsche Bank) API specifications, documentation, and generated clients.
+OpenAPI 3.x specifications for all DNB APIs.
 
 **Structure:**
 ```
@@ -133,16 +141,52 @@ apis/dnb/
 ├── specs/              # OpenAPI 3.x specifications
 │   ├── openapi3_statisticsdatav2024100101.yaml
 │   ├── openapi3_publicdatav1.yaml
-│   └── openapi3_echoapi.yaml
-├── generated/          # Auto-generated Python clients
-├── docs/               # API documentation
-├── scripts/            # Code generation scripts
-└── tests/              # API integration tests
+│   └── openapi3-echo-api.yaml
+└── docs/               # API documentation
 ```
 
 **Quick Start:**
 - 📖 [DNB API Services Overview](apis/dnb/DNB%20API%20Services.MD)
 - 🚀 [Quick Start Guide](apis/dnb/QUICKSTART.md)
+
+---
+
+### 📦 `/clients` - Kiota-Generated API Clients
+
+Python HTTP clients generated using Microsoft's Kiota tool.
+
+**Structure:**
+```
+clients/
+├── dnb-echo/              # DNB Echo API client
+├── dnb-public-register/   # Public Register API client
+├── dnb-statistics/        # Statistics API client
+├── echo_client.py         # Wrapper for Echo client
+├── statistics_client.py   # Wrapper for Statistics client
+└── public_register_client.py  # Wrapper for Public Register client
+```
+
+**Learn More:** See [Clients README](clients/README.md)
+
+---
+
+### 📊 `/etl` - ETL Pipelines
+
+Extract-Transform-Load pipelines for DNB data.
+
+**Structure:**
+```
+etl/
+├── dnb_statistics/     # Statistics API ETL (17+ extractors)
+├── dnb_public_register/  # Public Register ETL (6 extractors)
+├── run_dnb_stats_etl.py  # Statistics ETL runner
+└── run_dnb_pr_etl.py     # Public Register ETL runner
+```
+
+**Features:**
+- Automated data extraction from DNB APIs
+- Parquet file output (Bronze layer)
+- Configurable extractors per endpoint
 
 ---
 
@@ -158,10 +202,15 @@ Docker-based Model Context Protocol (MCP) server that exposes DNB APIs as tools 
 **Configuration:**
 ```
 toolbox/config/
-├── tools.dev.yaml      # Development tool definitions
-├── tools.prod.yaml     # Production tool definitions
+├── tools.dev.yaml      # Development environment root config
+├── tools.prod.yaml     # Production environment root config
 ├── dev/                # Generated DNB tool configs (dev)
+│   ├── 00-base.yaml    # Base configuration (sources, auth)
+│   ├── 10-dnb-echo.generated.yaml
+│   ├── 20-dnb-statistics.generated.yaml
+│   └── 30-dnb-public-register.generated.yaml
 └── prod/               # Generated DNB tool configs (prod)
+    └── (same structure as dev)
 ```
 
 **Management Tasks:**
@@ -188,8 +237,8 @@ Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
    └─> apis/dnb/specs/*.yaml
 
 2. Generate Tool Definitions
-   └─> Run: python agentbox/openapi_to_toolbox.py convert --all
-   └─> Output: toolbox/config/dev/*.yaml
+   └─> Run: python open-api-box/openapi_toolbox.py convert --all
+   └─> Output: toolbox/config/dev/*.generated.yaml
 
 3. Restart Toolbox
    └─> Run: docker-compose -f toolbox/docker-compose.dev.yml restart
@@ -198,8 +247,9 @@ Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
    └─> Open: http://localhost:5000/ui/
 
 5. Build/Update Agent
-   └─> Edit: adk/simple_dnb_agent.py
-   └─> Run: python adk/simple_dnb_agent.py
+   └─> Edit agent files in: adk/agents/
+   └─> Run multi-agent: python adk/run_dnb_openapi_agent.py
+   └─> Or run simple agent: python adk/simple_dnb_agent.py
 
 6. Monitor with Jaeger
    └─> Open: http://localhost:16686
@@ -231,9 +281,10 @@ This executes:
 ## 📚 Documentation
 
 ### Component Documentation:
-- **[ADK - Agent Development](adk/README.md)** - Build LangGraph agents
-- **[AgentBox - OpenAPI Conversion](agentbox/README.md)** - Convert APIs to tools
+- **[ADK - Agent Architecture](adk/AGENT_ARCHITECTURE_ANALYSIS.md)** - Multi-agent system design
+- **[Clients - Kiota Generated](clients/README.md)** - HTTP client usage
 - **[DNB APIs - Integration Guide](apis/dnb/DNB%20API%20Services.MD)** - DNB API documentation
+- **[ETL - Statistics Pipeline](etl/dnb_statistics/README.md)** - ETL pipeline details
 - **[Toolbox - Configuration](toolbox/config/QUICK_ANSWER.md)** - Tool configuration guide
 
 ### Monitoring & Observability:
@@ -287,9 +338,10 @@ curl -H "Ocp-Apim-Subscription-Key: $env:DNB_SUBSCRIPTION_KEY_DEV" `
 When contributing to the backend:
 
 1. **API Changes:** Update OpenAPI specs in `apis/dnb/specs/`
-2. **Tool Definitions:** Regenerate with `openapi_to_toolbox.py`
-3. **Agent Code:** Follow LangGraph patterns in `adk/`
-4. **Documentation:** Update relevant README files
+2. **Tool Definitions:** Regenerate with `open-api-box/openapi_toolbox.py`
+3. **Agent Code:** Follow ADK multi-agent patterns in `adk/agents/`
+4. **ETL Changes:** Update extractors in `etl/`
+5. **Documentation:** Update relevant README and markdown files
 
 ---
 

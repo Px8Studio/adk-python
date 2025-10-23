@@ -55,7 +55,7 @@ graph TB
     end
 
     subgraph Build["🛠️ Development Tools"]
-        AgentBox["AgentBox<br/>(OpenAPI → Toolbox Converter)"]
+        OpenAPIBox["OpenAPI-Box<br/>(OpenAPI → Toolbox Converter)"]
         OpenAPI_Specs["OpenAPI 3.0 Specs<br/>(APIs/DNB/Specs)"]
     end
 
@@ -80,8 +80,8 @@ graph TB
     OTel --> Jaeger
     Jaeger_UI -.Query.-> Jaeger
     
-    AgentBox -.Generates.-> ToolConfig
-    OpenAPI_Specs -.Input.-> AgentBox
+    OpenAPIBox -.Generates.-> ToolConfig
+    OpenAPI_Specs -.Input.-> OpenAPIBox
     
     Stats_ETL -.Extract.-> DNB_Stats
     PR_ETL -.Extract.-> DNB_PR
@@ -99,7 +99,7 @@ graph TB
     class Root,DNB_Coord,DNB_OpenAPI_Coord,Echo,Stats,PR agent
     class Toolbox,ToolConfig,OTel tool
     class DNB_Echo,DNB_Stats,DNB_PR,Jaeger external
-    class AgentBox,OpenAPI_Specs build
+    class OpenAPIBox,OpenAPI_Specs build
     class Stats_ETL,PR_ETL,Bronze etl
 ```
 
@@ -121,7 +121,7 @@ graph LR
     subgraph Backend["backend/"]
         ADK["📁 adk/<br/>Agent Development Kit<br/>• Root Agent<br/>• API Coordinators<br/>• API Specialists<br/>• Workflows"]
         APIs["📁 apis/<br/>API Specifications<br/>• OpenAPI 3.0 Specs<br/>• Generated Docs<br/>• API Tests"]
-        AgentBox["📁 agentbox/<br/>OpenAPI Converter<br/>• openapi_to_toolbox.py<br/>• Schema Validator"]
+        OpenAPIBox["📁 open-api-box/<br/>OpenAPI Converter<br/>• openapi_toolbox.py<br/>• Schema Validator"]
         Toolbox["📁 toolbox/<br/>MCP Server<br/>• Docker Compose<br/>• Tool Configs<br/>• Health Checks"]
         Clients["📁 clients/<br/>Kiota Clients<br/>• dnb-echo/<br/>• dnb-statistics/<br/>• dnb-public-register/"]
         ETL["📁 etl/<br/>ETL Pipelines<br/>• Statistics ETL<br/>• Public Register ETL<br/>• Orchestrators"]
@@ -131,8 +131,8 @@ graph LR
 
     ADK -.Uses.-> Toolbox
     ADK -.Uses.-> Clients
-    AgentBox -.Generates.-> Toolbox
-    APIs -.Input To.-> AgentBox
+    OpenAPIBox -.Generates.-> Toolbox
+    APIs -.Input To.-> OpenAPIBox
     APIs -.Input To.-> Clients
     ETL -.Uses.-> Clients
     ETL -.Writes.-> Data
@@ -143,13 +143,15 @@ graph LR
     
     class ADK,Toolbox primary
     class APIs,Clients,ETL secondary
-    class AgentBox,Scripts,Data utility
+    class OpenAPIBox,Scripts,Data utility
 ```
 
 **Component Responsibilities:**
 - **adk/**: AI agent logic and orchestration
 - **apis/**: OpenAPI specs and documentation
-- **agentbox/**: Tool generation automation
+- **open-api-box/**: Tool generation automation
+- **clients/**: Kiota-generated API clients
+- **etl/**: Data extraction pipelines
 - **toolbox/**: Runtime tool execution
 - **clients/**: Type-safe API clients (Kiota-generated)
 - **etl/**: Data extraction and transformation
@@ -244,7 +246,7 @@ graph TB
 sequenceDiagram
     participant Dev as Developer
     participant Spec as OpenAPI Specs
-    participant AgentBox as AgentBox Converter
+    participant OpenAPIBox as OpenAPI-Box Converter
     participant YAML as Tool YAML Configs
     participant Docker as Docker Compose
     participant Toolbox as GenAI Toolbox
@@ -252,9 +254,9 @@ sequenceDiagram
     participant API as DNB API
 
     Dev->>Spec: 1. Update OpenAPI spec
-    Dev->>AgentBox: 2. Run conversion
-    AgentBox->>Spec: 3. Parse spec
-    AgentBox->>YAML: 4. Generate tool definitions
+    Dev->>OpenAPIBox: 2. Run conversion
+    OpenAPIBox->>Spec: 3. Parse spec
+    OpenAPIBox->>YAML: 4. Generate tool definitions
     Note over YAML: 84+ tools defined<br/>• dnb-echo-* (3)<br/>• dnb-statistics-* (79)<br/>• dnb-public-register-* (5)
     
     Dev->>Docker: 5. Restart container
@@ -775,7 +777,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 flowchart LR
     subgraph Dev["👨‍💻 Development"]
         EditSpec["1. Edit OpenAPI Spec<br/>apis/dnb/specs/*.yaml"]
-        RunConverter["2. Run AgentBox<br/>openapi_to_toolbox.py"]
+        RunConverter["2. Run OpenAPI-Box<br/>openapi_toolbox.py"]
     end
 
     subgraph Build["🔨 Build"]
@@ -785,7 +787,7 @@ flowchart LR
 
     subgraph Test["🧪 Testing"]
         TestUI["5. Test in Toolbox UI<br/>http://localhost:5000/ui"]
-        TestAgent["6. Test with Agent<br/>simple_dnb_agent.py"]
+        TestAgent["6. Test with Agents<br/>run_dnb_openapi_agent.py<br/>or simple_dnb_agent.py"]
         ViewTraces["7. View Traces<br/>http://localhost:16686"]
     end
 
@@ -820,8 +822,8 @@ flowchart LR
 Ctrl+Shift+P → "Convert & Restart: Convert APIs → Restart Server → Open UI"
 
 # Manual steps
-cd backend/agentbox
-python openapi_to_toolbox.py convert --all
+cd backend/open-api-box
+python openapi_toolbox.py convert --all
 
 cd ../toolbox
 docker-compose -f docker-compose.dev.yml restart

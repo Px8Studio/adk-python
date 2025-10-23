@@ -18,11 +18,11 @@ Before diving into the operational flow, it's important to understand the "why" 
 
 ### Core Building Blocks
 
-- **OpenAPI → Toolbox → Agents:** Domain APIs (e.g., DNB) live as OpenAPI specs. `openapi-mcp-codegen` or ADK’s `OpenAPIToolset` converts them into structured tools. The generated YAML under `config/` defines each tool’s HTTP method, params, authentication, and docs. ADK agents then import those toolsets and expose them to the LLM.
+- **OpenAPI → Toolbox → Agents:** Domain APIs (e.g., DNB) live as OpenAPI specs. `openapi-mcp-codegen` integration in our `open-api-box` converts them into structured tools. The generated YAML files (e.g., `10-dnb-echo.generated.yaml`) under `config/dev/` and `config/prod/` define each tool's HTTP method, params, authentication, and docs. ADK agents then import those toolsets and expose them to the LLM.
 
 - **Model Context Protocol (MCP):** GenAI Toolbox is an MCP server. MCP is a model/tool interop standard backed by Google, LangChain, Microsoft, and others. MCP defines capabilities (tools, resources, prompts) and communications. Toolbox implements the protocol so any MCP-aware agent (ADK, LangChain, Semantic Kernel, etc.) can auto-discover and call tools without bespoke glue code.
 
-- **ADK Agents:** Google’s Agent Development Kit (ADK) wraps Gemini models, prompt instructions, memory, and tool orchestration. In Orkhon, the root agent routes requests, coordinator agents choose between “standard” toolbox tools or experimental OpenAPI tools, and API-specific agents invoke the DNB toolsets. The ADK runtime handles function-calling, structured responses, retries, logging, and evaluation hooks.
+- **ADK Agents:** Google's Agent Development Kit (ADK) wraps Gemini models, prompt instructions, memory, and tool orchestration. In Orkhon, the root agent (in `agents/root_agent/`) routes requests, coordinator agents (in `agents/api_coordinators/`) choose between different API domains, and specialized API agents (in `agents/api_agents/`) invoke the DNB toolsets. The ADK runtime handles function-calling, structured responses, retries, logging, and evaluation hooks.
 
 ### Where the Big Players Show Up
 
@@ -144,7 +144,10 @@ Once running, a typical request flows through the system as follows:
 │   ADK Web Server         │
 │   http://localhost:8000  │
 │                          │
-│   • LangGraph Agents     │
+│   • Multi-Agent System   │
+│   • Root Agent           │
+│   • Coordinators         │
+│   • API Agents           │
 │   • Tool Orchestration   │
 │   • Session Management   │
 └──────┬───────────────────┘
@@ -155,8 +158,8 @@ Once running, a typical request flows through the system as follows:
 │   GenAI Toolbox MCP Server            │
 │   http://localhost:5000               │
 │                                       │
-│   • 82 DNB API Tools                  │
-│   • 4 Toolsets                        │
+│   • 87 DNB API Tools                  │
+│   • Multiple Toolsets                 │
 │   • Request validation                │
 │   • OpenTelemetry tracing             │
 └──────┬────────────────────┬───────────┘
@@ -359,7 +362,7 @@ Once you see the "Full Stack Running" message, you can:
 
 ### Tips for Deeper Development
 
-1.  **Define once, reuse widely.** Keep specs in `apis/`, run `openapi-mcp-codegen` to refresh YAML, and immediately get the new tool in Toolbox, ADK, or LangChain clients.
+1.  **Define once, reuse widely.** Keep specs in `apis/dnb/specs/`, run `openapi_toolbox.py` (using `openapi-mcp-codegen`) to refresh YAML, and immediately get the new tool in Toolbox, ADK, or LangChain clients.
 2.  **Use MCP clients for cross-ecosystem use.** Want to test with LangChain or Copilot? Point them to the Toolbox MCP endpoint (`http://localhost:5000`) and they’ll see the same tool catalog ADK uses.
 3.  **Handle rate limits early.** Build backoff/retry policies into Toolbox (or your generated clients) and surface friendly errors from agents. That keeps conversational flows from collapsing on 429 responses.
 4.  **Trace everything.** With Jaeger already wired, tag your tool configs and agent flows so you can inspect every request end-to-end when something fails.

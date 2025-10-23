@@ -96,12 +96,23 @@ Invoke-WebRequest http://localhost:8000
 .\backend\scripts\diagnose-setup.ps1
 ```
 
-## 📝 Test Queries for dnb_agent
+## 📝 Test Queries for Multi-Agent System
 ```
 "What tools do you have available?"
 "Get the hello world message from DNB"
 "Show me available exchange rates"
 "List pension fund statistics"
+"Search for financial institutions in the public register"
+```
+
+Run with:
+```powershell
+python backend\adk\run_dnb_openapi_agent.py
+```
+
+Or test the simple LangGraph agent:
+```powershell
+python backend\adk\simple_dnb_agent.py
 ```
 
 ## 📚 Documentation
