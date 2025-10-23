@@ -7,7 +7,7 @@ This document outlines the complete system flow for the Orkhon project, from a s
 The entire stack can be launched with a single command from your PowerShell terminal.
 
 ```powershell
-.\quick-start.ps1
+.\backend\scripts\quick-start.ps1
 ```
 
 This script automates diagnostics, Docker setup, service health checks, and launching the ADK web server.
@@ -45,7 +45,7 @@ The `quick-start.ps1` script executes the following sequence to bring the full s
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     USER COMMAND                            │
-│              .\quick-start.ps1                             │
+│              .\backend\scripts\quick-start.ps1             │
 └────────────────────────┬────────────────────────────────────┘
                                            │
                                            ▼
@@ -180,7 +180,7 @@ The startup script actively probes services to ensure they are ready before proc
 
 ```
 ┌────────────────────────────────────────┐
-│   quick-start.ps1                      │
+│   backend\scripts\quick-start.ps1      │
 │   Step 3: Service Health Checks        │
 └────────────────┬───────────────────────┘
                              │
@@ -269,7 +269,7 @@ User presses Ctrl+C
 └─────────────────────────────────────┘
           │
           │ User can:
-          ├─► Restart ADK Web: .\quick-start.ps1
+          ├─► Restart ADK Web: .\backend\scripts\quick-start.ps1
           ├─► Stop Docker: cd backend\toolbox
           │                docker-compose down
           └─► View logs:   docker logs <container>
@@ -367,4 +367,4 @@ Once you see the "Full Stack Running" message, you can:
 
 ---
 
-**🎉 Everything is automated. Just run `.\quick-start.ps1` and you're ready to build!**
+**🎉 Everything is automated. Just run `.\backend\scripts\quick-start.ps1` and you're ready to build!**

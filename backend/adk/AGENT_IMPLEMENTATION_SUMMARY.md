@@ -233,7 +233,7 @@ root_agent (Root Coordinator)
 
 4. **Update ADK Web to use new root**
    ```bash
-   # In quick-start.ps1 or manual startup
+   # In backend\scripts\quick-start.ps1 or manual startup
    adk web --reload_agents backend/adk/agents/
    # ADK will discover root_agent automatically
    ```
@@ -261,7 +261,7 @@ root_agent (Root Coordinator)
 
 4. **Test complete system**
    ```bash
-   ./quick-start.ps1
+   .\backend\scripts\quick-start.ps1
    # Test all functionality
    ```
 

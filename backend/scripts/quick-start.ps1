@@ -104,10 +104,9 @@ Write-Host ""
 if (-not $SkipDiagnostics) {
   Show-Step "Step 1/6: Running system diagnostics..."
   try {
-    # Prefer repo-root diagnostics, then legacy backend path
+    # Use new location in backend/scripts
     $diagCandidates = @(
-      (Join-Path $ProjectRoot "diagnose-setup.ps1"),
-      (Join-Path $ProjectRoot "backend\adk\diagnose-setup.ps1")
+      (Join-Path $ProjectRoot "backend\scripts\diagnose-setup.ps1")
     )
 
     $diagScript = $null

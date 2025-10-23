@@ -158,8 +158,7 @@
 │                                                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                      Scripts & Automation                                │   │
-│  │  • start-adk-web.ps1 (PowerShell launcher)                             │   │
-│  │  • stop-adk-web.ps1 (Graceful shutdown)                                 │   │
+│  │  • backend\scripts\start-adk-web.ps1 (PowerShell launcher)             │   │
 │  │  • docker-compose.dev.yml (Dev environment)                             │   │
 │  │  • docker-compose.prod.yml (Prod environment)                           │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │

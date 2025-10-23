@@ -7,7 +7,7 @@
     {
       "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
       "type": "shell",
-      "command": "${workspaceFolder}/quick-start.ps1",
+      "command": "${workspaceFolder}/backend/scripts/quick-start.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -255,7 +255,7 @@
     {
       "label": "ADK: Start Web Server Only (PowerShell)",
       "type": "shell",
-      "command": "${workspaceFolder}/start-adk-web.ps1",
+      "command": "${workspaceFolder}/backend/scripts/start-adk-web.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -313,7 +313,7 @@
     {
       "label": "🔍 Diagnostics: Check System Status",
       "type": "shell",
-      "command": "${workspaceFolder}/backend/adk/diagnose-setup.ps1",
+      "command": "${workspaceFolder}/backend/scripts/diagnose-setup.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -332,7 +332,7 @@
     {
       "label": "🔄 Git: Sync All Upstream Repos",
       "type": "shell",
-      "command": "${workspaceFolder}/sync-upstream-repos.ps1",
+      "command": "${workspaceFolder}/backend/scripts/sync-upstream-repos.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -350,7 +350,7 @@
     {
       "label": "🔍 Git: Sync All Upstream Repos (Dry Run)",
       "type": "shell",
-      "command": "${workspaceFolder}/sync-upstream-repos.ps1",
+      "command": "${workspaceFolder}/backend/scripts/sync-upstream-repos.ps1",
       "args": ["-DryRun"],
       "options": {
         "cwd": "${workspaceFolder}"

@@ -3,7 +3,7 @@
 ## 🚀 One-Command Start (Full Stack)
 ```powershell
 cd C:\Users\rjjaf\_Projects\orkhon
-.\quick-start.ps1
+.\backend\scripts\quick-start.ps1
 ```
 
 **This starts:**
@@ -16,19 +16,19 @@ cd C:\Users\rjjaf\_Projects\orkhon
 **Advanced Options:**
 ```powershell
 # Skip diagnostics
-.\quick-start.ps1 -SkipDiagnostics
+.\backend\scripts\quick-start.ps1 -SkipDiagnostics
 
 # Force recreate Docker containers
-.\quick-start.ps1 -ForceRecreate
+.\backend\scripts\quick-start.ps1 -ForceRecreate
 
 # Don't open web UIs automatically
-.\quick-start.ps1 -OpenUIs:$false
+.\backend\scripts\quick-start.ps1 -OpenUIs:$false
 
 # Increase wait time for services (default 60s)
-.\quick-start.ps1 -WaitSeconds 120
+.\backend\scripts\quick-start.ps1 -WaitSeconds 120
 
 # Restart existing containers
-.\quick-start.ps1 -RestartToolbox
+.\backend\scripts\quick-start.ps1 -RestartToolbox
 ```
 
 ## 🎯 Quick URLs
@@ -93,7 +93,7 @@ Invoke-WebRequest http://localhost:5000/health
 Invoke-WebRequest http://localhost:8000
 
 # Run diagnostics
-.\diagnose-setup.ps1
+.\backend\scripts\diagnose-setup.ps1
 ```
 
 ## 📝 Test Queries for dnb_agent

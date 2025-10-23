@@ -142,13 +142,13 @@ Use the included PowerShell script to regenerate clients:
 
 ```powershell
 # Generate all clients
-.\backend\clients\generate-dnb-clients.ps1
+.\backend\scripts\generate-dnb-clients.ps1
 
 # Clean existing clients and regenerate
-.\backend\clients\generate-dnb-clients.ps1 -Clean
+.\backend\scripts\generate-dnb-clients.ps1 -Clean
 
 # Generate only a specific client
-.\backend\clients\generate-dnb-clients.ps1 -ClientName echo
+.\backend\scripts\generate-dnb-clients.ps1 -ClientName echo
 ```
 
 ### Manual Commands
