@@ -155,11 +155,7 @@ def get_output_path(
         stage: Data processing stage ('fetch', 'bronze', 'silver', 'gold')
         category: Data category
         filename: File name (without extension)
-    
-    Args:
-        stage: Data processing stage ('fetch', 'bronze', 'silver', 'gold')
-        category: Data category
-        filename: File name (without extension)
+
         subcategory: Optional nested directory under the category
     
     Returns:
