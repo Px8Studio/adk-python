@@ -13,7 +13,9 @@
 - [Tool Integration](#tool-integration)
 - [ETL Pipeline](#etl-pipeline)
 - [Data Flow Patterns](#data-flow-patterns)
+- [Data Science Agent Architecture](#data-science-agent-architecture)
 - [Deployment Architecture](#deployment-architecture)
+- [Deployment Topology](#deployment-topology)
 
 ---
 
@@ -47,11 +49,17 @@ graph TB
         OTel["OpenTelemetry<br/>(Tracing)"]
     end
 
-    subgraph External["🌐 External Services"]
+    subgraph External["🌐 External DNB Services (Public APIs)"]
         DNB_Echo["DNB Echo API<br/>(Testing)"]
         DNB_Stats["DNB Statistics API<br/>(v2024100101)"]
         DNB_PR["DNB Public Register API<br/>(v1)"]
         Jaeger["Jaeger Backend<br/>(Trace Storage)"]
+    end
+
+    subgraph Azure["☁️ Microsoft Azure (Internal DNB Services)"]
+        DNB_DataLoop["DNB DataLoop<br/>(Report Status)<br/>Financial Institutions"]
+        DNB_ATM["DNB ATM<br/>(Models)<br/>Third-party Service"]
+        DNB_MEGA["DNB MEGA<br/>(Validations)<br/>Third-party Service"]
     end
 
     subgraph Build["🛠️ Development Tools"]
@@ -65,6 +73,12 @@ graph TB
         Bronze["Bronze Layer<br/>(Parquet Files)"]
     end
 
+    subgraph Cloud["☁️ Google Cloud Platform"]
+        GCS["Cloud Storage<br/>(Staging Bucket)"]
+        BQ["BigQuery<br/>(Data Warehouse)"]
+        AlloyDB["AlloyDB<br/>(PostgreSQL)<br/>(PLANNED)"]
+    end
+
     %% Connections
     ADK_UI -.HTTP/WebSocket.-> Root
     Root --> DNB_Coord
@@ -76,6 +90,9 @@ graph TB
     Toolbox -.HTTPS.-> DNB_Echo
     Toolbox -.HTTPS.-> DNB_Stats
     Toolbox -.HTTPS.-> DNB_PR
+    Toolbox -.Internal Network.-> DNB_DataLoop
+    Toolbox -.Internal Network.-> DNB_ATM
+    Toolbox -.Internal Network.-> DNB_MEGA
     Toolbox -.OTLP/gRPC.-> OTel
     OTel --> Jaeger
     Jaeger_UI -.Query.-> Jaeger
@@ -87,6 +104,10 @@ graph TB
     PR_ETL -.Extract.-> DNB_PR
     Stats_ETL --> Bronze
     PR_ETL --> Bronze
+    
+    Bronze -.Upload.-> GCS
+    GCS -.Load.-> BQ
+    BQ -.Query.-> Root
 
     classDef frontend fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
     classDef agent fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
@@ -94,6 +115,8 @@ graph TB
     classDef external fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
     classDef build fill:#fce4ec,stroke:#c2185b,stroke-width:2px
     classDef etl fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef cloud fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef azure fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
 
     class ADK_UI,Jaeger_UI frontend
     class Root,DNB_Coord,DNB_OpenAPI_Coord,Echo,Stats,PR agent
@@ -101,14 +124,18 @@ graph TB
     class DNB_Echo,DNB_Stats,DNB_PR,Jaeger external
     class OpenAPIBox,OpenAPI_Specs build
     class Stats_ETL,PR_ETL,Bronze etl
+    class GCS,BQ,AlloyDB cloud
+    class DNB_DataLoop,DNB_ATM,DNB_MEGA azure
 ```
 
 **Key Components:**
 - **Frontend**: Angular-based UI for agent interaction
 - **Agents**: Multi-agent system built with Google ADK
-- **Tools**: MCP server managing 84+ DNB API tools
+- **Tools**: MCP server managing 84+ public DNB API tools + 3 internal Azure-hosted services
 - **ETL**: Data extraction pipelines for analytics
-- **External**: DNB APIs and observability backend
+- **External**: Public DNB APIs and observability backend
+- **Azure**: Internal DNB services (DataLoop, ATM, MEGA) - Microsoft Azure hosted
+- **Cloud**: GCP services for data warehouse and analytics (PLANNED)
 
 ---
 
@@ -184,7 +211,14 @@ graph TB
         PR_TB["dnb_public_register_agent<br/>ToolboxToolset<br/>• Entity Search<br/>• Publications<br/>• 5 endpoints"]
     end
 
-    subgraph OpenAPI_Specialists["🆕 OpenAPI Specialists"]
+    subgraph Azure_Specialists["☁️ Internal DNB Specialists (Azure-hosted)"]
+        direction LR
+        DataLoop_Agent["dnb_dataloop_agent<br/>ADK OpenAPI Tool<br/>• Report Status<br/>• FI Communications"]
+        ATM_Agent["dnb_atm_agent<br/>ADK OpenAPI Tool<br/>• Model Access<br/>• Third-party Integration"]
+        MEGA_Agent["dnb_mega_agent<br/>ADK OpenAPI Tool<br/>• Validation Services<br/>• Third-party Integration"]
+    end
+
+    subgraph OpenAPI_Specialists["🆕 OpenAPI Specialists (Runtime Generation)"]
         direction LR
         Echo_OA["dnb_openapi_echo_agent<br/>OpenAPIToolset<br/>Runtime Generation"]
         Stats_OA["dnb_openapi_statistics_agent<br/>OpenAPIToolset<br/>Runtime Generation"]
@@ -196,6 +230,14 @@ graph TB
         Parallel["parallel_fetcher<br/>ParallelAgent<br/>• Fan-out/Fan-in Pattern"]
     end
 
+    subgraph DataScience["🔬 Data Science Agents (PLANNED)"]
+        direction LR
+        BQ_Agent["bigquery_agent<br/>NL2SQL for BigQuery<br/>• CHASE-SQL / Baseline<br/>• Built-in BQ Tools"]
+        AlloyDB_Agent["alloydb_agent<br/>NL2SQL for AlloyDB<br/>• MCP Toolbox<br/>• PostgreSQL Queries"]
+        Analytics_Agent["analytics_agent<br/>NL2Py Analysis<br/>• Code Interpreter<br/>• Pandas/Plotting"]
+        BQML_Agent["bqml_agent<br/>BigQuery ML<br/>• Model Training<br/>• RAG-based Reference"]
+    end
+
     RA --> DNB_Coord
     RA --> OpenAPI_Coord
     RA -.Future.-> Google_Coord
@@ -204,6 +246,9 @@ graph TB
     DNB_Coord --> Echo_TB
     DNB_Coord --> Stats_TB
     DNB_Coord --> PR_TB
+    DNB_Coord --> DataLoop_Agent
+    DNB_Coord --> ATM_Agent
+    DNB_Coord --> MEGA_Agent
     
     OpenAPI_Coord --> Echo_OA
     OpenAPI_Coord --> Stats_OA
@@ -211,30 +256,78 @@ graph TB
     
     Data_Coord -.-> Sequential
     Data_Coord -.-> Parallel
+    Data_Coord -.-> BQ_Agent
+    Data_Coord -.-> AlloyDB_Agent
+    Data_Coord -.-> Analytics_Agent
+    Data_Coord -.-> BQML_Agent
 
     classDef root fill:#ffebee,stroke:#c62828,stroke-width:3px
     classDef coordinator fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
     classDef specialist fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef azure_specialist fill:#bbdefb,stroke:#0d47a1,stroke-width:2px
     classDef openapi fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     classDef workflow fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef datascience fill:#e0f2f1,stroke:#00695c,stroke-width:2px
     
     class RA root
     class DNB_Coord,OpenAPI_Coord,Google_Coord,Data_Coord coordinator
     class Echo_TB,Stats_TB,PR_TB specialist
+    class DataLoop_Agent,ATM_Agent,MEGA_Agent azure_specialist
     class Echo_OA,Stats_OA,PR_OA openapi
     class Sequential,Parallel workflow
+    class BQ_Agent,AlloyDB_Agent,Analytics_Agent,BQML_Agent datascience
 ```
 
 **Agent Types:**
 - **Root Agent**: Entry point, intelligent routing based on user intent
 - **Coordinators**: Domain-specific routers (DNB, Google, Data)
-- **Specialists**: Single-API experts with focused capabilities
+- **Specialists**: Single-API experts with focused capabilities (public DNB APIs)
+- **Azure Specialists**: Internal DNB service agents (DataLoop, ATM, MEGA) using ADK OpenAPI Tool
 - **Workflows**: Deterministic orchestration patterns
+- **Data Science**: Multi-agent analytics system (BigQuery, AlloyDB, Analytics, BQML)
 
 **Agent Communication:**
 - Uses `transfer_to_agent()` for delegation
 - State sharing via `output_key` parameter
 - Coordinators aggregate specialist results
+
+---
+
+### OpenAPI Tool Integration Strategy
+
+The Orkhon backend uses **two different approaches** for converting OpenAPI specifications into usable agent tools:
+
+#### 1. **GenAI Toolbox (MCP Server)** - For Public DNB APIs
+- **Source**: Go-based MCP server from Google GenAI Toolbox project
+- **Usage**: External public APIs (Echo, Statistics, Public Register)
+- **Workflow**:
+  1. OpenAPI spec → `openapi_toolbox.py` converter
+  2. Generates YAML tool definitions
+  3. Loaded by Toolbox MCP server at runtime
+  4. Agents invoke via `ToolboxToolset`
+- **Benefits**: 
+  - Centralized tool management
+  - Observability with OpenTelemetry
+  - Runtime tool discovery
+  - Works with any HTTP/REST API
+
+#### 2. **ADK Built-in OpenAPI Tool** - For Internal Azure Services
+- **Source**: Agent Development Kit (google.adk) built-in OpenAPI toolset
+- **Usage**: Internal DNB services hosted on Microsoft Azure (DataLoop, ATM, MEGA)
+- **Workflow**:
+  1. OpenAPI spec provided directly to agent
+  2. Agent generates tool definitions at runtime
+  3. No external toolbox server required
+  4. Direct HTTP requests from agent
+- **Benefits**:
+  - Secure internal network access
+  - No external dependencies
+  - Simplified architecture for internal services
+  - Reduced latency (no MCP hop)
+
+**When to Use Which:**
+- **GenAI Toolbox**: External APIs, development/testing, tools shared across agents
+- **ADK OpenAPI Tool**: Internal services, secure networks, single-agent dedicated tools
 
 ---
 
@@ -361,6 +454,342 @@ graph TB
 2. **Request Handling**: Build HTTP requests with authentication
 3. **Observability**: Create distributed traces for debugging
 4. **Schema Validation**: Ensure requests match tool definitions
+
+---
+
+## Data Science Agent Architecture
+
+### Multi-Agent Data Analysis System (PLANNED)
+
+```mermaid
+graph TB
+    subgraph User["👤 User Interface"]
+        User_Input["Natural Language Query<br/>e.g., 'What are total sales by country?'"]
+    end
+
+    subgraph Root_Layer["🎯 Root Agent"]
+        Data_Coord["data_coordinator<br/>Routes to appropriate sub-agent"]
+    end
+
+    subgraph Data_Sources["💾 Data Sources"]
+        direction TB
+        BQ_DS["BigQuery Datasets<br/>• dnb_statistics<br/>• flights_dataset<br/>• forecasting_sticker_sales"]
+        AlloyDB_DS["AlloyDB Database<br/>• flights_dataset<br/>• PostgreSQL Tables"]
+    end
+
+    subgraph Sub_Agents["🔬 Specialized Sub-Agents"]
+        direction TB
+        
+        subgraph BQ_Sub["BigQuery Sub-Agent"]
+            BQ_Agent["bigquery_agent<br/>NL2SQL Translation"]
+            BQ_Tools["Built-in BigQuery Tools<br/>• Query Execution<br/>• Schema Discovery"]
+            BQ_CHASE["CHASE-SQL<br/>(Optional)<br/>Advanced NL2SQL"]
+        end
+        
+        subgraph AlloyDB_Sub["AlloyDB Sub-Agent"]
+            AlloyDB_Agent["alloydb_agent<br/>NL2SQL Translation"]
+            MCP_Toolbox["MCP Toolbox for Databases<br/>• PostgreSQL Queries<br/>• Schema Introspection"]
+        end
+        
+        subgraph Analytics_Sub["Analytics Sub-Agent"]
+            Analytics_Agent["analytics_agent<br/>NL2Py Analysis"]
+            Code_Interp["Code Interpreter Extension<br/>• Pandas Operations<br/>• Matplotlib/Seaborn<br/>• Data Visualization"]
+        end
+        
+        subgraph BQML_Sub["BQML Sub-Agent"]
+            BQML_Agent["bqml_agent<br/>ML Model Management"]
+            BQML_RAG["RAG-based Reference Guide<br/>• BQML Documentation<br/>• Model Selection"]
+        end
+    end
+
+    subgraph Cross_Dataset["🔗 Cross-Dataset Capabilities"]
+        FK_Relations["Foreign Key Relations<br/>Dataset Configuration<br/>• cross_dataset_relations.json"]
+        Join_Logic["Cross-Dataset Joins<br/>BigQuery ↔ AlloyDB"]
+    end
+
+    User_Input --> Data_Coord
+    Data_Coord --> BQ_Agent
+    Data_Coord --> AlloyDB_Agent
+    Data_Coord --> Analytics_Agent
+    Data_Coord --> BQML_Agent
+    
+    BQ_Agent --> BQ_Tools
+    BQ_Agent -.Optional.-> BQ_CHASE
+    BQ_Tools --> BQ_DS
+    
+    AlloyDB_Agent --> MCP_Toolbox
+    MCP_Toolbox --> AlloyDB_DS
+    
+    Analytics_Agent --> Code_Interp
+    Code_Interp -.Reads from.-> BQ_DS
+    Code_Interp -.Reads from.-> AlloyDB_DS
+    
+    BQML_Agent --> BQML_RAG
+    BQML_Agent --> BQ_DS
+    
+    FK_Relations --> BQ_Agent
+    FK_Relations --> AlloyDB_Agent
+    BQ_Agent -.Cross-Join.-> Join_Logic
+    AlloyDB_Agent -.Cross-Join.-> Join_Logic
+
+    classDef user fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef coordinator fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef agent fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef tool fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef datasource fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef config fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class User_Input user
+    class Data_Coord coordinator
+    class BQ_Agent,AlloyDB_Agent,Analytics_Agent,BQML_Agent agent
+    class BQ_Tools,MCP_Toolbox,Code_Interp,BQML_RAG,BQ_CHASE tool
+    class BQ_DS,AlloyDB_DS datasource
+    class FK_Relations,Join_Logic config
+```
+
+**Key Features:**
+- **Multi-Agent Architecture**: Specialized agents for different data analysis tasks
+- **Database Interaction (NL2SQL)**: Translate natural language to SQL for BigQuery and AlloyDB
+- **Data Science Analysis (NL2Py)**: Python-based analysis and visualization
+- **Machine Learning (BQML)**: Train and evaluate ML models in BigQuery
+- **Cross-Dataset Joins**: Query across BigQuery and AlloyDB using foreign key relationships
+
+---
+
+### Data Science Agent Tools & Technologies
+
+```mermaid
+mindmap
+  root((Data Science<br/>Multi-Agent))
+    Database Agents
+      BigQuery Agent
+        Built-in BQ Tools
+        CHASE-SQL
+        Schema Discovery
+      AlloyDB Agent
+        MCP Toolbox
+        PostgreSQL Protocol
+        Connection Pooling
+    Analytics Agent
+      Code Interpreter
+        Pandas DataFrame
+        NumPy Arrays
+        Matplotlib Plots
+        Seaborn Visualizations
+      Python Execution
+        Isolated Sandbox
+        Base64 File I/O
+    BQML Agent
+      Model Training
+        ARIMA_PLUS
+        ARIMA_PLUS_XREG
+        Forecasting Models
+      RAG System
+        BQML Reference Guide
+        Vertex AI RAG Engine
+        Model Selection Help
+    Configuration
+      Dataset Config
+        JSON Format
+        Multiple Sources
+      Cross-Dataset Relations
+        Foreign Keys
+        Join Specifications
+```
+
+---
+
+### Sample Dataset Configurations
+
+#### Cymbal Airlines Flights Dataset
+
+```mermaid
+erDiagram
+    BIGQUERY {
+        string dataset "flights_dataset"
+    }
+    ALLOYDB {
+        string database "flights_dataset"
+    }
+    
+    FLIGHT_HISTORY ||--o{ TICKET_SALES : "flight_id"
+    CYMBALAIR_POLICIES ||--o{ TICKET_SALES : "policy_id"
+    
+    FLIGHT_HISTORY {
+        int flight_id PK
+        date flight_date
+        string origin
+        string destination
+        int duration_minutes
+    }
+    
+    TICKET_SALES {
+        int ticket_id PK
+        int flight_id FK
+        int policy_id FK
+        decimal price
+        date purchase_date
+    }
+    
+    CYMBALAIR_POLICIES {
+        int policy_id PK
+        string policy_name
+        string policy_description
+        decimal discount_percentage
+    }
+    
+    BIGQUERY ||--|| FLIGHT_HISTORY : "stores"
+    BIGQUERY ||--|| CYMBALAIR_POLICIES : "stores"
+    BIGQUERY ||--|| TICKET_SALES : "stores"
+    ALLOYDB ||--|| FLIGHT_HISTORY : "stores (duplicate)"
+```
+
+**Cross-Dataset Configuration:**
+```json
+{
+  "datasets": [
+    {
+      "type": "bigquery",
+      "name": "flights_dataset",
+      "description": "Flight history and ticket sales for Cymbal Airlines"
+    },
+    {
+      "type": "alloydb",
+      "name": "flights_dataset",
+      "description": "Flight history in AlloyDB (demonstrates cross-DB joins)"
+    }
+  ],
+  "cross_dataset_relations": {
+    "foreign_keys": [
+      {
+        "child": {
+          "type": "bigquery",
+          "dataset": "flights_dataset",
+          "table": "ticket_sales",
+          "column": "flight_id"
+        },
+        "parent": {
+          "type": "alloydb",
+          "dataset": "flights_dataset",
+          "table": "flight_history",
+          "column": "flight_id"
+        }
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Data Science Agent Interaction Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Root as root_agent
+    participant DataCoord as data_coordinator
+    participant BQAgent as bigquery_agent
+    participant BQTool as Built-in BQ Tool
+    participant BigQuery as BigQuery API
+    participant Analytics as analytics_agent
+    participant CodeInterp as Code Interpreter
+
+    User->>Root: "What are total sales by country? Generate a plot."
+    Root->>DataCoord: Route to data coordinator
+    DataCoord->>DataCoord: Analyze intent: SQL query + visualization
+    
+    Note over DataCoord,BQAgent: Step 1: Fetch Data from BigQuery
+    DataCoord->>BQAgent: Query for total sales by country
+    BQAgent->>BQAgent: Generate SQL (NL2SQL)
+    BQAgent->>BQTool: Execute query
+    BQTool->>BigQuery: Run SQL query
+    BigQuery-->>BQTool: Return results
+    BQTool-->>BQAgent: Query results (DataFrame)
+    BQAgent-->>DataCoord: Sales data by country
+    
+    Note over DataCoord,Analytics: Step 2: Generate Visualization
+    DataCoord->>Analytics: Create bar plot of sales by country
+    Analytics->>Analytics: Generate Python code (NL2Py)
+    Analytics->>CodeInterp: Execute plotting code
+    CodeInterp->>CodeInterp: Import matplotlib/pandas
+    CodeInterp->>CodeInterp: Create bar chart
+    CodeInterp->>CodeInterp: Encode as base64
+    CodeInterp-->>Analytics: Plot image (base64)
+    Analytics-->>DataCoord: Visualization ready
+    
+    DataCoord-->>Root: Aggregated results + plot
+    Root-->>User: "Here are total sales by country [BAR CHART]"
+```
+
+---
+
+### BigQuery Deployment Pipeline
+
+```mermaid
+flowchart LR
+    subgraph Local["💻 Local Development"]
+        ETL["ETL Extractors<br/>backend/etl/"]
+        Bronze["Bronze Layer<br/>data/1-bronze/<br/>Parquet Files"]
+    end
+
+    subgraph Deploy["🚀 Deployment Scripts"]
+        Deploy_Script["deploy_to_bigquery.py<br/>• Load Parquet to GCS<br/>• Create BQ Tables<br/>• Set Partitioning"]
+        Service_Acct["GCP Service Account<br/>• bigquery.dataEditor<br/>• bigquery.jobUser"]
+    end
+
+    subgraph GCP["☁️ Google Cloud Platform"]
+        GCS["Cloud Storage<br/>gs://dnb-data/bronze/<br/>Staging Area"]
+        BQ_Dataset["BigQuery Dataset<br/>dnb_statistics<br/>• Partitioned Tables<br/>• Clustered Keys"]
+    end
+
+    subgraph Tables["📊 BigQuery Tables"]
+        Ins_Corps["insurance_pensions__insurers__<br/>insurance_corps_balance_sheet_quarter"]
+        Pension["insurance_pensions__pension_funds__<br/>pension_funds_balance_sheet"]
+        Rates["financial_markets__<br/>exchange_rates"]
+        More["+ 15 more tables"]
+    end
+
+    ETL --> Bronze
+    Bronze --> Deploy_Script
+    Deploy_Script -.Authenticate.-> Service_Acct
+    Deploy_Script --> GCS
+    GCS --> BQ_Dataset
+    BQ_Dataset --> Ins_Corps
+    BQ_Dataset --> Pension
+    BQ_Dataset --> Rates
+    BQ_Dataset --> More
+
+    classDef local fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef deploy fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef cloud fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef tables fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    
+    class ETL,Bronze local
+    class Deploy_Script,Service_Acct deploy
+    class GCS,BQ_Dataset cloud
+    class Ins_Corps,Pension,Rates,More tables
+```
+
+**Deployment Process:**
+
+1. **Local ETL**: Extract DNB data to Parquet (Bronze layer)
+2. **Upload to GCS**: Stage Parquet files in Cloud Storage bucket
+3. **Load to BigQuery**: Use `bq load` or Python BigQuery client
+4. **Configure Tables**:
+   - Partition by `period` column
+   - Cluster by business keys (e.g., `category`, `subcategory`)
+   - Set schema enforcement
+
+**Table Naming Convention:**
+```
+{category}__{subcategory}__{endpoint_name}
+```
+
+Examples:
+- `insurance_pensions__insurers__insurance_corps_balance_sheet_quarter`
+- `financial_markets__interest_rates__market_interest_rates`
+- `financial_markets__bond_yields__dutch_state_loans`
 
 ---
 
@@ -835,6 +1264,306 @@ python simple_dnb_agent.py
 
 ---
 
+## Deployment Topology
+
+### Deployment Layers: Local vs Docker vs Cloud
+
+```mermaid
+graph TB
+    subgraph Local_Dev["💻 LOCAL DEVELOPMENT"]
+        direction TB
+        
+        subgraph Python_Local["Python Applications (Host)"]
+            ADK_Web_Local["ADK Web Server<br/>Port: 8000<br/>Poetry/uv managed"]
+            Root_Agent_Local["Root Agent<br/>gemini-2.0-flash<br/>.venv isolated"]
+            ETL_Local["ETL Pipelines<br/>Poetry environment<br/>Scheduled via cron/tasks"]
+        end
+        
+        subgraph Data_Local["File System"]
+            Bronze_Local["Bronze Layer<br/>data/1-bronze/<br/>Parquet files"]
+            Silver_Local["Silver Layer<br/>data/2-silver/<br/>Cleaned data"]
+            Gold_Local["Gold Layer<br/>data/3-gold/<br/>Aggregated data"]
+        end
+        
+        subgraph Docker_Local["🐳 Docker Containers"]
+            Toolbox_Docker["genai-toolbox-mcp<br/>Port: 5000<br/>Go binary + YAML configs"]
+            Jaeger_Docker["Jaeger All-in-One<br/>Ports: 4318, 16686<br/>OTLP + UI"]
+            Postgres_Docker["PostgreSQL 17<br/>Port: 5432<br/>Session storage (future)"]
+        end
+    end
+
+    subgraph Azure_Cloud["☁️ MICROSOFT AZURE (Internal DNB Services)"]
+        direction TB
+        
+        subgraph Azure_Services["Internal Services"]
+            DataLoop_Svc["DNB DataLoop<br/>Report Status API<br/>• Internal network<br/>• Financial institutions"]
+            ATM_Svc["DNB ATM<br/>Models API<br/>• Third-party hosted<br/>• Secure access"]
+            MEGA_Svc["DNB MEGA<br/>Validations API<br/>• Third-party hosted<br/>• Secure access"]
+        end
+        
+        subgraph Azure_Network["Azure Network"]
+            VNET["Virtual Network<br/>Private connectivity"]
+            PrivateEndpoint["Private Endpoint<br/>Secure agent access"]
+        end
+    end
+
+    subgraph GCP_Cloud["☁️ GOOGLE CLOUD PLATFORM (PLANNED)"]
+        direction TB
+        
+        subgraph Cloud_Run["Cloud Run Services"]
+            Toolbox_CR["MCP Toolbox<br/>Cloud Run Service<br/>• VPC Connector<br/>• Secret Manager<br/>• Auto-scaling"]
+            ADK_Agent_CR["Data Science Agent<br/>Cloud Run Service<br/>• Agent Engine<br/>• Session Service<br/>• Cloud SQL Connector"]
+        end
+        
+        subgraph Data_GCP["Data & Storage"]
+            GCS["Cloud Storage<br/>gs://dnb-data/<br/>• Bronze exports<br/>• Staging area"]
+            BQ["BigQuery<br/>dnb_statistics dataset<br/>• Partitioned tables<br/>• Clustered keys"]
+            AlloyDB_GCP["AlloyDB<br/>PostgreSQL cluster<br/>• VPC peering<br/>• Public IP + Auth Proxy"]
+            Cloud_SQL["Cloud SQL (PostgreSQL)<br/>Session storage<br/>• Private IP<br/>• Automated backups"]
+        end
+        
+        subgraph AI_Platform["Vertex AI"]
+            Gemini["Gemini API<br/>gemini-2.0-flash<br/>• NL2SQL<br/>• NL2Py"]
+            Code_Interp["Code Interpreter<br/>Extension Service<br/>• Python sandbox<br/>• File I/O"]
+            RAG_Engine["RAG Engine<br/>BQML Reference<br/>• Vector search<br/>• Document corpus"]
+            Agent_Engine["Agent Engine<br/>Reasoning Engine<br/>• Multi-agent orchestration<br/>• Session management"]
+        end
+    end
+
+    %% Local connections
+    Root_Agent_Local -.HTTP.-> Toolbox_Docker
+    Root_Agent_Local -.ADK OpenAPI Tool.-> PrivateEndpoint
+    ADK_Web_Local -.WebSocket.-> Root_Agent_Local
+    Toolbox_Docker -.OTLP.-> Jaeger_Docker
+    ETL_Local --> Bronze_Local
+    Bronze_Local --> Silver_Local
+    Silver_Local --> Gold_Local
+    
+    %% Azure connections
+    PrivateEndpoint --> VNET
+    VNET --> DataLoop_Svc
+    VNET --> ATM_Svc
+    VNET --> MEGA_Svc
+    
+    %% GCP Cloud connections
+    Toolbox_CR -.VPC Connector.-> AlloyDB_GCP
+    ADK_Agent_CR --> Cloud_SQL
+    ADK_Agent_CR --> Gemini
+    ADK_Agent_CR --> Code_Interp
+    ADK_Agent_CR --> RAG_Engine
+    ADK_Agent_CR --> Agent_Engine
+    ADK_Agent_CR -.Query.-> BQ
+    ADK_Agent_CR -.Via MCP.-> Toolbox_CR
+    ADK_Agent_CR -.Private Link.-> PrivateEndpoint
+    
+    %% Data flow: Local to Cloud
+    Bronze_Local -.Upload Script.-> GCS
+    GCS -.bq load.-> BQ
+    
+    classDef local_python fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef local_data fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    classDef azure_service fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
+    classDef azure_network fill:#90caf9,stroke:#1565c0,stroke-width:2px
+    classDef cloud_run fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    classDef gcp_data fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef vertex fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class ADK_Web_Local,Root_Agent_Local,ETL_Local local_python
+    class Bronze_Local,Silver_Local,Gold_Local local_data
+    class Toolbox_Docker,Jaeger_Docker,Postgres_Docker docker
+    class DataLoop_Svc,ATM_Svc,MEGA_Svc azure_service
+    class VNET,PrivateEndpoint azure_network
+    class Toolbox_CR,ADK_Agent_CR cloud_run
+    class GCS,BQ,AlloyDB_GCP,Cloud_SQL gcp_data
+    class Gemini,Code_Interp,RAG_Engine,Agent_Engine vertex
+```
+
+---
+
+### Deployment Comparison Matrix
+
+| Component | Local Development | Docker (Local) | Azure (Internal) | Cloud Run (GCP) |
+|-----------|-------------------|----------------|------------------|-----------------|
+| **ADK Web Server** | Host (Poetry/uv)<br/>Port 8000 | N/A | N/A | Cloud Run Service<br/>Auto-scaling |
+| **Root Agent** | Host (.venv)<br/>Gemini API via internet | N/A | N/A | Agent Engine<br/>Managed service |
+| **Data Science Agents** | N/A | N/A | N/A | Agent Engine<br/>Multi-agent system |
+| **MCP Toolbox** | N/A | Docker container<br/>Port 5000 | N/A | Cloud Run Service<br/>VPC + Secrets |
+| **DNB Internal Services** | ADK OpenAPI Tool<br/>Private network | N/A | **Azure-hosted<br/>DataLoop/ATM/MEGA<br/>Private endpoints** | Via Private Link |
+| **Jaeger** | N/A | Docker container<br/>In-memory storage | N/A | Cloud Trace<br/>Managed tracing |
+| **PostgreSQL** | N/A | Docker container<br/>Local volume | N/A | Cloud SQL<br/>Automated backups |
+| **AlloyDB** | N/A | N/A | N/A | AlloyDB cluster<br/>VPC + Auth Proxy |
+| **BigQuery** | N/A | N/A | N/A | Managed dataset<br/>Partitioned tables |
+| **Code Interpreter** | N/A | N/A | N/A | Vertex AI Extension<br/>Python sandbox |
+| **ETL Scripts** | Host (Poetry)<br/>Cron/VS Code tasks | N/A | N/A | Cloud Scheduler<br/>+ Cloud Functions |
+| **Bronze Data** | Local filesystem<br/>data/1-bronze/ | N/A | N/A | Cloud Storage<br/>gs://dnb-data/ |
+
+---
+
+### Cloud Run Deployment Architecture (PLANNED)
+
+```mermaid
+graph TB
+    subgraph Internet["🌐 Internet"]
+        User["User Browser"]
+        DNB_APIs["DNB APIs<br/>api.dnb.nl"]
+    end
+
+    subgraph GCP_Project["☁️ Google Cloud Project"]
+        direction TB
+        
+        subgraph Cloud_Run_Services["Cloud Run (Auto-scaling)"]
+            CR_Toolbox["MCP Toolbox Service<br/>• Private IP + Load Balancer<br/>• IAM Authentication<br/>• Min instances: 0, Max: 10"]
+            CR_Agent["Data Science Agent Service<br/>• Public endpoint<br/>• Session management<br/>• Min instances: 1, Max: 20"]
+        end
+        
+        subgraph VPC["VPC Network"]
+            VPC_Connector["Serverless VPC Connector<br/>us-central1"]
+            Subnet["Default Subnet<br/>10.128.0.0/20"]
+        end
+        
+        subgraph Databases["Managed Databases"]
+            AlloyDB_Cluster["AlloyDB Cluster<br/>• Primary instance (8 CPU)<br/>• Public IP enabled<br/>• SSL: ALLOW_UNENCRYPTED"]
+            Cloud_SQL_Instance["Cloud SQL (PostgreSQL 17)<br/>• db-g1-small<br/>• Private IP only<br/>• Auto backups"]
+        end
+        
+        subgraph Storage["Data Storage"]
+            GCS_Bucket["Cloud Storage Bucket<br/>gs://dnb-data/<br/>• Parquet staging<br/>• Lifecycle policies"]
+            BQ_Dataset["BigQuery Dataset<br/>dnb_statistics<br/>• US-multi region<br/>• Partitioned tables"]
+        end
+        
+        subgraph AI_Services["Vertex AI"]
+            Gemini_API["Gemini 2.0 Flash<br/>• NL2SQL generation<br/>• Agent reasoning"]
+            Code_Interp_Ext["Code Interpreter Extension<br/>• projects/.../extensions/..."]
+            RAG_Corpus["RAG Engine Corpus<br/>BQML reference docs"]
+            Agent_Engine_RE["Agent Engine<br/>Reasoning Engine resource"]
+        end
+        
+        subgraph Security["Security & Secrets"]
+            Secret_Manager["Secret Manager<br/>• ALLOYDB_POSTGRES_PASSWORD<br/>• DNB_SUBSCRIPTION_KEY_PROD<br/>• tools.yaml config"]
+            IAM["IAM Roles<br/>• Service Accounts<br/>• Workload Identity"]
+        end
+    end
+
+    %% User connections
+    User -.HTTPS.-> CR_Agent
+    
+    %% Agent to services
+    CR_Agent --> Cloud_SQL_Instance
+    CR_Agent --> Gemini_API
+    CR_Agent --> Code_Interp_Ext
+    CR_Agent --> RAG_Corpus
+    CR_Agent --> Agent_Engine_RE
+    CR_Agent -.Internal.-> CR_Toolbox
+    CR_Agent --> BQ_Dataset
+    
+    %% Toolbox to databases
+    CR_Toolbox --> VPC_Connector
+    VPC_Connector --> Subnet
+    Subnet --> AlloyDB_Cluster
+    CR_Toolbox -.HTTPS.-> DNB_APIs
+    CR_Toolbox --> Secret_Manager
+    
+    %% Data pipeline
+    GCS_Bucket -.bq load.-> BQ_Dataset
+    
+    %% Security
+    IAM -.Manages.-> CR_Toolbox
+    IAM -.Manages.-> CR_Agent
+    Secret_Manager -.Secrets.-> CR_Toolbox
+    Secret_Manager -.Secrets.-> CR_Agent
+
+    classDef internet fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef cloudrun fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px
+    classDef vpc fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef storage fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef ai fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef security fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    
+    class User,DNB_APIs internet
+    class CR_Toolbox,CR_Agent cloudrun
+    class VPC_Connector,Subnet vpc
+    class AlloyDB_Cluster,Cloud_SQL_Instance database
+    class GCS_Bucket,BQ_Dataset storage
+    class Gemini_API,Code_Interp_Ext,RAG_Corpus,Agent_Engine_RE ai
+    class Secret_Manager,IAM security
+```
+
+**Cloud Run Service Configuration:**
+
+```yaml
+# MCP Toolbox Service
+service: toolbox
+image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
+args:
+  - --tools-file=/app/tools.yaml
+  - --address=0.0.0.0
+  - --port=8080
+secrets:
+  - /app/tools.yaml=tools:latest
+  - ALLOYDB_POSTGRES_PASSWORD=ALLOYDB_POSTGRES_PASSWORD:latest
+network:
+  vpc: default
+  subnet: default
+service_account: toolbox-identity@PROJECT_ID.iam.gserviceaccount.com
+```
+
+```yaml
+# Data Science Agent Service
+service: data-science-agent
+port: 8080
+memory: 2G
+cloudsql_instances:
+  - PROJECT_ID:us-central1:ds-agent-session-service
+env_vars:
+  SERVE_WEB_INTERFACE: "True"
+  SESSION_SERVICE_URI: "postgresql+pg8000://postgres:PASSWORD@postgres/?unix_sock=/cloudsql/PROJECT_ID:us-central1:ds-agent-session-service/.s.PGSQL.5432"
+  GOOGLE_CLOUD_PROJECT: "PROJECT_ID"
+allow_unauthenticated: true
+```
+
+---
+
+### Deployment Workflow Comparison
+
+```mermaid
+flowchart LR
+    subgraph Local_Deploy["💻 Local Development Workflow"]
+        direction TB
+        UpdateSpec_L["1. Update OpenAPI Spec<br/>backend/apis/dnb/specs/"]
+        Convert_L["2. Convert to Toolbox<br/>openapi_toolbox.py"]
+        Restart_L["3. Restart Docker<br/>docker-compose restart"]
+        Test_L["4. Test Locally<br/>localhost:5000"]
+    end
+
+    subgraph Cloud_Deploy["☁️ Cloud Run Deployment"]
+        direction TB
+        Build_C["1. Build Container<br/>docker build -t ..."]
+        Push_C["2. Push to Artifact Registry<br/>docker push ..."]
+        Deploy_C["3. Deploy to Cloud Run<br/>gcloud run deploy"]
+        Migrate_C["4. Update Secrets<br/>gcloud secrets create"]
+        Test_C["5. Test Cloud Endpoint<br/>https://toolbox-...run.app"]
+    end
+
+    UpdateSpec_L --> Convert_L
+    Convert_L --> Restart_L
+    Restart_L --> Test_L
+    
+    Build_C --> Push_C
+    Push_C --> Deploy_C
+    Deploy_C --> Migrate_C
+    Migrate_C --> Test_C
+
+    classDef local fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef cloud fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    
+    class UpdateSpec_L,Convert_L,Restart_L,Test_L local
+    class Build_C,Push_C,Deploy_C,Migrate_C,Test_C cloud
+```
+
+---
+
 ## Technology Stack
 
 ### Core Technologies
@@ -922,33 +1651,79 @@ mindmap
 
 ### Component Count
 
-- **Agents**: 10+ (root, coordinators, specialists)
-- **Tools**: 84+ (echo: 3, statistics: 79, public-register: 5)
+- **Agents**: 13+ current (root, coordinators, 3 public API specialists, 3 Azure specialists) + 4 planned data science agents (BigQuery, AlloyDB, Analytics, BQML)
+- **Tools**: 87+ (echo: 3, statistics: 79, public-register: 5) + 3 internal Azure services (DataLoop, ATM, MEGA)
 - **ETL Extractors**: 23+ (statistics: 17, public-register: 6)
-- **API Clients**: 3 (echo, statistics, public-register)
-- **Services**: 3 (toolbox, jaeger, postgres)
+- **API Clients**: 3 Kiota clients (echo, statistics, public-register) + 3 ADK OpenAPI tools (DataLoop, ATM, MEGA)
+- **Services**: 3 running locally (toolbox, jaeger, postgres) + 3 Azure services + planned GCP services (AlloyDB, Cloud SQL, BigQuery)
+- **Data Layers**: 3 (bronze, silver, gold - medallion architecture)
+- **Cloud Platforms**: 2 (Microsoft Azure for internal services, Google Cloud for data/AI)
 
 ### Integration Points
 
-| Component | Protocol | Port | Purpose |
-|-----------|----------|------|---------|
-| ADK Web UI | HTTP/WebSocket | 4200 → Backend | Agent interaction |
-| ADK Agents | HTTP REST | → 5000 | Tool invocation |
-| GenAI Toolbox | HTTPS REST | → DNB APIs | API calls |
-| GenAI Toolbox | OTLP/gRPC | → 4318 | Trace export |
-| Jaeger UI | HTTP | 16686 | Trace visualization |
-| PostgreSQL | PostgreSQL | 5432 | Metadata storage |
+| Component | Protocol | Port | Purpose | Environment |
+|-----------|----------|------|---------|-------------|
+| ADK Web UI | HTTP/WebSocket | 4200 → Backend | Agent interaction | Local Host |
+| ADK Agents | HTTP REST | → 5000 | Tool invocation (public APIs) | Local Host → Docker |
+| **ADK Agents** | **ADK OpenAPI Tool** | **→ Azure** | **Internal service access** | **Local Host → Azure** |
+| GenAI Toolbox | HTTPS REST | → DNB APIs | External API calls | Docker → Internet |
+| GenAI Toolbox | OTLP/gRPC | → 4318 | Trace export | Docker → Docker |
+| Jaeger UI | HTTP | 16686 | Trace visualization | Browser → Docker |
+| PostgreSQL | PostgreSQL | 5432 | Metadata storage | Docker (Local) |
+| **DNB DataLoop** | **HTTPS/REST** | **443** | **Report status comms** | **Azure (Internal)** |
+| **DNB ATM** | **HTTPS/REST** | **443** | **Model access** | **Azure (Internal)** |
+| **DNB MEGA** | **HTTPS/REST** | **443** | **Validation services** | **Azure (Internal)** |
+| BigQuery | gRPC/REST | 443 | Data warehouse | GCP (Planned) |
+| AlloyDB | PostgreSQL | 5432 | OLTP database | GCP (Planned) |
+| Cloud Run | HTTPS | 443 | Agent services | GCP (Planned) |
+| Vertex AI | gRPC/REST | 443 | AI/ML platform | GCP (Planned) |
 
 ---
 
 ## Next Steps
 
-- **Review**: Validate architecture matches implementation
-- **Extend**: Add new agents (Google, data workflows)
-- **Optimize**: Performance tuning for ETL pipelines
-- **Document**: Update as system evolves
+### Implemented ✅
+- Multi-agent system with root, coordinators, and specialists
+- MCP Toolbox with 84+ DNB API tools
+- ETL pipeline extracting to Bronze layer (Parquet)
+- Docker Compose local development stack
+- OpenTelemetry tracing with Jaeger
+
+### In Progress 🚧
+- Data Science multi-agent system architecture design
+- BigQuery deployment pipeline documentation
+- Cloud Run deployment strategy
+
+### Planned 📋
+1. **Data Science Agents**:
+   - Implement `data_coordinator` with NL2SQL/NL2Py routing
+   - Create `bigquery_agent` with CHASE-SQL and built-in BQ tools
+   - Develop `analytics_agent` with Code Interpreter extension
+   - Build `bqml_agent` with RAG-based BQML reference guide
+   - Set up `alloydb_agent` with MCP Toolbox for Databases
+
+2. **Cloud Deployment**:
+   - Deploy MCP Toolbox to Cloud Run with VPC connector
+   - Set up AlloyDB cluster with Auth Proxy
+   - Create Cloud SQL instance for session storage
+   - Configure Vertex AI Code Interpreter extension
+   - Build RAG corpus for BQML documentation
+
+3. **Data Pipeline**:
+   - Implement Bronze → GCS upload scripts
+   - Create BigQuery dataset with partitioned tables
+   - Develop Silver layer transformation logic
+   - Build Gold layer aggregation views
+   - Set up Cloud Scheduler for automated ETL
+
+4. **Advanced Features**:
+   - Cross-dataset join capabilities (BigQuery ↔ AlloyDB)
+   - Dataset configuration files for flexible data source routing
+   - BQML model training workflows (ARIMA, forecasting)
+   - Performance optimization for large-scale analytics
 
 ---
 
 *Generated: October 2025*  
-*Version: 1.0.0*
+*Version: 2.0.0*  
+*Updated: Enhanced with Data Science Agent architecture and deployment topology*
