@@ -30,36 +30,44 @@ graph TB
         Jaeger_UI["Jaeger Tracing UI<br/>(Observability)<br/>Port: 16686"]
     end
 
-    subgraph Agents["🤖 Agent Orchestration Layer"]
+    subgraph Agents["🤖 Agent Orchestration Layer ✅ IMPLEMENTED"]
         direction TB
         Root["Root Agent<br/>(ADK LlmAgent)"]
         DNB_Coord["DNB Coordinator<br/>(Toolbox Path)"]
         DNB_OpenAPI_Coord["DNB OpenAPI Coordinator<br/>(OpenAPI Path)"]
         
-        subgraph API_Agents["API Specialists"]
+        subgraph API_Agents["API Specialists ✅ WORKING"]
             Echo["Echo Agent"]
             Stats["Statistics Agent"]
             PR["Public Register Agent"]
         end
     end
 
-    subgraph Tools["🔧 Tool Orchestration Layer"]
+    subgraph Tools["🔧 Tool Orchestration Layer ✅ IMPLEMENTED"]
         Toolbox["GenAI Toolbox<br/>MCP Server<br/>Port: 5000"]
         ToolConfig["Tool Configurations<br/>(YAML Definitions)<br/>84+ DNB Tools"]
         OTel["OpenTelemetry<br/>(Tracing)"]
     end
 
-    subgraph External["🌐 External DNB Services (Public APIs)"]
+    subgraph External["🌐 External DNB Services (Public APIs) ✅ CONNECTED"]
         DNB_Echo["DNB Echo API<br/>(Testing)"]
         DNB_Stats["DNB Statistics API<br/>(v2024100101)"]
         DNB_PR["DNB Public Register API<br/>(v1)"]
         Jaeger["Jaeger Backend<br/>(Trace Storage)"]
     end
 
-    subgraph Azure["☁️ Microsoft Azure (Internal DNB Services)"]
-        DNB_DataLoop["DNB DataLoop<br/>(Report Status)<br/>Financial Institutions"]
-        DNB_ATM["DNB ATM<br/>(Models)<br/>Third-party Service"]
-        DNB_MEGA["DNB MEGA<br/>(Validations)<br/>Third-party Service"]
+    subgraph Azure["☁️ Microsoft Azure (Internal DNB Services) 📋 PLANNED"]
+        subgraph Azure_DB["🗄️ Databases (PRIMARY ACCESS)"]
+            DataLoop_DB["DataLoop DB<br/>(SQL Server)<br/>IAM Auth"]
+            ATM_DB["ATM DB<br/>(PostgreSQL)<br/>IAM Auth"]
+            MEGA_DB["MEGA DB<br/>(SQL Server)<br/>IAM Auth"]
+        end
+        subgraph Azure_API["🔌 APIs (SECONDARY)"]
+            DNB_DataLoop["DNB DataLoop API<br/>(Report Status)"]
+            DNB_ATM["DNB ATM API<br/>(Models)"]
+            DNB_MEGA["DNB MEGA API<br/>(Validations)"]
+        end
+        Azure_IAM["Azure IAM<br/>(Role-Based Access)"]
     end
 
     subgraph Build["🛠️ Development Tools"]
@@ -67,19 +75,19 @@ graph TB
         OpenAPI_Specs["OpenAPI 3.0 Specs<br/>(APIs/DNB/Specs)"]
     end
 
-    subgraph ETL["📊 ETL Pipeline"]
+    subgraph ETL["📊 ETL Pipeline ✅ IMPLEMENTED"]
         Stats_ETL["Statistics ETL<br/>(17+ Extractors)"]
         PR_ETL["Public Register ETL<br/>(6 Extractors)"]
         Bronze["Bronze Layer<br/>(Parquet Files)"]
     end
 
-    subgraph Cloud["☁️ Google Cloud Platform"]
+    subgraph Cloud["☁️ Google Cloud Platform 📋 PLANNED"]
         GCS["Cloud Storage<br/>(Staging Bucket)"]
         BQ["BigQuery<br/>(Data Warehouse)"]
-        AlloyDB["AlloyDB<br/>(PostgreSQL)<br/>(PLANNED)"]
+        AlloyDB["AlloyDB<br/>(PostgreSQL)"]
     end
 
-    %% Connections
+    %% Connections - Implemented
     ADK_UI -.HTTP/WebSocket.-> Root
     Root --> DNB_Coord
     Root --> DNB_OpenAPI_Coord
@@ -90,13 +98,20 @@ graph TB
     Toolbox -.HTTPS.-> DNB_Echo
     Toolbox -.HTTPS.-> DNB_Stats
     Toolbox -.HTTPS.-> DNB_PR
-    Toolbox -.Internal Network.-> DNB_DataLoop
-    Toolbox -.Internal Network.-> DNB_ATM
-    Toolbox -.Internal Network.-> DNB_MEGA
     Toolbox -.OTLP/gRPC.-> OTel
     OTel --> Jaeger
     Jaeger_UI -.Query.-> Jaeger
     
+    %% Connections - Planned (Azure Database Access)
+    Toolbox -.IAM Auth.-> Azure_IAM
+    Azure_IAM -.SQL Connection.-> DataLoop_DB
+    Azure_IAM -.SQL Connection.-> ATM_DB
+    Azure_IAM -.SQL Connection.-> MEGA_DB
+    DataLoop_DB -.Backed by.-> DNB_DataLoop
+    ATM_DB -.Backed by.-> DNB_ATM
+    MEGA_DB -.Backed by.-> DNB_MEGA
+    
+    %% Build tools
     OpenAPIBox -.Generates.-> ToolConfig
     OpenAPI_Specs -.Input.-> OpenAPIBox
     
@@ -129,13 +144,105 @@ graph TB
 ```
 
 **Key Components:**
-- **Frontend**: Angular-based UI for agent interaction
-- **Agents**: Multi-agent system built with Google ADK
-- **Tools**: MCP server managing 84+ public DNB API tools + 3 internal Azure-hosted services
-- **ETL**: Data extraction pipelines for analytics
-- **External**: Public DNB APIs and observability backend
-- **Azure**: Internal DNB services (DataLoop, ATM, MEGA) - Microsoft Azure hosted
-- **Cloud**: GCP services for data warehouse and analytics (PLANNED)
+- **Frontend**: Angular-based UI for agent interaction ✅ **IMPLEMENTED**
+- **Agents**: Multi-agent system built with Google ADK ✅ **IMPLEMENTED**
+- **Tools**: MCP server managing 84+ public DNB API tools ✅ **IMPLEMENTED**
+- **ETL**: Data extraction pipelines for analytics ✅ **IMPLEMENTED**
+- **External**: Public DNB APIs and observability backend ✅ **CONNECTED**
+- **Azure**: Internal DNB services with **database access (PRIMARY)** 📋 **PLANNED**
+  - Database access granted FIRST via Azure IAM
+  - API access as secondary option
+  - Role-based access control required
+- **Cloud**: GCP services for data warehouse and analytics 📋 **PLANNED**
+
+---
+
+## Azure Database Integration Architecture 📋 PLANNED
+
+### Database-First Access Pattern
+
+```mermaid
+graph TB
+    subgraph DNB_Infra["🏢 DNB Internal Infrastructure"]
+        subgraph Agents_DNB["Agents (Copilot-based)"]
+            DNB_Agent["Internal DNB Agents<br/>Model: GitHub Copilot<br/>Deployment: Azure Container Apps"]
+        end
+        
+        subgraph IAM["🔐 Azure IAM"]
+            RBAC["Role-Based Access Control"]
+            ServicePrincipal["Service Principals"]
+            ManagedIdentity["Managed Identities"]
+        end
+        
+        subgraph Databases["🗄️ Primary Data Access"]
+            DataLoop_DB_Detail["DataLoop Database<br/>Type: SQL Server<br/>Auth: Azure AD IAM<br/>Tables: Reports, Statuses, FI Data"]
+            ATM_DB_Detail["ATM Database<br/>Type: PostgreSQL<br/>Auth: Azure AD IAM<br/>Tables: Models, Predictions"]
+            MEGA_DB_Detail["MEGA Database<br/>Type: SQL Server<br/>Auth: Azure AD IAM<br/>Tables: Validations, Rules"]
+        end
+        
+        subgraph APIs_Secondary["🔌 Secondary API Access"]
+            DataLoop_API_Detail["DataLoop REST API<br/>OpenAPI 3.0<br/>HTTPS/JSON"]
+            ATM_API_Detail["ATM REST API<br/>OpenAPI 3.0<br/>HTTPS/JSON"]
+            MEGA_API_Detail["MEGA REST API<br/>OpenAPI 3.0<br/>HTTPS/JSON"]
+        end
+        
+        subgraph A2A_Server["🔄 A2A Protocol Server"]
+            A2A_Endpoint["A2A JSON-RPC Endpoint<br/>Agent Cards Published<br/>Cross-Org Communication"]
+        end
+    end
+    
+    %% IAM Authentication Flow
+    DNB_Agent -->|1. Request Access| RBAC
+    RBAC -->|2. Validate Role| ServicePrincipal
+    ServicePrincipal -->|3. Grant Token| ManagedIdentity
+    
+    %% Primary Database Access
+    ManagedIdentity -->|4. SQL Connection| DataLoop_DB_Detail
+    ManagedIdentity -->|4. SQL Connection| ATM_DB_Detail
+    ManagedIdentity -->|4. SQL Connection| MEGA_DB_Detail
+    
+    %% Secondary API Access
+    DNB_Agent -.Optional.-> DataLoop_API_Detail
+    DNB_Agent -.Optional.-> ATM_API_Detail
+    DNB_Agent -.Optional.-> MEGA_API_Detail
+    
+    %% A2A Integration
+    DNB_Agent -->|Expose via A2A| A2A_Endpoint
+    
+    classDef dnb_agent fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef iam fill:#e0f2f1,stroke:#00796b,stroke-width:2px
+    classDef database fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef api fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef a2a fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    
+    class DNB_Agent dnb_agent
+    class RBAC,ServicePrincipal,ManagedIdentity iam
+    class DataLoop_DB_Detail,ATM_DB_Detail,MEGA_DB_Detail database
+    class DataLoop_API_Detail,ATM_API_Detail,MEGA_API_Detail api
+    class A2A_Endpoint a2a
+```
+
+**Access Pattern Priority:**
+1. **PRIMARY**: Direct database connections via Azure IAM (SQL Server/PostgreSQL)
+2. **SECONDARY**: REST API access as fallback or for specific operations
+3. **A2A Protocol**: Required for cross-organization agent communication
+
+**IAM Requirements:**
+- Service Principals for agent authentication
+- Managed Identities for Azure resource access
+- Role-Based Access Control (RBAC) for database permissions
+- Token-based authentication with refresh
+
+**Model Configuration:**
+- **Local/External Deployment**: Google Gemini (gemini-2.5-flash, gemini-2.5-pro)
+- **DNB Infrastructure**: GitHub Copilot (required by DNB policy)
+- Configuration via environment variables
+
+**A2A Protocol Requirements:**
+- Agent cards (.well-known/agent.json) for each internal agent
+- JSON-RPC 2.0 endpoints for agent-to-agent communication
+- Authentication schemes for secure cross-org communication
+- Task management and streaming support
 
 ---
 
@@ -204,18 +311,26 @@ graph TB
         Data_Coord["data_coordinator<br/>(COMING SOON)<br/>Data Workflows"]
     end
 
-    subgraph Specialists["🔧 Specialist Agents"]
+    subgraph Specialists["🔧 Specialist Agents ✅ IMPLEMENTED"]
         direction LR
         Echo_TB["dnb_echo_agent<br/>ToolboxToolset<br/>• Connectivity Tests<br/>• Health Checks"]
         Stats_TB["dnb_statistics_agent<br/>ToolboxToolset<br/>• Market Data<br/>• Financial Stats<br/>• 79 endpoints"]
         PR_TB["dnb_public_register_agent<br/>ToolboxToolset<br/>• Entity Search<br/>• Publications<br/>• 5 endpoints"]
     end
 
-    subgraph Azure_Specialists["☁️ Internal DNB Specialists (Azure-hosted)"]
-        direction LR
-        DataLoop_Agent["dnb_dataloop_agent<br/>ADK OpenAPI Tool<br/>• Report Status<br/>• FI Communications"]
-        ATM_Agent["dnb_atm_agent<br/>ADK OpenAPI Tool<br/>• Model Access<br/>• Third-party Integration"]
-        MEGA_Agent["dnb_mega_agent<br/>ADK OpenAPI Tool<br/>• Validation Services<br/>• Third-party Integration"]
+    subgraph Azure_Specialists["☁️ Internal DNB Specialists 📋 PLANNED"]
+        direction TB
+        subgraph Azure_DB_Agents["Database-First Agents"]
+            DataLoop_DB_Agent["dnb_dataloop_db_agent<br/>SQL Toolset (Azure IAM)<br/>• Report Status Queries<br/>• FI Communications Data"]
+            ATM_DB_Agent["dnb_atm_db_agent<br/>PostgreSQL Toolset (Azure IAM)<br/>• Model Metadata Queries<br/>• Prediction History"]
+            MEGA_DB_Agent["dnb_mega_db_agent<br/>SQL Toolset (Azure IAM)<br/>• Validation Rule Queries<br/>• Validation Results"]
+        end
+        subgraph Azure_API_Agents["API Fallback Agents"]
+            DataLoop_API_Agent["dnb_dataloop_api_agent<br/>ADK OpenAPI Tool<br/>• REST Operations"]
+            ATM_API_Agent["dnb_atm_api_agent<br/>ADK OpenAPI Tool<br/>• REST Operations"]
+            MEGA_API_Agent["dnb_mega_api_agent<br/>ADK OpenAPI Tool<br/>• REST Operations"]
+        end
+        Azure_Note["Model: GitHub Copilot<br/>Deployment: DNB Azure<br/>Auth: Azure IAM + A2A"]
     end
 
     subgraph OpenAPI_Specialists["🆕 OpenAPI Specialists (Runtime Generation)"]
@@ -230,12 +345,17 @@ graph TB
         Parallel["parallel_fetcher<br/>ParallelAgent<br/>• Fan-out/Fan-in Pattern"]
     end
 
-    subgraph DataScience["🔬 Data Science Agents (PLANNED)"]
+    subgraph DataScience["🔬 Data Science Agents 📋 PLANNED"]
         direction LR
         BQ_Agent["bigquery_agent<br/>NL2SQL for BigQuery<br/>• CHASE-SQL / Baseline<br/>• Built-in BQ Tools"]
         AlloyDB_Agent["alloydb_agent<br/>NL2SQL for AlloyDB<br/>• MCP Toolbox<br/>• PostgreSQL Queries"]
         Analytics_Agent["analytics_agent<br/>NL2Py Analysis<br/>• Code Interpreter<br/>• Pandas/Plotting"]
         BQML_Agent["bqml_agent<br/>BigQuery ML<br/>• Model Training<br/>• RAG-based Reference"]
+    end
+
+    subgraph A2A_Integration["🔄 A2A Protocol Integration 📋 PLANNED"]
+        A2A_Server["A2A JSON-RPC Server<br/>Agent Card Publishing<br/>Cross-Org Communication"]
+        A2A_Client["A2A Client<br/>Remote Agent Access<br/>Task Management"]
     end
 
     RA --> DNB_Coord
@@ -246,9 +366,18 @@ graph TB
     DNB_Coord --> Echo_TB
     DNB_Coord --> Stats_TB
     DNB_Coord --> PR_TB
-    DNB_Coord --> DataLoop_Agent
-    DNB_Coord --> ATM_Agent
-    DNB_Coord --> MEGA_Agent
+    DNB_Coord -.Planned.-> DataLoop_DB_Agent
+    DNB_Coord -.Planned.-> ATM_DB_Agent
+    DNB_Coord -.Planned.-> MEGA_DB_Agent
+    
+    %% Database agents can fallback to API agents
+    DataLoop_DB_Agent -.Fallback.-> DataLoop_API_Agent
+    ATM_DB_Agent -.Fallback.-> ATM_API_Agent
+    MEGA_DB_Agent -.Fallback.-> MEGA_API_Agent
+    
+    %% A2A Integration for Azure agents
+    Azure_DB_Agents -.Expose via.-> A2A_Server
+    A2A_Client -.Connect to.-> A2A_Server
     
     OpenAPI_Coord --> Echo_OA
     OpenAPI_Coord --> Stats_OA
@@ -264,27 +393,41 @@ graph TB
     classDef root fill:#ffebee,stroke:#c62828,stroke-width:3px
     classDef coordinator fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
     classDef specialist fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef azure_specialist fill:#bbdefb,stroke:#0d47a1,stroke-width:2px
+    classDef azure_db fill:#bbdefb,stroke:#0d47a1,stroke-width:3px
+    classDef azure_api fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
     classDef openapi fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     classDef workflow fill:#fff9c4,stroke:#f57f17,stroke-width:2px
     classDef datascience fill:#e0f2f1,stroke:#00695c,stroke-width:2px
+    classDef a2a fill:#fce4ec,stroke:#c2185b,stroke-width:2px
     
     class RA root
     class DNB_Coord,OpenAPI_Coord,Google_Coord,Data_Coord coordinator
     class Echo_TB,Stats_TB,PR_TB specialist
-    class DataLoop_Agent,ATM_Agent,MEGA_Agent azure_specialist
+    class DataLoop_DB_Agent,ATM_DB_Agent,MEGA_DB_Agent azure_db
+    class DataLoop_API_Agent,ATM_API_Agent,MEGA_API_Agent,Azure_Note azure_api
     class Echo_OA,Stats_OA,PR_OA openapi
     class Sequential,Parallel workflow
     class BQ_Agent,AlloyDB_Agent,Analytics_Agent,BQML_Agent datascience
+    class A2A_Server,A2A_Client a2a
 ```
 
 **Agent Types:**
-- **Root Agent**: Entry point, intelligent routing based on user intent
-- **Coordinators**: Domain-specific routers (DNB, Google, Data)
-- **Specialists**: Single-API experts with focused capabilities (public DNB APIs)
-- **Azure Specialists**: Internal DNB service agents (DataLoop, ATM, MEGA) using ADK OpenAPI Tool
-- **Workflows**: Deterministic orchestration patterns
-- **Data Science**: Multi-agent analytics system (BigQuery, AlloyDB, Analytics, BQML)
+- **Root Agent**: Entry point ✅ **IMPLEMENTED**
+- **Coordinators**: Domain routing ✅ **IMPLEMENTED** (DNB), 📋 **PLANNED** (Google, Data)
+- **Specialists**: Public APIs ✅ **IMPLEMENTED** (Echo, Stats, PR)
+- **Azure Database Agents**: Direct DB access via IAM 📋 **PLANNED**
+- **Azure API Agents**: REST API fallback 📋 **PLANNED**
+- **Workflows**: Orchestration patterns 📋 **PLANNED**
+- **Data Science**: Analytics system 📋 **PLANNED**
+- **A2A Protocol**: Cross-org communication 📋 **PLANNED**
+
+**Azure Agent Requirements (DNB Infrastructure):**
+- **Model**: GitHub Copilot (DNB policy, not Gemini)
+- **Authentication**: Azure IAM + Managed Identities
+- **Primary**: Direct database connections (SQL Server/PostgreSQL)
+- **Secondary**: REST APIs as fallback
+- **Protocol**: A2A JSON-RPC for agent cards + cross-org communication
+- **Deployment**: Azure Container Apps
 
 **Agent Communication:**
 - Uses `transfer_to_agent()` for delegation
@@ -295,9 +438,9 @@ graph TB
 
 ### OpenAPI Tool Integration Strategy
 
-The Orkhon backend uses **two different approaches** for converting OpenAPI specifications into usable agent tools:
+The Orkhon backend uses **three different approaches** for integrating with DNB services:
 
-#### 1. **GenAI Toolbox (MCP Server)** - For Public DNB APIs
+#### 1. **GenAI Toolbox (MCP Server)** - For Public DNB APIs ✅ **IMPLEMENTED**
 - **Source**: Go-based MCP server from Google GenAI Toolbox project
 - **Usage**: External public APIs (Echo, Statistics, Public Register)
 - **Workflow**:
@@ -311,23 +454,47 @@ The Orkhon backend uses **two different approaches** for converting OpenAPI spec
   - Runtime tool discovery
   - Works with any HTTP/REST API
 
-#### 2. **ADK Built-in OpenAPI Tool** - For Internal Azure Services
+#### 2. **Database Toolsets (SQL)** - For Internal Azure Services (PRIMARY) 📋 **PLANNED**
+- **Source**: ADK SQL/PostgreSQL toolsets with Azure IAM
+- **Usage**: Internal DNB databases (DataLoop DB, ATM DB, MEGA DB)
+- **Workflow**:
+  1. Azure IAM authentication with Managed Identity
+  2. Direct SQL connections to databases
+  3. Agents use SQL toolsets for queries
+  4. Type-safe query generation
+- **Benefits**:
+  - Direct database access (faster than REST)
+  - Full query capabilities (JOIN, aggregate, etc.)
+  - IAM-based security
+  - Connection pooling
+- **Model Requirement**: GitHub Copilot for DNB infrastructure deployment
+
+#### 3. **ADK Built-in OpenAPI Tool** - For Internal Azure APIs (FALLBACK) 📋 **PLANNED**
 - **Source**: Agent Development Kit (google.adk) built-in OpenAPI toolset
-- **Usage**: Internal DNB services hosted on Microsoft Azure (DataLoop, ATM, MEGA)
+- **Usage**: Internal DNB REST APIs (DataLoop API, ATM API, MEGA API) - used as fallback
 - **Workflow**:
   1. OpenAPI spec provided directly to agent
   2. Agent generates tool definitions at runtime
   3. No external toolbox server required
   4. Direct HTTP requests from agent
 - **Benefits**:
+  - Lower latency (no MCP hop)
+  - Simplified architecture
+  - Runtime spec updates
   - Secure internal network access
-  - No external dependencies
-  - Simplified architecture for internal services
-  - Reduced latency (no MCP hop)
-
 **When to Use Which:**
-- **GenAI Toolbox**: External APIs, development/testing, tools shared across agents
-- **ADK OpenAPI Tool**: Internal services, secure networks, single-agent dedicated tools
+
+| Approach | Use Case | Access Pattern | Status |
+|----------|----------|----------------|---------|
+| **GenAI Toolbox** | External public APIs | HTTP/REST | ✅ **IMPLEMENTED** |
+| **Database Toolsets** | Internal Azure databases (PRIMARY) | SQL over IAM | 📋 **PLANNED** |
+| **ADK OpenAPI Tool** | Internal Azure APIs (FALLBACK) | HTTP/REST | 📋 **PLANNED** |
+
+**Azure Services Strategy:**
+1. **First**: Connect to databases directly via Azure IAM auth
+2. **Then**: Use REST APIs as fallback for specific operations
+3. **Always**: Use GitHub Copilot as model for DNB infrastructure agents
+4. **Required**: A2A protocol for cross-organization communication
 
 ---
 
@@ -1651,51 +1818,118 @@ mindmap
 
 ### Component Count
 
-- **Agents**: 13+ current (root, coordinators, 3 public API specialists, 3 Azure specialists) + 4 planned data science agents (BigQuery, AlloyDB, Analytics, BQML)
-- **Tools**: 87+ (echo: 3, statistics: 79, public-register: 5) + 3 internal Azure services (DataLoop, ATM, MEGA)
-- **ETL Extractors**: 23+ (statistics: 17, public-register: 6)
-- **API Clients**: 3 Kiota clients (echo, statistics, public-register) + 3 ADK OpenAPI tools (DataLoop, ATM, MEGA)
-- **Services**: 3 running locally (toolbox, jaeger, postgres) + 3 Azure services + planned GCP services (AlloyDB, Cloud SQL, BigQuery)
-- **Data Layers**: 3 (bronze, silver, gold - medallion architecture)
-- **Cloud Platforms**: 2 (Microsoft Azure for internal services, Google Cloud for data/AI)
+**Current (Implemented):**
+- **Agents**: 10+ ✅ (root, 2 coordinators, 3 public API specialists, workflows, OpenAPI variants)
+- **Tools**: 84+ ✅ (echo: 3, statistics: 79, public-register: 5)
+- **ETL Extractors**: 23+ ✅ (statistics: 17, public-register: 6)
+- **API Clients**: 3 Kiota clients ✅ (echo, statistics, public-register)
+- **Services**: 3 running locally ✅ (toolbox, jaeger, postgres)
+- **Data Layers**: 3 ✅ (bronze, silver, gold - medallion architecture)
+
+**Planned (Azure + GCP):**
+- **Agents**: +10 📋 (6 Azure DB/API agents, 4 data science agents)
+- **Tools**: +6 📋 (3 Azure DB toolsets + 3 Azure API tools)
+- **API Clients**: +3 ADK OpenAPI tools 📋 (DataLoop, ATM, MEGA APIs)
+- **Database Connections**: +3 Azure IAM auth 📋 (DataLoop DB, ATM DB, MEGA DB)
+- **Services (Azure)**: +3 databases + 3 APIs 📋
+- **Services (GCP)**: +4 📋 (AlloyDB, Cloud SQL, BigQuery, Vertex AI)
+- **Cloud Platforms**: +2 📋 (Microsoft Azure, Google Cloud)
+- **A2A Endpoints**: +1 📋 (JSON-RPC server for agent cards)
+
+**Total System (When Complete):**
+- **Agents**: 20+ (10 implemented + 10 planned)
+- **Tools**: 90+ (84 implemented + 6 planned)
+- **Data Sources**: 9+ (3 public APIs + 3 Azure DBs + 3 Azure APIs)
+- **Model Options**: 2 (Gemini for local/external, Copilot for DNB infrastructure)
 
 ### Integration Points
 
-| Component | Protocol | Port | Purpose | Environment |
-|-----------|----------|------|---------|-------------|
-| ADK Web UI | HTTP/WebSocket | 4200 → Backend | Agent interaction | Local Host |
-| ADK Agents | HTTP REST | → 5000 | Tool invocation (public APIs) | Local Host → Docker |
-| **ADK Agents** | **ADK OpenAPI Tool** | **→ Azure** | **Internal service access** | **Local Host → Azure** |
-| GenAI Toolbox | HTTPS REST | → DNB APIs | External API calls | Docker → Internet |
-| GenAI Toolbox | OTLP/gRPC | → 4318 | Trace export | Docker → Docker |
-| Jaeger UI | HTTP | 16686 | Trace visualization | Browser → Docker |
-| PostgreSQL | PostgreSQL | 5432 | Metadata storage | Docker (Local) |
-| **DNB DataLoop** | **HTTPS/REST** | **443** | **Report status comms** | **Azure (Internal)** |
-| **DNB ATM** | **HTTPS/REST** | **443** | **Model access** | **Azure (Internal)** |
-| **DNB MEGA** | **HTTPS/REST** | **443** | **Validation services** | **Azure (Internal)** |
-| BigQuery | gRPC/REST | 443 | Data warehouse | GCP (Planned) |
-| AlloyDB | PostgreSQL | 5432 | OLTP database | GCP (Planned) |
-| Cloud Run | HTTPS | 443 | Agent services | GCP (Planned) |
-| Vertex AI | gRPC/REST | 443 | AI/ML platform | GCP (Planned) |
+### Integration Points
+
+| Component | Protocol | Port | Purpose | Status | Environment |
+|-----------|----------|------|---------|--------|-------------|
+| ADK Web UI | HTTP/WebSocket | 4200 | Agent interaction | ✅ IMPLEMENTED | Local Host |
+| ADK Agents → Toolbox | HTTP REST | 5000 | Tool invocation | ✅ IMPLEMENTED | Local Host → Docker |
+| Toolbox → DNB Public APIs | HTTPS REST | 443 | External API calls | ✅ IMPLEMENTED | Docker → Internet |
+| Toolbox | OTLP/gRPC | 4318 | Trace export | ✅ IMPLEMENTED | Docker → Jaeger |
+| Jaeger UI | HTTP | 16686 | Trace visualization | ✅ IMPLEMENTED | Browser → Docker |
+| PostgreSQL (Local) | PostgreSQL | 5432 | Metadata storage | ✅ IMPLEMENTED | Docker |
+| **Azure IAM** | **Token Auth** | **443** | **Identity verification** | 📋 **PLANNED** | **DNB → Azure** |
+| **DataLoop DB** | **SQL Server** | **1433** | **Report status queries** | 📋 **PLANNED** | **DNB → Azure (PRIMARY)** |
+| **ATM DB** | **PostgreSQL** | **5432** | **Model metadata queries** | 📋 **PLANNED** | **DNB → Azure (PRIMARY)** |
+| **MEGA DB** | **SQL Server** | **1433** | **Validation queries** | 📋 **PLANNED** | **DNB → Azure (PRIMARY)** |
+| **DNB DataLoop API** | **HTTPS/REST** | **443** | **Report status ops** | 📋 **PLANNED** | **DNB → Azure (FALLBACK)** |
+| **DNB ATM API** | **HTTPS/REST** | **443** | **Model access** | 📋 **PLANNED** | **DNB → Azure (FALLBACK)** |
+| **DNB MEGA API** | **HTTPS/REST** | **443** | **Validation services** | 📋 **PLANNED** | **DNB → Azure (FALLBACK)** |
+| **A2A Protocol** | **JSON-RPC** | **8000** | **Agent cards + tasks** | 📋 **PLANNED** | **DNB → External** |
+| BigQuery | gRPC/REST | 443 | Data warehouse | 📋 PLANNED | GCP |
+| AlloyDB | PostgreSQL | 5432 | OLTP database | 📋 PLANNED | GCP |
+| Cloud Run | HTTPS | 443 | Agent services | 📋 PLANNED | GCP |
+| Vertex AI | gRPC/REST | 443 | AI/ML platform | 📋 PLANNED | GCP |
+
+**Key Distinctions:**
+- **PRIMARY**: Database access via Azure IAM (direct SQL connections)
+- **FALLBACK**: API access via HTTPS/REST (when database unavailable)
+- **A2A**: Required for DNB infrastructure deployment (agent-to-agent communication)
+- **Model**: Gemini (local/external) vs Copilot (DNB infrastructure)
 
 ---
 
-## Next Steps
+## Implementation Status & Next Steps
 
-### Implemented ✅
-- Multi-agent system with root, coordinators, and specialists
-- MCP Toolbox with 84+ DNB API tools
-- ETL pipeline extracting to Bronze layer (Parquet)
-- Docker Compose local development stack
-- OpenTelemetry tracing with Jaeger
+### ✅ Implemented & Working
+- **Multi-agent system**: root_agent, dnb_coordinator, specialized agents
+- **GenAI Toolbox**: MCP server with 84+ DNB public API tools
+- **ETL pipelines**: Bronze layer extraction (Statistics + Public Register)
+- **Docker Compose**: Local development stack (Toolbox, Jaeger, Postgres)
+- **OpenTelemetry**: Full tracing and observability
+- **Type-safe clients**: Kiota-generated clients for all public APIs
+- **OpenAPI tooling**: Converter for Toolbox YAML generation
 
-### In Progress 🚧
-- Data Science multi-agent system architecture design
-- BigQuery deployment pipeline documentation
-- Cloud Run deployment strategy
+### 📋 Planned (Priority Order)
 
-### Planned 📋
-1. **Data Science Agents**:
+#### 1. **Azure Database Integration** (HIGHEST PRIORITY)
+- [ ] Configure Azure IAM authentication with Managed Identities
+- [ ] Implement database agents (DataLoop DB, ATM DB, MEGA DB)
+- [ ] Create SQL toolsets with Azure IAM auth
+- [ ] Set up connection pooling and retry logic
+- [ ] Document database schemas and access patterns
+- [ ] Configure GitHub Copilot as model for DNB infrastructure agents
+- [ ] Implement API fallback agents for each database
+
+#### 2. **A2A Protocol Implementation**
+- [ ] Create agent cards (.well-known/agent.json) for all agents
+- [ ] Set up JSON-RPC server endpoints
+- [ ] Implement task management and streaming
+- [ ] Configure authentication schemes for cross-org communication
+- [ ] Test A2A client for remote agent access
+
+#### 3. **Data Science Agents**
+- [ ] Implement `data_coordinator` with NL2SQL/NL2Py routing
+- [ ] Create `bigquery_agent` with CHASE-SQL and built-in BQ tools
+- [ ] Develop `analytics_agent` with Code Interpreter extension
+- [ ] Build `bqml_agent` with RAG-based BQML reference
+- [ ] Set up `alloydb_agent` with MCP Toolbox for Databases
+
+#### 4. **GCP Cloud Deployment**
+- [ ] Deploy GenAI Toolbox to Cloud Run with VPC connector
+- [ ] Set up AlloyDB cluster with Auth Proxy
+- [ ] Create Cloud SQL instance for session storage
+- [ ] Configure Vertex AI Code Interpreter extension
+- [ ] Build RAG corpus for BQML documentation
+- [ ] Implement Bronze → GCS upload scripts
+- [ ] Create BigQuery dataset with partitioned tables
+
+#### 5. **Advanced Features**
+- [ ] Cross-dataset join capabilities (BigQuery ↔ AlloyDB)
+- [ ] Dataset configuration files for flexible data source routing
+- [ ] BQML model training workflows (ARIMA, forecasting)
+- [ ] Performance optimization for large-scale analytics
+- [ ] Multi-cloud observability (Azure + GCP traces in Jaeger)
+
+### 🔄 In Progress (None currently)
+
+---
    - Implement `data_coordinator` with NL2SQL/NL2Py routing
    - Create `bigquery_agent` with CHASE-SQL and built-in BQ tools
    - Develop `analytics_agent` with Code Interpreter extension
