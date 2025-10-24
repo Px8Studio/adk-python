@@ -384,6 +384,157 @@
         "clear": true
       }
     },
+    // ============================================================
+    // BigQuery Upload - DNB Public Register
+    // ============================================================
+    {
+      "label": "📊 BigQuery: Upload All DNB Public Register",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Metadata (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "metadata"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Entities (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "entities"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Publications (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "publications"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: List Available Files (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Dry Run DNB Public Register",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all",
+        "--dry-run"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
     {
       "label": "🌐 Open: BigQuery Console",
       "type": "shell",

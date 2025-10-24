@@ -1,0 +1,75 @@
+# Datasource Profile: DNB Public Register
+# De Nederlandsche Bank (DNB) Public Register API
+
+datasource:
+  id: dnb_public_register
+  name: "DNB Public Register API"
+  description: "Dutch Central Bank public register data covering regulated financial institutions, publications, registrations, and regulatory framework"
+  provider: "De Nederlandsche Bank (DNB)"
+  source_url: "https://api.dnb.nl/publicdata/v1/api/publicregister"
+
+gcp:
+  # BigQuery Configuration
+  bigquery:
+    dataset_id: dnb_public_register
+    location: us-central1
+    description: "DNB Public Register data warehouse - Dutch Central Bank regulated financial institutions and publications"
+    labels:
+      datasource: dnb-public-register
+      provider: dnb
+      project: orkhon
+      environment: development
+    
+    # Default table configuration
+    table_defaults:
+      # Time-based partitioning on 'publication_date' field (daily granularity)
+      # Note: Not all tables have date fields, so this is optional
+      partition_field: null  # Override per table if time-series data exists
+      partition_type: DAY
+      
+      # Clustering by register_code for efficient filtering
+      clustering_fields:
+        - register_code
+      
+      # Replace existing data on upload
+      write_disposition: WRITE_TRUNCATE
+  
+  # Cloud Storage Configuration
+  storage:
+    bucket_name: orkhon-dnb-public-register
+    location: us-central1
+    storage_class: STANDARD
+    staging_prefix: bronze
+    labels:
+      datasource: dnb-public-register
+      purpose: etl-staging
+      project: orkhon
+      environment: development
+
+# Data Pipeline Configuration
+pipeline:
+  # Bronze layer path (relative to backend/data/1-bronze/)
+  bronze_path: dnb_public_register
+  
+  # Table naming convention: category and filename
+  # Example: entities_organizations_wftaf_nl, publications_all_publications_nl
+  table_naming: single_underscore
+  
+  # Schema detection from parquet files
+  schema:
+    auto_detect: true
+    source_format: PARQUET
+  
+  # Data quality requirements
+  quality:
+    require_partition_field: false  # Not all tables have time-series data
+    validate_schema: true
+
+# Data Categories
+# Used for filtering uploads and organizing data
+categories:
+  - metadata           # Registers and supported languages
+  - entities           # Organizations (financial institutions)
+  - publications       # Publications and search results
+  - registrations      # Registrations and act article names
+  - regulatory         # Register articles (regulatory framework)

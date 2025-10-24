@@ -26,32 +26,42 @@ Each datasource gets its own:
 backend/
 ├── gcp/
 │   ├── __init__.py
-│   ├── auth.py                    # ✅ Already exists
-│   ├── storage_manager.py         # ✅ Already exists
-│   ├── bigquery_manager.py        # ✅ Already exists
-│   ├── setup.py                   # ⚠️  Refactor to use profiles
-│   ├── upload_parquet.py          # 🆕 Generic orchestrator
-│   ├── datasource_config.py       # 🆕 Config loader/validator
-│   └── profiles/                  # 🆕 Datasource configurations
-│       ├── dnb_statistics.yaml
-│       ├── dnb_public_register.yaml
-│       ├── eiopa_data.yaml
-│       ├── world_bank.yaml
-│       └── README.md
+│   ├── auth.py                    # ✅ Authentication manager
+│   ├── storage_manager.py         # ✅ GCS operations
+│   ├── bigquery_manager.py        # ✅ BigQuery operations
+│   ├── setup.py                   # ✅ Infrastructure setup (profile-based)
+│   ├── upload_parquet.py          # ✅ Generic orchestrator
+│   ├── datasource_config.py       # ✅ Config loader/validator
+│   ├── docs/
+│   │   ├── BIGQUERY_UPLOAD.md     # ✅ Central BigQuery guide
+│   │   ├── MULTI_DATASOURCE_ARCHITECTURE.md  # ✅ This file
+│   │   └── README.md              # ✅ GCP managers documentation
+│   └── profiles/                  # ✅ Datasource configurations
+│       ├── dnb_statistics.yaml    # ✅ DNB Statistics profile
+│       ├── dnb_public_register.yaml  # ✅ DNB Public Register profile
+│       ├── eiopa_data.yaml        # 🆕 Future datasource
+│       ├── world_bank.yaml        # 🆕 Future datasource
+│       └── README.md              # ✅ Profile documentation
 │
 ├── etl/
-│   ├── dnb_statistics/            # Extraction logic only
-│   ├── dnb_public_register/       # Extraction logic only
+│   ├── dnb_statistics/            # ✅ Extraction logic + QUICKSTART.md
+│   ├── dnb_public_register/       # ✅ Extraction logic + QUICKSTART.md
 │   ├── eiopa_data/                # 🆕 Future datasource
 │   └── world_bank/                # 🆕 Future datasource
 │
 └── data/
     └── 1-bronze/
-        ├── dnb_statistics/
-        ├── dnb_public_register/
-        ├── eiopa_data/            # 🆕
-        └── world_bank/            # 🆕
+        ├── dnb_statistics/        # ✅ DNB Statistics parquet files
+        ├── dnb_public_register/   # ✅ DNB Public Register parquet files
+        ├── eiopa_data/            # 🆕 Future datasource
+        └── world_bank/            # 🆕 Future datasource
 ```
+
+**Documentation Structure:**
+- **Central Guide**: `backend/gcp/docs/BIGQUERY_UPLOAD.md` - Comprehensive BigQuery upload guide
+- **Quick Starts**: `backend/etl/{datasource}/QUICKSTART.md` - 5-minute datasource-specific guides
+- **ETL Guides**: `backend/etl/{datasource}/README.md` - Data extraction documentation
+- **Profile Docs**: `backend/gcp/profiles/README.md` - Profile configuration reference
 
 ---
 

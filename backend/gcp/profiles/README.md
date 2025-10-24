@@ -167,6 +167,25 @@ pipeline:
     validate_schema: boolean          # Default: true
 ```
 
+**Table Naming Convention:**
+
+Choose the naming convention that matches your data structure:
+
+- **`double_underscore`** - For hierarchical data (3+ levels)
+  - Format: `{category}__{subcategory}__{endpoint}`
+  - Example: `insurance_pensions__insurers__insurance_corps_balance_sheet_quarter`
+  - Use when: Data has multiple levels of categorization
+
+- **`single_underscore`** - For flat data (2 levels)
+  - Format: `{category}_{filename}`
+  - Example: `entities_organizations_wftaf_nl`
+  - Use when: Simple category + descriptive filename
+
+- **`hyphen`** - Alternative flat structure
+  - Format: `{category}-{filename}`
+  - Example: `entities-organizations-wftaf-nl`
+  - Use when: Hyphen preferred over underscore
+
 ### Categories
 
 ```yaml
@@ -207,6 +226,10 @@ Run to list all configured datasources:
 ```bash
 poetry run python -m backend.gcp.upload_parquet --list-datasources
 ```
+
+**Currently Configured:**
+- **dnb_statistics** - Dutch Central Bank statistical data (insurance, pensions, market data, macroeconomic indicators)
+- **dnb_public_register** - Dutch Central Bank regulated institutions and publications
 
 ## 🔐 Security Notes
 
@@ -273,8 +296,8 @@ Conflict: Bucket orkhon-my-datasource already exists
 ## 💡 Examples
 
 See existing profiles:
-- `dnb_statistics.yaml` - DNB Statistics API configuration
-- `dnb_public_register.yaml` - DNB Public Register configuration
+- `dnb_statistics.yaml` - DNB Statistics API configuration (partitioned by date, 4 categories)
+- `dnb_public_register.yaml` - DNB Public Register configuration (clustered by register_code, 5 categories)
 
 ---
 
