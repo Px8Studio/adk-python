@@ -1,0 +1,105 @@
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""BigQuery Agent: NL2SQL translation and query execution for BigQuery."""
+
+from __future__ import annotations
+
+import logging
+import os
+from typing import Any
+
+from google.adk.agents import LlmAgent
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools import BaseTool, ToolContext
+from google.adk.tools.bigquery import BigQueryToolset
+from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
+from google.genai import types
+
+from . import tools
+from .prompts import return_instructions_bigquery
+
+_logger = logging.getLogger(__name__)
+
+# BigQuery built-in tool name
+ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL = "execute_sql"
+
+
+def setup_before_agent_call(callback_context: CallbackContext) -> None:
+  """Set up the BigQuery agent before each call.
+
+  Loads database settings into the agent's context if not already present.
+
+  Args:
+    callback_context: ADK callback context to store state
+  """
+  if "database_settings" not in callback_context.state:
+    callback_context.state["database_settings"] = {}
+
+  if "bigquery" not in callback_context.state["database_settings"]:
+    callback_context.state["database_settings"]["bigquery"] = (
+        tools.get_database_settings()
+    )
+
+
+def store_results_in_context(
+    tool: BaseTool,
+    args: dict[str, Any],
+    tool_context: ToolContext,
+    tool_response: dict,
+) -> dict | None:
+  """Store query results in context for downstream agents.
+
+  Args:
+    tool: The tool that was executed
+    args: Arguments passed to the tool
+    tool_context: Tool execution context
+    tool_response: Response from the tool
+
+  Returns:
+    None (modifies context in place)
+  """
+  # Store successful query results for analytics agent
+  if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
+    if tool_response.get("status") == "SUCCESS":
+      tool_context.state["bigquery_query_result"] = tool_response.get("rows", [])
+      _logger.info("Stored %d rows in context", len(tool_response.get("rows", [])))
+
+  return None
+
+
+# Configure BigQuery toolset with read-only access
+bigquery_tool_filter = [ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL]
+bigquery_tool_config = BigQueryToolConfig(
+    write_mode=WriteMode.BLOCKED,  # Read-only for safety
+    application_name="orkhon-data-science-agent",
+)
+bigquery_toolset = BigQueryToolset(
+    tool_filter=bigquery_tool_filter,
+    bigquery_tool_config=bigquery_tool_config,
+)
+
+# Create the BigQuery agent
+bigquery_agent = LlmAgent(
+    model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.0-flash-exp"),
+    name="bigquery_agent",
+    instruction=return_instructions_bigquery(),
+    tools=[
+        tools.bigquery_nl2sql,
+        bigquery_toolset,
+    ],
+    before_agent_callback=setup_before_agent_call,
+    after_tool_callback=store_results_in_context,
+    generate_content_config=types.GenerateContentConfig(temperature=0.01),
+)
