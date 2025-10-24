@@ -26,6 +26,7 @@ psycopg2-binary = "^2.9.11"
 pandas = "^2.3.3"
 pyarrow = "^21.0.0"
 python-dotenv = "^1.0.0"
+google-cloud-storage = ">=2.18.0,<3.0.0"
 
 
 [tool.poetry.group.dev.dependencies]
