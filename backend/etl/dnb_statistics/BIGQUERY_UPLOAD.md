@@ -1,20 +1,29 @@
-# BigQuery Upload Guide
+# BigQuery Upload Guide - Multi-Datasource Edition
 
-Upload your DNB Statistics parquet files from the Bronze layer to Google BigQuery for analysis with the Data Science Multi-Agent System.
+Upload parquet files from any datasource to Google BigQuery using the profile-based orchestrator.
 
 ---
 
 ## 📋 Overview
 
-This guide covers uploading the DNB Statistics data extracted by the ETL pipeline to BigQuery via Google Cloud Storage (GCS) staging.
+This guide covers uploading data from **any configured datasource** to BigQuery via Google Cloud Storage (GCS) staging using the new **profile-based multi-datasource architecture**.
+
+**What's New in v2.0:**
+- ✨ **Multi-Datasource Support** - One tool for all datasources (DNB Statistics, EIOPA, World Bank, etc.)
+- 📝 **Configuration as Code** - YAML profiles define all datasource settings
+- 🔒 **Type-Safe Configuration** - Pydantic validation catches errors early
+- 🚀 **Zero Code Changes** - Add new datasources by creating YAML files
+- 📊 **Self-Documenting** - Profiles contain all metadata and configuration
 
 **Pipeline Flow:**
 ```
 Bronze Layer (Parquet)
-  ↓ Upload Script
-GCS Staging (gs://dnb-data/bronze/)
+  ↓ Profile Loader (datasource_config.py)
+Configuration (profiles/datasource.yaml)
+  ↓ Generic Orchestrator (upload_parquet.py)
+GCS Staging (gs://orkhon-{datasource}/bronze/)
   ↓ BigQuery Load Job
-BigQuery Tables (dnb_statistics dataset)
+BigQuery Tables ({datasource} dataset)
   ↓ Ready for Analysis
 Data Science Agent
 ```
@@ -100,51 +109,73 @@ This installs:
 
 ## 🚀 Quick Start
 
-> **Note:** This guide now uses the professional GCP infrastructure managers located in `backend/gcp/` for all upload operations.
+> **Note:** This guide uses the new profile-based multi-datasource architecture. All datasources are configured via YAML profiles in `backend/gcp/profiles/`.
 
-### 1. Configure Environment
+### 1. List Available Datasources
 
-Copy and edit `.env.example`:
+See what datasources are configured:
 
 ```powershell
-cp .env.example .env
+poetry run python -m backend.gcp.upload_parquet --list-datasources
 ```
 
-Edit `.env` and set:
+Output:
+```
+Available datasources (1):
+  • dnb_statistics               - DNB Statistics API
+    Bucket: orkhon-dnb-statistics
+    Dataset: dnb_statistics
+```
+
+### 2. Configure Environment
+
+Only one environment variable is required:
 
 ```bash
 GOOGLE_CLOUD_PROJECT=your-gcp-project-id
-GCS_BUCKET=dnb-data
-BQ_DATASET_ID=dnb_statistics
-BQ_PARTITION_FIELD=period
 ```
 
-### 2. Test with Dry Run
+All other configuration (bucket names, dataset IDs, partitioning, etc.) is defined in the datasource profile.
+
+### 3. Setup Infrastructure
+
+Create GCS bucket and BigQuery dataset for a datasource:
+
+```powershell
+# Setup everything
+poetry run python -m backend.gcp.setup --datasource dnb_statistics --all
+
+# Or individually
+poetry run python -m backend.gcp.setup --datasource dnb_statistics --bucket
+poetry run python -m backend.gcp.setup --datasource dnb_statistics --dataset
+```
+
+### 4. Test with Dry Run
 
 Preview what would be uploaded:
 
 ```powershell
-poetry run python -m backend.gcp.upload_dnb_statistics --all --dry-run
+poetry run python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --dry-run
 ```
 
 Or use the VS Code task: **📊 BigQuery: Dry Run (Preview Upload)**
 
-### 3. Upload a Single Category (Recommended First Step)
+### 5. Upload a Single Category (Recommended First Step)
 
 Start with a smaller category to verify everything works:
 
 ```powershell
-poetry run python -m backend.gcp.upload_dnb_statistics --category market_data
+poetry run python -m backend.gcp.upload_parquet --datasource dnb_statistics --category market_data
 ```
 
 Or use the VS Code task: **📊 BigQuery: Upload Category (Market Data)**
 
-### 4. Upload All Data
+### 6. Upload All Data
 
 Once verified, upload everything:
 
 ```powershell
-poetry run python -m backend.gcp.upload_dnb_statistics --all
+poetry run python -m backend.gcp.upload_parquet --datasource dnb_statistics --all
 ```
 
 Or use the VS Code task: **📊 BigQuery: Upload All DNB Statistics**
@@ -226,17 +257,88 @@ poetry run python -m backend.gcp.upload_dnb_statistics --category macroeconomic
 
 ### Custom Configuration
 
-Override default settings via environment variables:
+Edit the datasource profile at `backend/gcp/profiles/dnb_statistics.yaml`:
 
-```powershell
+```yaml
 # Disable partitioning
-$env:BQ_PARTITION_FIELD=""
-poetry run python -m backend.gcp.upload_dnb_statistics --all
+gcp:
+  bigquery:
+    table_defaults:
+      partition_field: null  # Disable partitioning
 
 # Add clustering
-$env:BQ_CLUSTERING_FIELDS="category,subcategory"
-poetry run python -m backend.gcp.upload_dnb_statistics --category market_data
+gcp:
+  bigquery:
+    table_defaults:
+      clustering_fields:
+        - category
+        - subcategory
 ```
+
+---
+
+## 🆕 Adding New Datasources
+
+### 1. Create Profile
+
+```powershell
+poetry run python -m backend.gcp.upload_parquet --create-profile eiopa_data
+```
+
+This creates `backend/gcp/profiles/eiopa_data.yaml` with a template.
+
+### 2. Edit Profile
+
+Open the YAML file and customize:
+
+```yaml
+datasource:
+  id: eiopa_data
+  name: "EIOPA Insurance Data"
+  description: "European Insurance and Occupational Pensions Authority datasets"
+  provider: "EIOPA"
+  source_url: "https://www.eiopa.europa.eu"
+
+gcp:
+  bigquery:
+    dataset_id: eiopa_data
+    location: eu-west1  # EU data stored in EU
+    labels:
+      datasource: eiopa
+      provider: eiopa
+      project: orkhon
+  
+  storage:
+    bucket_name: orkhon-eiopa-data
+    location: eu-west1
+
+pipeline:
+  bronze_path: eiopa_data
+  table_naming: double_underscore
+  schema_config:
+    auto_detect: true
+  quality:
+    require_partition_field: true
+
+categories:
+  - solvency_ii
+  - statistical_returns
+  - stress_tests
+```
+
+### 3. Setup Infrastructure
+
+```powershell
+poetry run python -m backend.gcp.setup --datasource eiopa_data --all
+```
+
+### 4. Upload Data
+
+```powershell
+poetry run python -m backend.gcp.upload_parquet --datasource eiopa_data --all
+```
+
+No code changes needed!
 
 ---
 
@@ -465,6 +567,16 @@ For questions or improvements, open an issue in the project repository.
 
 ---
 
-**Status**: ✅ Ready for Production Use
-**Version**: 1.0.0
+## 📖 Profile System Documentation
+
+For detailed documentation on the profile system, see:
+- `backend/gcp/profiles/README.md` - Comprehensive profile guide
+- `backend/gcp/MULTI_DATASOURCE_ARCHITECTURE.md` - Architecture overview
+- `backend/gcp/datasource_config.py` - Configuration loader implementation
+
+---
+
+**Status**: ✅ Ready for Production Use (Multi-Datasource v2.0)
+**Version**: 2.0.0
 **Last Updated**: October 24, 2025
+**Migration**: Phase 2 Complete - DNB Statistics migrated to profile system
