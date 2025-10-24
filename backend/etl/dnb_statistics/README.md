@@ -6,10 +6,12 @@ Comprehensive ETL pipeline for extracting, transforming, and loading all financi
 
 This pipeline:
 - ✅ Extracts data from **all DNB Statistics API endpoints** using the Kiota-generated client
-- ✅ Handles pagination automatically (up to 2000 records per page)
+- ✅ **Smart pagination**: Automatically detects truncated datasets and switches to full pagination
+- ✅ **Completeness verification**: Tracks which datasets may be incomplete
+- ✅ **Metadata tracking**: Maintains extraction history, timestamps, and data quality indicators
+- ✅ **Incremental updates**: Supports date-based filtering for delta loads
 - ✅ Applies rate limiting to stay under API limits
-- ✅ Saves raw data as **JSONL** (landing zone)
-- ✅ Converts to efficient **Parquet** format (analytics-ready)
+- ✅ Saves data in efficient **Parquet** format (analytics-ready)
 - ✅ Organizes data by logical categories
 
 ## Architecture
@@ -18,11 +20,13 @@ This pipeline:
 
 ```
 dnb_statistics/
-├── config.py          # Configuration (API keys, paths, settings)
-├── base.py            # Base extractor classes with pagination & rate limiting
-├── extractors.py      # Endpoint-specific extractors (20+ endpoints)
-├── orchestrator.py    # Main coordination script
-└── README.md          # This file
+├── config.py             # Configuration (API keys, paths, settings)
+├── base.py               # Base extractor classes with smart pagination
+├── extractors.py         # Endpoint-specific extractors (17+ endpoints)
+├── orchestrator.py       # Main coordination script
+├── metadata.py           # Extraction metadata tracking
+├── metadata_report.py    # Metadata query and reporting utility
+└── README.md             # This file
 ```
 
 ### Data Flow
@@ -39,8 +43,6 @@ dnb_statistics/
 │   Pipeline  │
 └──────┬──────┘
        │
-       ├─► 0-fetch/     (Raw JSONL - landing zone)
-       │
        └─► 1-bronze/    (Clean Parquet - analytics-ready)
 ```
 
@@ -48,17 +50,6 @@ dnb_statistics/
 
 ```
 backend/data/
-├── 0-fetch/dnb_statistics/          # Raw API responses (JSONL)
-│   ├── market_data/
-│   │   ├── exchange_rates_day.jsonl
-│   │   ├── market_interest_rates_day.jsonl
-│   │   └── ...
-│   ├── macroeconomic/
-│   ├── financial_statements/
-│   ├── insurance_pensions/
-│   ├── investments/
-│   └── payments/
-│
 └── 1-bronze/dnb_statistics/         # Clean Parquet files
     ├── market_data/
     │   ├── exchange_rates_day.parquet
@@ -73,36 +64,25 @@ backend/data/
 
 ## Available Endpoints
 
-### Market Data (6 endpoints)
-- `exchange_rates_day` - Daily exchange rates and gold prices
-- `exchange_rates_month` - Monthly exchange rates
-- `exchange_rates_quarter` - Quarterly exchange rates
-- `market_interest_rates_day` - Daily market interest rates
-- `market_interest_rates_month` - Monthly market interest rates
-- `ecb_interest_rates` - ECB policy rates
+✅ **ALL 71 ENDPOINTS IMPLEMENTED!** (100% coverage)
 
-### Macroeconomic (3 endpoints)
-- `balance_of_payments_quarter` - Quarterly balance of payments
-- `balance_of_payments_year` - Yearly balance of payments
-- `macroeconomic_scoreboard_quarter` - Quarterly economic indicators
+### Summary by Category
 
-### Financial Statements (2 endpoints)
-- `dnb_balance_sheet_month` - Monthly DNB balance sheet
-- `mfi_balance_sheet_month` - Monthly MFI balance sheets
+- **Market Data**: 8 endpoints (exchange rates, interest rates, ECB rates)
+- **Macroeconomic**: 8 endpoints (balance of payments, FDI, monetary indicators)
+- **Financial Statements**: 14 endpoints (banks, MFIs, other financial institutions)
+- **Insurance & Pensions**: 17 endpoints (insurance corps, pension funds, premiums/claims)
+- **Investments & Securities**: 16 endpoints (holdings, household investments, sustainable finance)
+- **Loans & Mortgages**: 3 endpoints (securitisation, residential mortgages)
+- **Payments**: 4 endpoints (transactions, infrastructure)
+- **Other**: 1 endpoint (statutory interest rates)
 
-### Insurance & Pensions (2 endpoints)
-- `pension_funds_balance_sheet` - Pension fund financials
-- `insurance_corps_balance_sheet_quarter` - Insurance company financials
+### List All Available Endpoints
+```bash
+python -m backend.etl.dnb_statistics.orchestrator --list
+```
 
-### Investments & Securities (2 endpoints)
-- `dutch_household_savings_month` - Household savings data
-- `dutch_securities_holdings_by_holder` - Securities ownership
-
-### Payments (2 endpoints)
-- `payment_transactions_half_year` - Payment volumes & values
-- `retail_payment_transactions` - Retail payment statistics
-
-**Total: 17+ implemented endpoints** (easily extensible to all 70+ endpoints)
+This will show all 71 endpoints organized by category.
 
 ## Usage
 
@@ -144,6 +124,33 @@ python -m backend.etl.dnb_statistics.orchestrator --list
 **Dry run (preview):**
 ```bash
 python -m backend.etl.dnb_statistics.orchestrator --all --dry-run
+```
+
+### Metadata Reporting
+
+**View extraction metadata summary:**
+```bash
+python -m backend.etl.dnb_statistics.metadata_report
+```
+
+**Check for incomplete datasets:**
+```bash
+python -m backend.etl.dnb_statistics.metadata_report --incomplete
+```
+
+**Find stale datasets (not updated in 24h):**
+```bash
+python -m backend.etl.dnb_statistics.metadata_report --stale
+```
+
+**View details for specific endpoint:**
+```bash
+python -m backend.etl.dnb_statistics.metadata_report --endpoint exchange_rates_day
+```
+
+**Export metadata to JSON:**
+```bash
+python -m backend.etl.dnb_statistics.metadata_report --export metadata.json
 ```
 
 ### Using the Simple Runner
@@ -206,33 +213,48 @@ That's it! The orchestrator will automatically discover and run it.
 
 ## Features
 
+### ✅ Smart Pagination & Completeness Verification
+- **Automatic truncation detection**: Detects when a dataset hits the 2000-record limit
+- **Intelligent pagination**: Automatically switches from single-request to full pagination when needed
+- **Completeness tracking**: Flags datasets that may be incomplete for manual verification
+- **Full data extraction**: Ensures you get ALL available data, not just the first 2000 records
+
+### ✅ Metadata Tracking & History
+- **Extraction history**: Tracks last 10 extractions per endpoint with timestamps
+- **Data quality indicators**: Completeness flags, error tracking, and success rates
+- **Staleness detection**: Identifies datasets that haven't been updated recently
+- **Audit trail**: Complete history of when data was extracted and how much
+
+### ✅ Incremental Updates
+- **Date-based filtering**: Support for extracting only new/updated records
+- **Delta loads**: Efficient incremental updates instead of full refreshes
+- **Last extraction tracking**: Automatically determines if incremental update is appropriate
+
 ### ✅ Robust Error Handling
 - Automatic retry with exponential backoff
 - Graceful failure recovery
-- Detailed error logging
+- Detailed error logging with metadata tracking
 
 ### ✅ Performance Optimized
-- Parallel page fetching (respects rate limits)
+- Single-request extraction when possible (pageSize=0 API feature)
+- Fallback to pagination when necessary
 - Batch writes to Parquet
 - Efficient memory management
 
 ### ✅ Data Quality
 - Adds ETL metadata to all records
-- Preserves raw responses in JSONL
 - Type-safe Parquet schema
+- Efficient columnar storage
+- Completeness verification
 
-### ✅ Monitoring & Logging
+### ✅ Monitoring & Reporting
 - Real-time progress tracking
 - Detailed statistics per endpoint
+- Metadata reporting utilities
 - Structured logs in `logs/etl_dnb_statistics.log`
+- Built-in metadata JSON for programmatic access
 
 ## Output Format
-
-### JSONL (0-fetch)
-```json
-{"period":"2024-01","value":1.5,"_etl_timestamp":"2024-10-21T12:00:00","_etl_source":"exchange_rates_day"}
-{"period":"2024-02","value":1.6,"_etl_timestamp":"2024-10-21T12:00:00","_etl_source":"exchange_rates_day"}
-```
 
 ### Parquet (1-bronze)
 Columnar format optimized for analytics:
@@ -240,6 +262,41 @@ Columnar format optimized for analytics:
 - Fast filtering & aggregation
 - Schema enforcement
 - Compatible with Pandas, DuckDB, Spark, etc.
+- Includes ETL metadata: `_etl_timestamp`, `_etl_source`
+
+### Extraction Metadata
+Located at: `backend/data/1-bronze/dnb_statistics/_extraction_metadata.json`
+
+Tracks for each endpoint:
+- **Last extraction timestamps**: When data was last fetched
+- **Record counts**: How many records were extracted
+- **Completeness status**: Whether the dataset appears complete or truncated
+- **Extraction history**: Last 10 runs with duration, errors, and warnings
+- **Data quality flags**: Indicators for incomplete or stale data
+
+Example metadata entry:
+```json
+{
+  "endpoint_name": "exchange_rates_day",
+  "category": "market_data",
+  "filename": "exchange_rates_day",
+  "last_extraction": "2025-10-21T17:23:18.351Z",
+  "total_records": 2000,
+  "is_complete": false,
+  "extraction_history": [
+    {
+      "timestamp": "2025-10-21T17:23:18.351Z",
+      "total_records": 2000,
+      "total_pages": 1,
+      "is_complete": false,
+      "completeness_notes": [
+        "Dataset has exactly 2000 records - may be truncated at API limit"
+      ],
+      "duration_seconds": 1.66
+    }
+  ]
+}
+```
 
 ## Performance
 
@@ -278,13 +335,76 @@ $env:DNB_SUBSCRIPTION_KEY_DEV = "your-key"
 pip install pandas pyarrow httpx kiota-abstractions kiota-http
 ```
 
+### Incomplete Datasets Warning
+If you see warnings about incomplete datasets (exactly 2000 records):
+1. **Check the metadata report**:
+   ```bash
+   python -m backend.etl.dnb_statistics.metadata_report --incomplete
+   ```
+2. **The pipeline now automatically handles this** by switching to full pagination
+3. **Re-run the extraction** and it will fetch all available data
+
+## Working with Metadata
+
+### Query Metadata Programmatically
+```python
+from backend.etl.dnb_statistics.metadata import ExtractionMetadata
+
+metadata = ExtractionMetadata()
+
+# Get incomplete endpoints
+incomplete = metadata.get_incomplete_endpoints()
+for item in incomplete:
+    print(f"{item['endpoint']}: {item['total_records']} records")
+
+# Get stale endpoints (>24h old)
+stale = metadata.get_stale_endpoints(max_age_hours=24)
+
+# Check if endpoint should use incremental
+should_incr, last_time = metadata.should_extract_incremental(
+    'exchange_rates_day',
+    max_age_hours=24
+)
+```
+
+### Reset Metadata
+To start fresh:
+```bash
+# Delete the metadata file
+rm backend/data/1-bronze/dnb_statistics/_extraction_metadata.json
+
+# Next extraction will create new metadata
+```
+
 ## Next Steps
 
-1. **Add more extractors**: The Kiota client has 70+ endpoints available
-2. **Silver layer**: Join datasets, add business logic
-3. **Gold layer**: Create aggregated views for dashboards
-4. **Scheduling**: Set up with cron/Task Scheduler for daily/weekly runs
-5. **Incremental loads**: Add date filtering for delta updates
+### ✅ Completed
+1. ✅ **Completeness verification**: Automatically detects truncated datasets
+2. ✅ **Smart pagination**: Switches to full pagination when needed
+3. ✅ **Metadata tracking**: Complete extraction history and data quality indicators
+4. ✅ **Incremental update support**: Date-based filtering infrastructure ready
+
+### 🔄 Recommended Actions
+1. **Re-run full extraction** to verify all datasets are complete:
+   ```bash
+   python -m backend.etl.dnb_statistics.orchestrator --all
+   ```
+
+2. **Check the metadata report** for any remaining incomplete datasets:
+   ```bash
+   python -m backend.etl.dnb_statistics.metadata_report --incomplete
+   ```
+
+3. **Monitor data freshness** with the staleness check:
+   ```bash
+   python -m backend.etl.dnb_statistics.metadata_report --stale
+   ```
+
+### 🚀 Future Enhancements
+1. **Silver layer**: Join datasets, add business logic
+2. **Gold layer**: Create aggregated views for dashboards
+3. **Scheduling**: Set up with cron/Task Scheduler for daily/weekly runs
+4. **Dashboard integration**: Connect to BI tools for visualization
 
 ## Related Documentation
 

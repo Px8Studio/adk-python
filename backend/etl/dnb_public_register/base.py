@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -19,6 +20,7 @@ import httpx
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+from kiota_abstractions.api_error import APIError
 from kiota_abstractions.request_adapter import RequestAdapter
 from kiota_http.httpx_request_adapter import HttpxRequestAdapter
 from kiota_abstractions.authentication import AnonymousAuthenticationProvider
@@ -45,17 +47,37 @@ class RateLimiter:
       calls_per_period: int = config.RATE_LIMIT_CALLS,
       period_seconds: float = config.RATE_LIMIT_PERIOD,
       buffer_factor: float = config.RATE_LIMIT_BUFFER,
+      min_delay: float = config.MIN_DELAY_BETWEEN_CALLS,
   ):
-    # Apply safety buffer (e.g., 30 calls → 25 calls)
+    # Apply safety buffer (e.g., 30 calls → 20 calls with 1.5x buffer)
     self.max_calls = int(calls_per_period / buffer_factor)
     self.period = period_seconds
+    self.min_delay = min_delay  # Minimum delay between consecutive calls
     self.tokens = self.max_calls
     self.last_refill = time.monotonic()
+    self.last_request_time = 0.0
     self.lock = asyncio.Lock()
+    
+    logger.info(
+        f"⏱️  Rate limiter initialized: "
+        f"{self.max_calls} calls/{period_seconds}s "
+        f"(min {min_delay}s between calls)"
+    )
   
   async def acquire(self) -> None:
-    """Wait until a token is available, then consume it."""
+    """Wait until a token is available AND minimum delay has passed."""
     async with self.lock:
+      # First, enforce minimum delay between calls
+      now = time.monotonic()
+      elapsed_since_last = now - self.last_request_time
+      if elapsed_since_last < self.min_delay:
+        wait_for_delay = self.min_delay - elapsed_since_last
+        logger.debug(
+            f"Enforcing minimum delay: waiting {wait_for_delay:.2f}s..."
+        )
+        await asyncio.sleep(wait_for_delay)
+      
+      # Then, check token bucket
       await self._refill()
       
       while self.tokens <= 0:
@@ -68,6 +90,7 @@ class RateLimiter:
         await self._refill()
       
       self.tokens -= 1
+      self.last_request_time = time.monotonic()
   
   async def _refill(self) -> None:
     """Refill tokens based on elapsed time."""
@@ -78,6 +101,35 @@ class RateLimiter:
       self.tokens = self.max_calls
       self.last_refill = now
       logger.debug(f"Rate limit refilled: {self.tokens} tokens")
+
+
+_SHARED_RATE_LIMITER = RateLimiter()
+
+
+def _extract_retry_after_seconds(
+  headers: Optional[Any],
+  body: Optional[str],
+) -> Optional[float]:
+  """Parse Retry-After hint from headers or response text."""
+  header_value: Optional[str] = None
+  if headers is not None:
+    try:
+      header_value = headers.get("Retry-After") or headers.get("retry-after")
+    except AttributeError:
+      if isinstance(headers, dict):
+        header_value = headers.get("Retry-After") or headers.get("retry-after")
+  if header_value:
+    header_value = header_value.strip()
+    if header_value.isdigit():
+      return float(header_value)
+  if body:
+    match = re.search(r"try again in\s+(\d+)\s*seconds", body, re.IGNORECASE)
+    if match:
+      try:
+        return float(match.group(1))
+      except ValueError:
+        return None
+  return None
 
 
 # ==========================================
@@ -97,7 +149,7 @@ class BaseExtractor(ABC):
   """
   
   def __init__(self):
-    self.rate_limiter = RateLimiter()
+    self.rate_limiter = _SHARED_RATE_LIMITER
     self.http_client = httpx.AsyncClient(
         timeout=config.REQUEST_TIMEOUT,
         headers={
@@ -155,10 +207,10 @@ class BaseExtractor(ABC):
     pass
   
   async def fetch_with_retry(
-      self,
-      url: str,
-      params: Optional[dict[str, Any]] = None,
-      retry_count: int = 0,
+    self,
+    url: str,
+    params: Optional[dict[str, Any]] = None,
+    retry_count: int = 0,
   ) -> Optional[dict[str, Any]]:
     """
     Fetch from API with retry logic and rate limiting.
@@ -182,15 +234,40 @@ class BaseExtractor(ABC):
     except httpx.HTTPStatusError as exc:
       if exc.response.status_code == 429:  # Rate limit
         wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            exc.response.headers,
+            exc.response.text,
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
         logger.warning(
-            f"Rate limited (429), waiting {wait_time:.1f}s... "
-            f"(retry {retry_count + 1}/{config.MAX_RETRIES})"
+            "Rate limited (429), waiting %.1fs... (retry %d/%d)%s",
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
         )
         await asyncio.sleep(wait_time)
         
         if retry_count < config.MAX_RETRIES:
           return await self.fetch_with_retry(url, params, retry_count + 1)
+        logger.error("❌ Max retries exceeded for rate limit (HTTP client)")
+        self.stats["failed_pages"] += 1
+        return None
       
+      elif exc.response.status_code == 400:
+        response_body = exc.response.text or ""
+        if len(response_body) > 300:
+          response_body = response_body[:297] + "..."
+        logger.warning(
+            "⚠️ DNB API rejected request (400) for %s with params=%s. "
+            "Treating as warning so extraction can continue. Response: %s",
+            url,
+            params or {},
+            response_body,
+        )
+        self.stats["failed_pages"] += 1
+        return None
       elif exc.response.status_code >= 500:  # Server error
         if retry_count < config.MAX_RETRIES:
           wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
@@ -217,9 +294,10 @@ class BaseExtractor(ABC):
       return None
   
   async def call_api_with_retry(
-      self,
-      api_call_func,
-      retry_count: int = 0,
+    self,
+    api_call_func,
+    retry_count: int = 0,
+    context: Optional[str] = None,
   ):
     """
     Execute Kiota API call with rate limiting and retry logic.
@@ -237,18 +315,122 @@ class BaseExtractor(ABC):
     try:
       return await api_call_func()
     
-    except Exception as exc:
-      # Check if it's a rate limit error (429)
-      if hasattr(exc, 'response_status_code') and exc.response_status_code == 429:
+    except APIError as exc:
+      status = exc.response_status_code or 0
+      message = exc.message or getattr(exc, "primary_message", None) or str(exc).strip()
+      details = getattr(exc, "error_message", None)
+      context_suffix = f" ({context})" if context else ""
+      
+      if status == 429:
         wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            exc.response_headers,
+            message,
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
         logger.warning(
-            f"⏳ Rate limited (429), waiting {wait_time:.1f}s... "
-            f"(retry {retry_count + 1}/{config.MAX_RETRIES})"
+            "⏳ Rate limited (429)%s, waiting %.1fs... (retry %d/%d)%s",
+            context_suffix,
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
         )
         await asyncio.sleep(wait_time)
         
         if retry_count < config.MAX_RETRIES:
-          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
+        logger.error("❌ Max retries exceeded for rate limit")
+        raise
+      
+      if status >= 500:
+        if retry_count < config.MAX_RETRIES:
+          wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+          logger.warning(
+              f"Server error {status}{context_suffix}, "
+              f"retrying in {wait_time:.1f}s..."
+          )
+          await asyncio.sleep(wait_time)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
+        logger.error("❌ Max retries exceeded for server error")
+        raise
+      
+      if status == 400:
+        self.stats["failed_pages"] += 1
+        warning_parts = [
+            "⚠️ DNB API returned 400 Bad Request",
+            context_suffix.strip(),
+        ]
+        warning_message = " ".join(part for part in warning_parts if part)
+        extra = f" Message: {message}" if message else ""
+        if details:
+          extra += f" | Details: {details}"
+        logger.warning(
+            "%s. Treating as warning so extraction can continue. "
+            "If this persists, raise the spec mismatch with DNB.",
+            f"{warning_message}{extra}",
+        )
+        return None
+      
+      if retry_count < config.MAX_RETRIES:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        logger.warning(
+            "API call failed%s: %s, retrying in %.1fs...",
+            context_suffix,
+            message,
+            wait_time,
+        )
+        await asyncio.sleep(wait_time)
+        return await self.call_api_with_retry(
+            api_call_func,
+            retry_count + 1,
+            context=context,
+        )
+      
+      logger.error(
+          "❌ API call failed after %d attempts%s: %s",
+          retry_count + 1,
+          context_suffix,
+          message,
+      )
+      raise
+    
+    except Exception as exc:
+      # Check if it's a rate limit error (429)
+      context_suffix = f" ({context})" if context else ""
+      if hasattr(exc, 'response_status_code') and exc.response_status_code == 429:
+        wait_time = config.RETRY_BACKOFF_FACTOR ** retry_count
+        retry_after = _extract_retry_after_seconds(
+            getattr(exc, 'response_headers', None),
+            getattr(exc, 'message', None) or str(exc),
+        )
+        if retry_after:
+          wait_time = max(wait_time, retry_after)
+        logger.warning(
+            "⏳ Rate limited (429)%s, waiting %.1fs... (retry %d/%d)%s",
+            context_suffix,
+            wait_time,
+            retry_count + 1,
+            config.MAX_RETRIES,
+            f" (server asked for {retry_after:.1f}s)" if retry_after else "",
+        )
+        await asyncio.sleep(wait_time)
+        
+        if retry_count < config.MAX_RETRIES:
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
         else:
           logger.error(f"❌ Max retries exceeded for rate limit")
           raise
@@ -262,7 +444,11 @@ class BaseExtractor(ABC):
               f"retrying in {wait_time:.1f}s..."
           )
           await asyncio.sleep(wait_time)
-          return await self.call_api_with_retry(api_call_func, retry_count + 1)
+          return await self.call_api_with_retry(
+              api_call_func,
+              retry_count + 1,
+              context=context,
+          )
         else:
           logger.error(f"❌ Max retries exceeded for server error")
           raise
@@ -274,7 +460,11 @@ class BaseExtractor(ABC):
             f"API call failed: {exc}, retrying in {wait_time:.1f}s..."
         )
         await asyncio.sleep(wait_time)
-        return await self.call_api_with_retry(api_call_func, retry_count + 1)
+        return await self.call_api_with_retry(
+            api_call_func,
+            retry_count + 1,
+            context=context,
+        )
       
       # All retries exhausted
       logger.error(f"❌ API call failed after {retry_count + 1} attempts: {exc}")
@@ -399,7 +589,11 @@ class PaginatedExtractor(BaseExtractor):
   """
   Base extractor for paginated endpoints.
   
-  Automatically handles pagination with configurable page size.
+  The Public Register API has a MAXIMUM of 25 records per page and does NOT support
+  fetching all records at once (unlike the Statistics API). Therefore, we MUST
+  use pagination loops to retrieve all data.
+  
+  Automatically handles pagination with configurable page size (max 25).
   """
   
   async def fetch_page(
@@ -437,74 +631,119 @@ class PaginatedExtractor(BaseExtractor):
       page_size: int = config.DEFAULT_PAGE_SIZE,
       extra_params: Optional[dict[str, Any]] = None,
       record_key: str = "records",
+      checkpoint_id: Optional[str] = None,
   ) -> AsyncIterator[dict[str, Any]]:
     """
-    Extract all records from a paginated endpoint.
+    Extract all records from a paginated endpoint with checkpoint support.
     
     Handles pagination by continuing to fetch pages until an empty response is received,
     since the DNB API doesn't always provide reliable total count metadata.
+    
+    Supports resuming from checkpoints for long-running extractions.
     
     Args:
         url: API endpoint URL
         page_size: Records per page
         extra_params: Additional query parameters
         record_key: JSON key containing records (default: 'records')
+        checkpoint_id: Optional checkpoint identifier for resume capability
     
     Yields:
         Individual records
     """
-    page = config.DEFAULT_START_PAGE
+    from .checkpoint import ExtractionCheckpoint
     
-    while True:
-      response = await self.fetch_page(url, page, page_size, extra_params)
+    # Setup checkpoint if requested
+    checkpoint = None
+    start_page = config.DEFAULT_START_PAGE
+    
+    if checkpoint_id:
+      checkpoint = ExtractionCheckpoint(config.CHECKPOINT_DIR, checkpoint_id)
+      saved_state = checkpoint.load()
       
-      if not response:
-        logger.warning(f"⚠️ Failed to fetch page {page}, stopping pagination")
-        break
-      
-      # Extract records (API structure varies)
-      records = response.get(record_key, [])
-      if not records:
-        # Try alternative structures
-        if isinstance(response, list):
-          records = response
-        else:
-          logger.info(f"✅ No more records at page {page} - pagination complete")
-          break
-      
-      record_count = len(records)
-      
-      for record in records:
-        yield record
-      
-      # Check pagination metadata if available
-      pagination = response.get("pagination", {})
-      total_pages = pagination.get("totalPages")
-      
-      if total_pages:
-        self.stats["total_pages"] = total_pages
+      if saved_state:
+        start_page = saved_state.get("last_page", 0) + 1
+        prev_records = saved_state.get("total_records", 0)
         logger.info(
-            f"📄 Page {page}/{total_pages}: "
-            f"{record_count} records ({self.stats['total_records'] + record_count} total)"
+            f"📍 Resuming from checkpoint: page {start_page} "
+            f"({prev_records:,} records already extracted)"
         )
+    
+    page = start_page
+    
+    try:
+      while True:
+        response = await self.fetch_page(url, page, page_size, extra_params)
         
-        # Stop if we've reached the last page
-        if page >= total_pages:
-          logger.info(f"✅ Reached last page {page}/{total_pages}")
+        if not response:
+          logger.warning(f"⚠️ Failed to fetch page {page}, stopping pagination")
           break
-      else:
-        # No pagination metadata - rely on empty response detection
-        logger.info(
-            f"📄 Page {page}: {record_count} records "
-            f"({self.stats['total_records'] + record_count} total)"
-        )
         
-        # If we got fewer records than page size, likely the last page
-        if record_count < page_size:
+        # Extract records (API structure varies)
+        records = response.get(record_key, [])
+        if not records:
+          # Try alternative structures
+          if isinstance(response, list):
+            records = response
+          else:
+            logger.info(f"✅ No more records at page {page} - pagination complete")
+            break
+        
+        record_count = len(records)
+        
+        for record in records:
+          yield record
+        
+        # Save checkpoint after successful page
+        if checkpoint:
+          checkpoint.save({
+              "last_page": page,
+              "total_records": self.stats["total_records"],
+              "url": url,
+          })
+        
+        # Check pagination metadata if available
+        pagination = response.get("pagination", {})
+        total_pages = pagination.get("totalPages")
+        
+        if total_pages:
+          self.stats["total_pages"] = total_pages
+          progress_pct = (page / total_pages) * 100
           logger.info(
-              f"✅ Last page (partial): {record_count} records "
-              f"(less than pageSize={page_size})"
+              f"📄 Page {page}/{total_pages} ({progress_pct:.1f}%): "
+              f"{record_count} records ({self.stats['total_records'] + record_count} total)"
           )
-          break
+          
+          # Stop if we've reached the last page
+          if page >= total_pages:
+            logger.info(f"✅ Reached last page {page}/{total_pages}")
+            break
+        else:
+          # No pagination metadata - rely on empty response detection
+          logger.info(
+              f"📄 Page {page}: {record_count} records "
+              f"({self.stats['total_records'] + record_count} total)"
+          )
+          
+          # If we got fewer records than page size, likely the last page
+          if record_count < page_size:
+            logger.info(
+                f"✅ Last page (partial): {record_count} records "
+                f"(less than pageSize={page_size})"
+            )
+            break
+        
+        page += 1
       
-      page += 1
+      # Clear checkpoint on successful completion
+      if checkpoint:
+        checkpoint.clear()
+    
+    except Exception as exc:
+      # Save checkpoint on error for resume
+      if checkpoint:
+        logger.warning(
+            f"⚠️ Extraction interrupted at page {page} - "
+            "checkpoint saved for resume"
+        )
+      raise

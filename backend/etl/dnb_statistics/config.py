@@ -37,10 +37,7 @@ if not DNB_API_KEY:
 # Root data directory
 DATA_ROOT: Final[Path] = Path(__file__).parent.parent.parent / "data"
 
-# 0-fetch: Raw API responses (landing zone)
-FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_statistics"
-
-# 1-bronze: Cleaned and typed Parquet files
+# 1-bronze: Cleaned and typed Parquet files (primary output)
 BRONZE_DIR: Final[Path] = DATA_ROOT / "1-bronze" / "dnb_statistics"
 
 # 2-silver: Enriched and joined data (optional)
@@ -49,12 +46,19 @@ SILVER_DIR: Final[Path] = DATA_ROOT / "2-silver" / "dnb_statistics"
 # 3-gold: Analytics-ready aggregations (optional)
 GOLD_DIR: Final[Path] = DATA_ROOT / "3-gold" / "dnb_statistics"
 
+# Legacy fetch directory (no longer used - kept for backwards compatibility)
+FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_statistics"
+
 # ==========================================
 # Processing Configuration
 # ==========================================
 
 # Pagination settings
-DEFAULT_PAGE_SIZE: Final[int] = 2000  # DNB API max
+# Statistics API supports pageSize=0 to fetch ALL records in a single request!
+# This is much more efficient than paginating through thousands of pages.
+# See: https://api.dnb.nl/statisticsdata/v2024100101 - pageSize parameter docs
+DEFAULT_PAGE_SIZE: Final[int] = 0  # 0 = fetch all records at once (API feature)
+FALLBACK_PAGE_SIZE: Final[int] = 2000  # Fallback if pageSize=0 fails
 DEFAULT_START_PAGE: Final[int] = 1
 
 # Request settings
@@ -141,6 +145,8 @@ def get_output_path(
     stage: str,  # 'fetch', 'bronze', 'silver', 'gold'
     category: str,  # From ENDPOINT_CATEGORIES
     filename: str,
+    *,
+    subcategory: str | None = None,
 ) -> Path:
     """
     Generate standardized output path for data files.
@@ -149,6 +155,8 @@ def get_output_path(
         stage: Data processing stage ('fetch', 'bronze', 'silver', 'gold')
         category: Data category
         filename: File name (without extension)
+
+        subcategory: Optional nested directory under the category
     
     Returns:
         Full path to output file
@@ -170,9 +178,15 @@ def get_output_path(
     
     category_dir = base_dir / category
     category_dir.mkdir(parents=True, exist_ok=True)
+
+    target_dir = category_dir
+    if subcategory:
+        target_dir = category_dir / subcategory
+        target_dir.mkdir(parents=True, exist_ok=True)
     
-    extension = ".jsonl" if stage == "fetch" else ".parquet"
-    return category_dir / f"{filename}{extension}"
+    # Always use .parquet extension
+    extension = ".parquet"
+    return target_dir / f"{filename}{extension}"
 
 
 def categorize_endpoint(endpoint_name: str) -> str:

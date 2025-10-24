@@ -129,10 +129,14 @@ class OrganizationRelationNumbersExtractor(PaginatedExtractor):
             f"🔢 Extracting relation numbers: register={self.register_code}"
         )
         
+        # Create checkpoint ID for this extraction
+        checkpoint_id = f"relation_numbers_{self.register_code.lower()}"
+        
         # This endpoint returns OrganizationRelationNumbersView with pagination
         async for record in self.extract_paginated(
             url=url,
             record_key="relationNumbers",
+            checkpoint_id=checkpoint_id,
         ):
             yield {
                 "register_code": self.register_code,
@@ -381,9 +385,18 @@ class PublicationsSearchExtractor(PaginatedExtractor):
             f"article={self.act_article_name or 'all'}"
         )
         
+        # Create checkpoint ID for this extraction
+        checkpoint_id = (
+            f"publications_search_{self.register_code.lower()}_"
+            f"{self.language_code.lower()}"
+        )
+        if self.organization_name:
+            checkpoint_id += f"_{self.organization_name.lower()[:20]}"
+        
         async for record in self.extract_paginated(
             url=url,
             extra_params=extra_params,
+            checkpoint_id=checkpoint_id,
         ):
             # Flatten nested structures for Parquet
             yield {
@@ -404,7 +417,7 @@ class AllPublicationsExtractor(BaseExtractor):
     
     This is a convenience wrapper that:
     1. Discovers all registers
-    2. Runs PublicationsSearchExtractor for each
+    2. Runs PublicationDetailsExtractor for each
     3. Combines results
     """
     
@@ -435,7 +448,7 @@ class AllPublicationsExtractor(BaseExtractor):
         for register_code in register_codes:
             logger.info(f"\n🔍 Processing register: {register_code}")
             
-            extractor = PublicationsSearchExtractor(
+            extractor = PublicationDetailsExtractor(
                 register_code=register_code,
                 language_code=self.language_code,
             )
@@ -497,6 +510,10 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                 query_parameters=query_params
             )
             
+            page_context = (
+                f"register={self.register_code}, page={page}, "
+                f"pageSize={config.DEFAULT_PAGE_SIZE}"
+            )
             result = await self.call_api_with_retry(
                 lambda: (
                     client.api
@@ -505,7 +522,8 @@ class PublicationDetailsExtractor(PaginatedExtractor):
                     .publications
                     .by_register_code(self.register_code)
                     .get(request_config)
-                )
+                ),
+                context=page_context,
             )
             
             if not result or not result.organizations:

@@ -36,10 +36,7 @@ if not DNB_API_KEY:
 # Root data directory
 DATA_ROOT: Final[Path] = Path(__file__).parent.parent.parent / "data"
 
-# 0-fetch: Raw API responses (landing zone)
-FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_public_register"
-
-# 1-bronze: Cleaned and typed Parquet files
+# 1-bronze: Cleaned and typed Parquet files (primary output)
 BRONZE_DIR: Final[Path] = DATA_ROOT / "1-bronze" / "dnb_public_register"
 
 # 2-silver: Enriched and joined data
@@ -48,12 +45,18 @@ SILVER_DIR: Final[Path] = DATA_ROOT / "2-silver" / "dnb_public_register"
 # 3-gold: Analytics-ready aggregations
 GOLD_DIR: Final[Path] = DATA_ROOT / "3-gold" / "dnb_public_register"
 
+# Legacy fetch directory (no longer used - kept for backwards compatibility)
+FETCH_DIR: Final[Path] = DATA_ROOT / "0-fetch" / "dnb_public_register"
+
 # ==========================================
 # Processing Configuration
 # ==========================================
 
 # Pagination settings
-DEFAULT_PAGE_SIZE: Final[int] = 25  # DNB API max
+# Public Register API has a MAXIMUM of 25 records per page - cannot fetch all at once.
+# Must use pagination loops to retrieve all data.
+# See: https://api.dnb.nl/publicdata/v1 - pageSize parameter docs (max: 25)
+DEFAULT_PAGE_SIZE: Final[int] = 25  # DNB API max (enforced by API)
 DEFAULT_START_PAGE: Final[int] = 1
 
 # Request settings
@@ -61,13 +64,19 @@ REQUEST_TIMEOUT: Final[float] = 30.0  # seconds
 MAX_RETRIES: Final[int] = 3
 RETRY_BACKOFF_FACTOR: Final[float] = 2.0  # Exponential backoff
 
-# Rate limiting (DNB allows 30 calls/minute)
-RATE_LIMIT_CALLS: Final[int] = 30
+# Rate limiting - Public Register specific (more conservative than Statistics API)
+# Public Register requires heavy pagination (~5000+ API calls per full extraction)
+# vs Statistics API which supports bulk fetch (~100 calls total)
+RATE_LIMIT_CALLS: Final[int] = 30  # DNB API limit
 RATE_LIMIT_PERIOD: Final[float] = 60.0  # seconds
-RATE_LIMIT_BUFFER: Final[float] = 1.2  # Safety margin (20% slower)
+RATE_LIMIT_BUFFER: Final[float] = 1.5  # Safety margin (50% slower) - more conservative
+MIN_DELAY_BETWEEN_CALLS: Final[float] = 2.5  # Minimum seconds between API calls
 
 # Parallel processing
 MAX_CONCURRENT_REQUESTS: Final[int] = 5  # Stay under rate limit
+
+# Checkpoint configuration
+CHECKPOINT_DIR: Final[Path] = DATA_ROOT / "checkpoints" / "dnb_public_register"
 
 # ==========================================
 # Language & Register Codes
@@ -166,7 +175,8 @@ def get_output_path(
     category_dir = base_dir / category
     category_dir.mkdir(parents=True, exist_ok=True)
     
-    extension = ".jsonl" if stage == "fetch" else ".parquet"
+    # Always use .parquet extension
+    extension = ".parquet"
     return category_dir / f"{filename}{extension}"
 
 
