@@ -1,13 +1,23 @@
 """
 GCP Infrastructure Setup Script
 
-Python-based CLI for setting up GCP resources for the Orkhon project.
+Python-based CLI for setting up GCP resources for any datasource.
 
 Usage:
-    python -m backend.gcp.setup --all
-    python -m backend.gcp.setup --bucket
-    python -m backend.gcp.setup --dataset
-    python -m backend.gcp.setup --validate
+    # List available datasources
+    python -m backend.gcp.setup --list-datasources
+
+    # Setup all resources for a datasource
+    python -m backend.gcp.setup --datasource dnb_statistics --all
+
+    # Setup only storage
+    python -m backend.gcp.setup --datasource dnb_statistics --bucket
+
+    # Setup only BigQuery
+    python -m backend.gcp.setup --datasource dnb_statistics --dataset
+
+    # Validate existing setup
+    python -m backend.gcp.setup --datasource dnb_statistics --validate
 """
 
 from __future__ import annotations
@@ -23,6 +33,11 @@ from dotenv import load_dotenv
 from .auth import GCPAuth
 from .bigquery_manager import BigQueryManager
 from .storage_manager import StorageManager
+from .datasource_config import (
+    load_datasource_config,
+    list_datasources,
+    DatasourceConfig,
+)
 
 # Load environment variables
 load_dotenv()
@@ -40,20 +55,14 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ==========================================
 
-def get_config() -> dict:
-    """Load configuration from environment."""
-    config = {
-        "project_id": os.getenv("GOOGLE_CLOUD_PROJECT"),
-        "location": os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
-        "gcs_bucket": os.getenv("GCS_BUCKET", "dnb-data"),
-        "bq_dataset": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
-    }
-    
-    if not config["project_id"]:
+def get_project_id() -> str:
+    """Get GCP project ID from environment."""
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    if not project_id:
         logger.error("GOOGLE_CLOUD_PROJECT environment variable not set")
+        logger.error("Set it in your .env file or environment")
         sys.exit(1)
-    
-    return config
+    return project_id
 
 
 # ==========================================
@@ -82,21 +91,22 @@ def setup_authentication() -> GCPAuth:
     return auth
 
 
-def setup_storage(auth: GCPAuth, config: dict) -> bool:
+def setup_storage(auth: GCPAuth, config: DatasourceConfig) -> bool:
     """Create GCS bucket."""
     logger.info("=" * 70)
     logger.info("SETTING UP GOOGLE CLOUD STORAGE")
     logger.info("=" * 70)
     
     storage_mgr = StorageManager(auth)
-    bucket_name = config["gcs_bucket"]
-    location = config["location"]
+    bucket_name = config.storage.bucket_name
+    location = config.storage.location
     
     try:
         storage_mgr.create_bucket(
             bucket_name,
             location=location,
-            labels={"project": "orkhon", "purpose": "etl-staging"},
+            storage_class=config.storage.storage_class,
+            labels=config.storage.labels,
         )
         
         # Verify
@@ -115,20 +125,20 @@ def setup_storage(auth: GCPAuth, config: dict) -> bool:
         return False
 
 
-def setup_bigquery(auth: GCPAuth, config: dict) -> bool:
+def setup_bigquery(auth: GCPAuth, config: DatasourceConfig) -> bool:
     """Create BigQuery dataset."""
     logger.info("=" * 70)
     logger.info("SETTING UP GOOGLE BIGQUERY")
     logger.info("=" * 70)
     
-    bq_mgr = BigQueryManager(auth, location=config["location"])
-    dataset_id = config["bq_dataset"]
+    bq_mgr = BigQueryManager(auth, location=config.bigquery.location)
+    dataset_id = config.bigquery.dataset_id
     
     try:
         bq_mgr.create_dataset(
             dataset_id,
-            description="DNB Statistics data from ETL pipeline",
-            labels={"project": "orkhon", "source": "dnb-api"},
+            description=config.bigquery.description or f"{config.datasource.name} data from ETL pipeline",
+            labels=config.bigquery.labels,
         )
         
         # Verify
@@ -147,7 +157,7 @@ def setup_bigquery(auth: GCPAuth, config: dict) -> bool:
         return False
 
 
-def validate_setup(auth: GCPAuth, config: dict) -> bool:
+def validate_setup(auth: GCPAuth, config: DatasourceConfig) -> bool:
     """Validate the entire GCP setup."""
     logger.info("=" * 70)
     logger.info("VALIDATING GCP SETUP")
@@ -167,10 +177,13 @@ def validate_setup(auth: GCPAuth, config: dict) -> bool:
     logger.info("\n2. Cloud Storage")
     try:
         storage_mgr = StorageManager(auth)
-        if storage_mgr.bucket_exists(config["gcs_bucket"]):
-            logger.info(f"  ✓ Bucket exists: gs://{config['gcs_bucket']}")
+        if storage_mgr.bucket_exists(config.storage.bucket_name):
+            logger.info(f"  ✓ Bucket exists: gs://{config.storage.bucket_name}")
+            bucket_info = storage_mgr.get_bucket_info(config.storage.bucket_name)
+            logger.info(f"    Location: {bucket_info['location']}")
+            logger.info(f"    Storage Class: {bucket_info['storage_class']}")
         else:
-            logger.error(f"  ✗ Bucket not found: {config['gcs_bucket']}")
+            logger.error(f"  ✗ Bucket not found: {config.storage.bucket_name}")
             all_valid = False
     except Exception as exc:
         logger.error(f"  ✗ Storage validation failed: {exc}")
@@ -179,15 +192,17 @@ def validate_setup(auth: GCPAuth, config: dict) -> bool:
     # Validate BigQuery
     logger.info("\n3. BigQuery")
     try:
-        bq_mgr = BigQueryManager(auth, location=config["location"])
-        if bq_mgr.dataset_exists(config["bq_dataset"]):
-            logger.info(f"  ✓ Dataset exists: {config['bq_dataset']}")
+        bq_mgr = BigQueryManager(auth, location=config.bigquery.location)
+        if bq_mgr.dataset_exists(config.bigquery.dataset_id):
+            logger.info(f"  ✓ Dataset exists: {config.bigquery.dataset_id}")
             
             # List tables
-            tables = bq_mgr.list_tables(config["bq_dataset"])
+            tables = bq_mgr.list_tables(config.bigquery.dataset_id)
             logger.info(f"  ✓ Tables: {len(tables)}")
+            if tables:
+                logger.info(f"    First few: {', '.join(tables[:5])}")
         else:
-            logger.error(f"  ✗ Dataset not found: {config['bq_dataset']}")
+            logger.error(f"  ✗ Dataset not found: {config.bigquery.dataset_id}")
             all_valid = False
     except Exception as exc:
         logger.error(f"  ✗ BigQuery validation failed: {exc}")
@@ -211,29 +226,42 @@ def validate_setup(auth: GCPAuth, config: dict) -> bool:
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="GCP Infrastructure Setup for Orkhon",
+        description="GCP Infrastructure Setup for any datasource",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Setup everything
-  python -m backend.gcp.setup --all
+  # List available datasources
+  python -m backend.gcp.setup --list-datasources
+
+  # Setup everything for a datasource
+  python -m backend.gcp.setup --datasource dnb_statistics --all
 
   # Setup only storage
-  python -m backend.gcp.setup --bucket
+  python -m backend.gcp.setup --datasource dnb_statistics --bucket
 
   # Setup only BigQuery
-  python -m backend.gcp.setup --dataset
+  python -m backend.gcp.setup --datasource dnb_statistics --dataset
 
   # Validate existing setup
-  python -m backend.gcp.setup --validate
+  python -m backend.gcp.setup --datasource dnb_statistics --validate
 
 Environment Variables:
-  GOOGLE_CLOUD_PROJECT     - GCP project ID (required)
-  GOOGLE_CLOUD_LOCATION    - GCP location (default: us-central1)
-  GCS_BUCKET               - GCS bucket name (default: dnb-data)
-  BQ_DATASET_ID            - BigQuery dataset ID (default: dnb_statistics)
+  GOOGLE_CLOUD_PROJECT           - GCP project ID (required)
   GOOGLE_APPLICATION_CREDENTIALS - Path to service account key (optional)
         """,
+    )
+    
+    parser.add_argument(
+        "--list-datasources",
+        action="store_true",
+        help="List all available datasource profiles",
+    )
+    
+    parser.add_argument(
+        "--datasource",
+        type=str,
+        metavar="DATASOURCE_ID",
+        help="Datasource to setup (e.g., dnb_statistics)",
     )
     
     parser.add_argument(
@@ -267,16 +295,49 @@ def main():
     """Main entry point."""
     args = parse_args()
     
-    # Load configuration
-    config = get_config()
+    # List datasources
+    if args.list_datasources:
+        datasources = list_datasources()
+        if not datasources:
+            logger.info("\nNo datasource profiles found.")
+            logger.info("Create one with: python -m backend.gcp.upload_parquet --create-profile <datasource_id>")
+        else:
+            logger.info(f"\nAvailable datasources ({len(datasources)}):")
+            for ds in datasources:
+                try:
+                    config = load_datasource_config(ds)
+                    logger.info(f"  • {ds:30s} - {config.datasource.name}")
+                    logger.info(f"    Bucket: {config.storage.bucket_name}")
+                    logger.info(f"    Dataset: {config.bigquery.dataset_id}")
+                except Exception as exc:
+                    logger.info(f"  • {ds:30s} - (invalid profile: {exc})")
+        sys.exit(0)
+    
+    # Require datasource for setup operations
+    if not args.datasource:
+        logger.error("Error: --datasource required for setup operations")
+        logger.error("\nRun with --list-datasources to see available datasources")
+        sys.exit(1)
+    
+    # Load datasource configuration
+    try:
+        config = load_datasource_config(args.datasource)
+    except Exception as exc:
+        logger.error(f"Failed to load datasource profile '{args.datasource}': {exc}")
+        logger.error("\nRun with --list-datasources to see available datasources")
+        sys.exit(1)
+    
+    # Get project ID
+    project_id = get_project_id()
     
     logger.info("\n" + "=" * 70)
-    logger.info("GCP INFRASTRUCTURE SETUP - ORKHON PROJECT")
+    logger.info(f"GCP INFRASTRUCTURE SETUP - {config.datasource.name.upper()}")
     logger.info("=" * 70)
-    logger.info(f"Project ID: {config['project_id']}")
-    logger.info(f"Location: {config['location']}")
-    logger.info(f"GCS Bucket: {config['gcs_bucket']}")
-    logger.info(f"BQ Dataset: {config['bq_dataset']}")
+    logger.info(f"Datasource: {args.datasource}")
+    logger.info(f"Project ID: {project_id}")
+    logger.info(f"Location: {config.bigquery.location}")
+    logger.info(f"GCS Bucket: {config.storage.bucket_name}")
+    logger.info(f"BQ Dataset: {config.bigquery.dataset_id}")
     logger.info("=" * 70 + "\n")
     
     # Setup authentication
