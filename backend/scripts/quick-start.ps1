@@ -8,7 +8,7 @@
 param(
   [switch]$SkipDiagnostics,
   [switch]$RestartToolbox,
-  [switch]$OpenUIs = $true,  # Automatically open web UIs
+  [bool]$OpenUIs = $true,    # Automatically open web UIs
   [int]$WaitSeconds = 60,     # Increased default wait time
   [switch]$ForceRecreate      # Force recreate containers
 )
