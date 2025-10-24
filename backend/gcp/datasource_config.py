@@ -69,8 +69,10 @@ class PipelineConfig(BaseModel):
     """Data pipeline configuration."""
     bronze_path: str
     table_naming: str = "double_underscore"
-    schema: SchemaConfig = Field(default_factory=SchemaConfig)
+    schema_config: SchemaConfig = Field(default_factory=SchemaConfig, alias="schema")
     quality: QualityConfig = Field(default_factory=QualityConfig)
+    
+    model_config = {"populate_by_name": True}
 
 
 class DatasourceMeta(BaseModel):

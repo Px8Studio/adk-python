@@ -38,7 +38,8 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from backend.gcp import GCPAuth, BigQueryManager
+from backend.gcp.auth import GCPAuth
+from backend.gcp.bigquery_manager import BigQueryManager
 
 # Load environment variables
 load_dotenv()

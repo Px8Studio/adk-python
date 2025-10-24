@@ -19,7 +19,8 @@ from typing import Any, Optional
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict, NotFound
 
-from backend.gcp import GCPAuth, StorageManager
+from backend.gcp.auth import GCPAuth
+from backend.gcp.storage_manager import StorageManager
 
 logger = logging.getLogger(__name__)
 
@@ -821,64 +822,66 @@ class BigQueryManager:
 
 
 auth = GCPAuth()
-storage = StorageManager(auth)
-
-# Create bucket with labels
-storage.create_bucket(
-    "my-bucket",
-    location="us-central1",
-    labels={"project": "orkhon"}
-)
-
-# Upload file
-gcs_uri = storage.upload_file(
-    local_path="data.parquet",
-    bucket_name="my-bucket",
-    blob_path="bronze/data.parquet"
-)
-
-# List objects
-files = storage.list_objects("my-bucket", prefix="bronze/")
-
-# Check existence
-if storage.bucket_exists("my-bucket"):
-    print("Bucket ready!")
-
-bq = BigQueryManager(auth, location="us-central1")
-
-# Create dataset with labels
-bq.create_dataset(
-    "dnb_statistics",
-    description="DNB data",
-    labels={"project": "orkhon"}
-)
-
-# Create table with schema
-schema = [
-    bigquery.SchemaField("id", "INTEGER"),
-    bigquery.SchemaField("name", "STRING"),
-    bigquery.SchemaField("date", "DATE"),
-]
-
-bq.create_table(
-    "dnb_statistics",
-    "my_table",
-    schema=schema,
-    partition_field="date",
-    clustering_fields=["name"]
-)
-
-# Load data from GCS
-bq.load_table_from_gcs(
-    gcs_uri="gs://bucket/data.parquet",
-    dataset_id="dnb_statistics",
-    table_id="my_table",
-    source_format="PARQUET"
-)
-
-# Dry run query (cost estimation)
-estimate = bq.execute_query(
-    "SELECT * FROM dnb_statistics.my_table",
-    dry_run=True
-)
-print(f"Cost: ${estimate['cost_estimate_usd']:.4f}")
+# Example usage (for reference, do not execute at import time):
+# 
+# storage = StorageManager(auth)
+# 
+# # Create bucket with labels
+# storage.create_bucket(
+#     "my-bucket",
+#     location="us-central1",
+#     labels={"project": "orkhon"}
+# )
+# 
+# # Upload file
+# gcs_uri = storage.upload_file(
+#     local_path="data.parquet",
+#     bucket_name="my-bucket",
+#     blob_path="bronze/data.parquet"
+# )
+# 
+# # List objects
+# files = storage.list_objects("my-bucket", prefix="bronze/")
+# 
+# # Check existence
+# if storage.bucket_exists("my-bucket"):
+#     print("Bucket ready!")
+# 
+# bq = BigQueryManager(auth, location="us-central1")
+# 
+# # Create dataset with labels
+# bq.create_dataset(
+#     "dnb_statistics",
+#     description="DNB data",
+#     labels={"project": "orkhon"}
+# )
+# 
+# # Create table with schema
+# schema = [
+#     bigquery.SchemaField("id", "INTEGER"),
+#     bigquery.SchemaField("name", "STRING"),
+#     bigquery.SchemaField("date", "DATE"),
+# ]
+# 
+# bq.create_table(
+#     "dnb_statistics",
+#     "my_table",
+#     schema=schema,
+#     partition_field="date",
+#     clustering_fields=["name"]
+# )
+# 
+# # Load data from GCS
+# bq.load_table_from_gcs(
+#     gcs_uri="gs://bucket/data.parquet",
+#     dataset_id="dnb_statistics",
+#     table_id="my_table",
+#     source_format="PARQUET"
+# )
+# 
+# # Dry run query (cost estimation)
+# estimate = bq.execute_query(
+#     "SELECT * FROM dnb_statistics.my_table",
+#     dry_run=True
+# )
+# print(f"Cost: ${estimate['cost_estimate_usd']:.4f}")
