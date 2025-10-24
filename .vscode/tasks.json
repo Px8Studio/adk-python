@@ -258,7 +258,7 @@
       }
     },
     // ============================================================
-    // BigQuery Upload - DNB Statistics
+    // BigQuery Upload - DNB Statistics (Professional GCP Managers)
     // ============================================================
     {
       "label": "📊 BigQuery: Upload All DNB Statistics",
@@ -268,7 +268,7 @@
         "run",
         "python",
         "-m",
-        "backend.etl.dnb_statistics.upload_to_bigquery",
+        "backend.gcp.upload_dnb_statistics",
         "--all"
       ],
       "options": {
@@ -294,7 +294,7 @@
         "run",
         "python",
         "-m",
-        "backend.etl.dnb_statistics.upload_to_bigquery",
+        "backend.gcp.upload_dnb_statistics",
         "--category",
         "insurance_pensions"
       ],
@@ -316,7 +316,7 @@
         "run",
         "python",
         "-m",
-        "backend.etl.dnb_statistics.upload_to_bigquery",
+        "backend.gcp.upload_dnb_statistics",
         "--category",
         "market_data"
       ],
@@ -338,7 +338,7 @@
         "run",
         "python",
         "-m",
-        "backend.etl.dnb_statistics.upload_to_bigquery",
+        "backend.gcp.upload_dnb_statistics",
         "--all",
         "--list"
       ],
@@ -360,7 +360,7 @@
         "run",
         "python",
         "-m",
-        "backend.etl.dnb_statistics.upload_to_bigquery",
+        "backend.gcp.upload_dnb_statistics",
         "--all",
         "--dry-run"
       ],

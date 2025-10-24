@@ -2,25 +2,28 @@
 DNB Statistics BigQuery Upload Orchestrator
 
 Upload parquet files from Bronze layer to BigQuery via GCS staging.
+Uses the professional GCP infrastructure managers.
 
 Usage:
     # Upload everything
-    python -m backend.etl.dnb_statistics.upload_to_bigquery --all
+    python -m backend.gcp.upload_dnb_statistics --all
 
     # Upload specific category
-    python -m backend.etl.dnb_statistics.upload_to_bigquery --category insurance_pensions
+    python -m backend.gcp.upload_dnb_statistics --category insurance_pensions
 
     # Upload specific tables
-    python -m backend.etl.dnb_statistics.upload_to_bigquery --tables exchange_rates_day market_interest_rates_day
+    python -m backend.gcp.upload_dnb_statistics --tables exchange_rates_day market_interest_rates_day
 
     # Dry run (no actual upload)
-    python -m backend.etl.dnb_statistics.upload_to_bigquery --all --dry-run
+    python -m backend.gcp.upload_dnb_statistics --all --dry-run
 
 Environment Variables:
     GOOGLE_CLOUD_PROJECT: GCP project ID
-    GCS_BUCKET: GCS bucket name for staging (default: dnb-data)
+    GOOGLE_CLOUD_LOCATION: GCP location (default: us-central1)
+    GCS_BUCKET: GCS bucket name for staging (default: {dataset}-data)
     BQ_DATASET_ID: BigQuery dataset ID (default: dnb_statistics)
     BQ_PARTITION_FIELD: Field for time partitioning (default: period)
+    BQ_CLUSTERING_FIELDS: Comma-separated clustering fields (optional)
 """
 
 from __future__ import annotations
@@ -35,21 +38,17 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from . import config
-from .bigquery_upload import upload_parquet_to_bigquery
+from backend.gcp import GCPAuth, BigQueryManager
 
 # Load environment variables
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(
-    level=config.LOG_LEVEL,
-    format=config.LOG_FORMAT,
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(
-            config.LOG_DIR / "bigquery_upload.log"
-        ),
     ],
 )
 logger = logging.getLogger(__name__)
@@ -68,12 +67,19 @@ def get_config() -> dict[str, Any]:
             "Set it in your .env file or environment."
         )
     
+    dataset_id = os.getenv("BQ_DATASET_ID", "dnb_statistics")
+    
     return {
         "project_id": project_id,
-        "gcs_bucket": os.getenv("GCS_BUCKET", "dnb-data"),
-        "bq_dataset": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
+        "location": os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1"),
+        "gcs_bucket": os.getenv("GCS_BUCKET") or f"{dataset_id}-data",
+        "bq_dataset": dataset_id,
         "partition_field": os.getenv("BQ_PARTITION_FIELD", "period"),
-        "clustering_fields": os.getenv("BQ_CLUSTERING_FIELDS", "").split(",") if os.getenv("BQ_CLUSTERING_FIELDS") else None,
+        "clustering_fields": (
+            os.getenv("BQ_CLUSTERING_FIELDS", "").split(",")
+            if os.getenv("BQ_CLUSTERING_FIELDS")
+            else None
+        ),
     }
 
 
@@ -81,21 +87,42 @@ def get_config() -> dict[str, Any]:
 # Discovery
 # ==========================================
 
+def get_bronze_dir() -> Path:
+    """Get Bronze layer directory path."""
+    # Try to find bronze dir relative to this script
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent.parent
+    bronze_dir = project_root / "backend" / "data" / "1-bronze"
+    
+    if not bronze_dir.exists():
+        raise FileNotFoundError(
+            f"Bronze directory not found: {bronze_dir}\n"
+            "Please ensure data has been extracted first."
+        )
+    
+    return bronze_dir
+
+
 def discover_parquet_files(
-    bronze_dir: Path = config.BRONZE_DIR,
     category: str | None = None,
 ) -> list[Path]:
     """
     Discover all parquet files in Bronze layer.
     
     Args:
-        bronze_dir: Bronze layer directory
         category: Optional category filter
     
     Returns:
         List of parquet file paths
     """
+    bronze_dir = get_bronze_dir()
     search_path = bronze_dir / "dnb_statistics"
+    
+    if not search_path.exists():
+        raise FileNotFoundError(
+            f"DNB Statistics directory not found: {search_path}\n"
+            "Please run ETL extraction first."
+        )
     
     if category:
         search_path = search_path / category
@@ -113,18 +140,17 @@ def discover_parquet_files(
 
 def discover_by_table_names(
     table_names: list[str],
-    bronze_dir: Path = config.BRONZE_DIR,
 ) -> list[Path]:
     """
     Find parquet files by table names (endpoint names).
     
     Args:
         table_names: List of endpoint/table names
-        bronze_dir: Bronze layer directory
     
     Returns:
         List of parquet file paths
     """
+    bronze_dir = get_bronze_dir()
     search_path = bronze_dir / "dnb_statistics"
     found_files = []
     
@@ -168,6 +194,7 @@ def upload_files(
     logger.info("DNB STATISTICS → BIGQUERY UPLOAD")
     logger.info("=" * 70)
     logger.info(f"Project: {cfg['project_id']}")
+    logger.info(f"Location: {cfg['location']}")
     logger.info(f"GCS Bucket: {cfg['gcs_bucket']}")
     logger.info(f"BQ Dataset: {cfg['bq_dataset']}")
     logger.info(f"Files to upload: {len(parquet_files)}")
@@ -175,9 +202,20 @@ def upload_files(
     
     if dry_run:
         logger.info("🔍 DRY RUN MODE - No actual uploads will occur\n")
+        bronze_dir = get_bronze_dir()
         for i, pf in enumerate(parquet_files, 1):
-            logger.info(f"[{i}/{len(parquet_files)}] Would upload: {pf.relative_to(config.BRONZE_DIR)}")
+            try:
+                rel_path = pf.relative_to(bronze_dir)
+            except ValueError:
+                rel_path = pf
+            logger.info(f"[{i}/{len(parquet_files)}] Would upload: {rel_path}")
         return {"dry_run": True, "files": len(parquet_files)}
+    
+    # Initialize GCP managers
+    logger.info("Initializing GCP connection...")
+    auth = GCPAuth(project_id=cfg["project_id"])
+    bq_mgr = BigQueryManager(auth, location=cfg["location"])
+    logger.info(f"✓ Connected to project: {cfg['project_id']}\n")
     
     overall_start = datetime.now()
     results = []
@@ -187,12 +225,13 @@ def upload_files(
         logger.info(f"\n[{i}/{len(parquet_files)}] Processing: {parquet_file.name}")
         
         try:
-            stats = upload_parquet_to_bigquery(
-                parquet_path=parquet_file,
+            stats = bq_mgr.load_parquet_from_local(
+                parquet_path=str(parquet_file),
+                dataset_id=cfg["bq_dataset"],
                 gcs_bucket=cfg["gcs_bucket"],
-                bq_dataset=cfg["bq_dataset"],
                 partition_field=cfg["partition_field"],
                 clustering_fields=cfg["clustering_fields"],
+                auto_detect_table_name=True,
             )
             results.append(stats)
         
@@ -259,16 +298,16 @@ def parse_args() -> argparse.Namespace:
         epilog="""
 Examples:
   # Upload all tables
-  python -m backend.etl.dnb_statistics.upload_to_bigquery --all
+  python -m backend.gcp.upload_dnb_statistics --all
 
   # Upload specific category
-  python -m backend.etl.dnb_statistics.upload_to_bigquery --category insurance_pensions
+  python -m backend.gcp.upload_dnb_statistics --category insurance_pensions
 
   # Upload specific tables
-  python -m backend.etl.dnb_statistics.upload_to_bigquery --tables exchange_rates_day
+  python -m backend.gcp.upload_dnb_statistics --tables exchange_rates_day
 
   # Dry run
-  python -m backend.etl.dnb_statistics.upload_to_bigquery --all --dry-run
+  python -m backend.gcp.upload_dnb_statistics --all --dry-run
         """,
     )
     
@@ -320,7 +359,8 @@ def main():
         logger.error("\nRequired environment variables:")
         logger.error("  GOOGLE_CLOUD_PROJECT - Your GCP project ID")
         logger.error("\nOptional environment variables:")
-        logger.error("  GCS_BUCKET - GCS bucket name (default: dnb-data)")
+        logger.error("  GOOGLE_CLOUD_LOCATION - GCP location (default: us-central1)")
+        logger.error("  GCS_BUCKET - GCS bucket name (default: {dataset}-data)")
         logger.error("  BQ_DATASET_ID - BigQuery dataset ID (default: dnb_statistics)")
         logger.error("  BQ_PARTITION_FIELD - Partition field (default: period)")
         logger.error("  BQ_CLUSTERING_FIELDS - Comma-separated clustering fields")
@@ -348,9 +388,14 @@ def main():
     
     # List mode
     if args.list:
+        bronze_dir = get_bronze_dir()
         logger.info(f"\nFound {len(parquet_files)} parquet file(s):")
         for pf in parquet_files:
-            logger.info(f"  • {pf.relative_to(config.BRONZE_DIR)}")
+            try:
+                rel_path = pf.relative_to(bronze_dir)
+            except ValueError:
+                rel_path = pf
+            logger.info(f"  • {rel_path}")
         sys.exit(0)
     
     # Upload
