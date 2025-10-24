@@ -109,18 +109,62 @@ This document summarizes the comprehensive enhancements made to `ARCHITECTURE_ME
 
 ---
 
-### 3. **BigQuery Deployment Pipeline** (ENHANCED)
+### 3. **BigQuery Deployment Pipeline** (IMPLEMENTED ✅ - Oct 24, 2025)
 
 #### ETL → GCS → BigQuery Flow
 ```
-Bronze Layer (Local)
-  ↓ (Upload Script)
+Bronze Layer (Local Parquet)
+  ↓ (Upload Script - upload_to_bigquery.py)
 Cloud Storage (gs://dnb-data/bronze/)
-  ↓ (bq load)
+  ↓ (BigQuery Load Job)
 BigQuery Dataset (dnb_statistics)
   ├── Partitioned by period
   ├── Clustered by business keys
-  └── Schema enforcement
+  ├── Schema auto-detected from parquet
+  └── Table naming: {category}__{subcategory}__{endpoint}
+```
+
+#### Implementation Details
+
+**Core Upload Utilities** (`backend/etl/dnb_statistics/bigquery_upload.py`):
+- `generate_table_name()` - Creates BQ table names from folder structure
+- `parse_table_path()` - Extracts category/subcategory/endpoint from paths
+- `parquet_to_bigquery_schema()` - Auto-detects schema with type mapping
+- `upload_to_gcs()` - Uploads parquet to GCS staging bucket
+- `create_bigquery_table()` - Creates tables with partitioning/clustering
+- `load_parquet_from_gcs()` - Executes BigQuery load jobs
+- `upload_parquet_to_bigquery()` - Full pipeline orchestration
+
+**CLI Orchestrator** (`backend/etl/dnb_statistics/upload_to_bigquery.py`):
+```powershell
+# Upload all tables
+python -m backend.etl.dnb_statistics.upload_to_bigquery --all
+
+# Upload specific category
+python -m backend.etl.dnb_statistics.upload_to_bigquery --category insurance_pensions
+
+# Upload specific tables
+python -m backend.etl.dnb_statistics.upload_to_bigquery --tables exchange_rates_day
+
+# Dry run (preview only)
+python -m backend.etl.dnb_statistics.upload_to_bigquery --all --dry-run
+```
+
+**VS Code Tasks** (6 new tasks):
+- 📊 BigQuery: Upload All DNB Statistics
+- 📊 BigQuery: Upload Category (Insurance & Pensions)
+- 📊 BigQuery: Upload Category (Market Data)
+- 📊 BigQuery: List Available Files
+- 📊 BigQuery: Dry Run (Preview Upload)
+- 🌐 Open: BigQuery Console
+
+**Configuration** (`.env` file):
+```bash
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
+GCS_BUCKET=dnb-data
+BQ_DATASET_ID=dnb_statistics
+BQ_PARTITION_FIELD=period
+BQ_CLUSTERING_FIELDS=category,subcategory  # optional
 ```
 
 #### Table Naming Convention
@@ -128,6 +172,40 @@ BigQuery Dataset (dnb_statistics)
 {category}__{subcategory}__{endpoint_name}
 
 Examples:
+- insurance_pensions__insurers__insurance_corps_balance_sheet_quarter
+- market_data__interest_rates__market_interest_rates_day
+- macroeconomic__national_accounts__gdp_quarter
+```
+
+#### Schema Auto-Detection
+
+Parquet-to-BigQuery type mapping:
+- `int64/int32` → `INTEGER`
+- `float/double` → `FLOAT`
+- `string` → `STRING`
+- `bool` → `BOOLEAN`
+- `date` → `DATE`
+- `timestamp` → `TIMESTAMP`
+
+#### Prerequisites & Setup
+
+See comprehensive guide: `backend/etl/dnb_statistics/BIGQUERY_UPLOAD.md`
+
+1. **GCP Project Setup**:
+   - Enable BigQuery and Storage APIs
+   - Create GCS bucket (`gs://dnb-data`)
+   - Create BigQuery dataset (`dnb_statistics`)
+
+2. **Authentication**:
+   - Service account OR `gcloud auth application-default login`
+   - Required roles: `bigquery.dataEditor`, `bigquery.jobUser`, `storage.admin`
+
+3. **Python Dependencies** (in pyproject.toml):
+   - `google-cloud-bigquery ^3.28.0`
+   - `google-cloud-storage ^2.19.0`
+   - `pyarrow ^21.0.0`
+
+---
 - insurance_pensions__insurers__insurance_corps_balance_sheet_quarter
 - financial_markets__interest_rates__market_interest_rates
 - financial_markets__bond_yields__dutch_state_loans
@@ -239,6 +317,7 @@ Examples:
 ### BigQuery Integration
 12. **BigQuery Deployment Pipeline**: ETL → GCS → BigQuery with table creation
 13. **Cross-Dataset Relations**: Foreign key configuration for multi-database joins
+14. **BigQuery Upload Architecture** (NEW - Oct 24, 2025): Complete upload workflow with CLI and VS Code tasks
 
 ---
 
@@ -259,13 +338,18 @@ Examples:
   - ✅ Dataset configuration system (JSON-based)
   - ✅ Runner script for local testing
   - ✅ Environment configuration template
-- **ADK Built-in OpenAPI Tool for internal service access**
-- ETL pipeline extracting to Bronze layer (Parquet)
-- Docker Compose local development stack
-- OpenTelemetry tracing with Jaeger
+- **BigQuery Upload Pipeline** - ✅ **IMPLEMENTED (Oct 24, 2025)**
+  - ✅ Parquet to BigQuery upload utilities (`bigquery_upload.py`)
+  - ✅ CLI orchestrator with --all, --category, --tables options
+  - ✅ Auto-schema detection from parquet files
+  - ✅ Table naming convention (category__subcategory__endpoint)
+  - ✅ GCS staging for efficient load jobs
+  - ✅ Partitioning and clustering support
+  - ✅ VS Code tasks for upload operations
+  - ✅ Comprehensive documentation (BIGQUERY_UPLOAD.md)
 
 ### In Progress 🚧
-- **Data Integration**: Loading Bronze layer parquet files to BigQuery
+- ~~**Data Integration**: Loading Bronze layer parquet files to BigQuery~~ ✅ **COMPLETED (Oct 24, 2025)**
 - **Testing**: Validating data science agent with actual DNB Statistics data
 - **BQML Agent**: Implementing BigQuery ML capabilities with RAG reference
 - **AlloyDB Agent**: Setting up MCP Toolbox for Databases integration
