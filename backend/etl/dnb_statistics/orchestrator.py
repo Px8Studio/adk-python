@@ -243,9 +243,6 @@ async def extract_all() -> dict[str, Any]:
                 logger.warning(f"    - {note}")
     
     return all_stats
-    
-    return all_stats
-
 
 async def list_endpoints_info() -> None:
     """List all available endpoints with their categories."""
