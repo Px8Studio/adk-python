@@ -16,6 +16,8 @@
 - [Data Science Agent Architecture](#data-science-agent-architecture)
 - [Deployment Architecture](#deployment-architecture)
 - [Deployment Topology](#deployment-topology)
+- [Security & Authentication Flow](#-security--authentication-flow)
+- [Data Models & Schemas](#-data-models--schemas)
 
 ---
 
@@ -1806,6 +1808,128 @@ mindmap
 
 ---
 
+## 🔐 Security & Authentication Flow
+
+### Authentication Architecture
+
+```mermaid
+flowchart TB
+    subgraph EnvVars["🔑 Environment Variables (.env)"]
+        DNB_KEY_DEV["DNB_SUBSCRIPTION_KEY_DEV=<key>"]
+        DNB_KEY_PROD["DNB_SUBSCRIPTION_KEY_PROD=<key>"]
+        DNB_NAME_DEV["DNB_SUBSCRIPTION_NAME_DEV=<name>"]
+        DNB_NAME_PROD["DNB_SUBSCRIPTION_NAME_PROD=<name>"]
+    end
+
+    subgraph DockerCompose["🐳 Docker Compose"]
+        EnvFile["env_file: .env"]
+    end
+
+    subgraph ToolboxContainer["📦 GenAI Toolbox Container"]
+        ContainerEnv["Environment: DNB_SUBSCRIPTION_KEY_DEV"]
+    end
+
+    subgraph ToolYAML["📄 Tool YAML Configuration"]
+        AuthConfig["authentication:<br/>  name: dnb-dev-auth<br/>  kind: http<br/>  scheme: apiKey<br/>  in: header<br/>  key: Ocp-Apim-Subscription-Key<br/>  value: ${DNB_SUBSCRIPTION_KEY_DEV}"]
+        ToolAuth["tools:<br/>  authentication: dnb-dev-auth"]
+    end
+
+    subgraph HTTPRequest["🌐 HTTP Request to DNB API"]
+        Headers["Headers:<br/>  Ocp-Apim-Subscription-Key: <actual-key>"]
+    end
+
+    DNB_KEY_DEV --> EnvFile
+    DNB_KEY_PROD --> EnvFile
+    DNB_NAME_DEV --> EnvFile
+    DNB_NAME_PROD --> EnvFile
+    
+    EnvFile --> ContainerEnv
+    ContainerEnv --> AuthConfig
+    AuthConfig --> ToolAuth
+    ToolAuth --> Headers
+
+    classDef env fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef docker fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
+    classDef config fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef network fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+
+    class DNB_KEY_DEV,DNB_KEY_PROD,DNB_NAME_DEV,DNB_NAME_PROD env
+    class EnvFile,ContainerEnv docker
+    class AuthConfig,ToolAuth config
+    class Headers network
+```
+
+**Security Best Practices:**
+- ✅ **Environment Variables**: API keys stored in `.env` (never committed)
+- ✅ **Container Isolation**: Secrets injected at runtime via Docker Compose
+- ✅ **Dynamic Injection**: YAML uses `${VAR}` syntax for runtime substitution
+- ✅ **Separation of Concerns**: Dev/Prod keys managed separately
+- ✅ **Header-Based Auth**: Standard `Ocp-Apim-Subscription-Key` header
+
+---
+
+## 🗄️ Data Models & Schemas
+
+### ADK Session Schema
+
+```yaml
+Session:
+  id: string (UUID)
+  agent_id: string
+  created_at: datetime
+  events: Event[]
+    - id: string
+      type: USER_MESSAGE | AGENT_MESSAGE | TOOL_CALL | TOOL_RESULT
+      timestamp: datetime
+      content: string | object
+  state: dict (custom state)
+```
+
+### GenAI Toolbox Tool Schema
+
+```yaml
+Tool:
+  name: string (dnb-statistics-get-metadata)
+  description: string
+  inputSchema:
+    type: object
+    properties:
+      param_name:
+        type: string | integer | boolean | json
+        description: string
+        required: boolean
+  authentication: string (ref to auth config)
+  source: string (http_source_dnb_dev)
+  endpoint: string (/statistics/v2024100101/metadata)
+  method: GET | POST | PUT | DELETE
+```
+
+### OpenTelemetry Span Schema
+
+```json
+{
+  "traceId": "hex-string",
+  "spanId": "hex-string",
+  "parentSpanId": "hex-string",
+  "name": "dnb-statistics-get-metadata",
+  "startTime": "2024-10-17T10:00:00Z",
+  "endTime": "2024-10-17T10:00:01Z",
+  "attributes": {
+    "http.method": "GET",
+    "http.url": "https://api.dnb.nl/statistics/.../metadata",
+    "http.status_code": 200,
+    "tool.name": "dnb-statistics-get-metadata"
+  }
+}
+```
+
+**Schema Validation:**
+- **ADK Sessions**: Validated by ADK framework (Pydantic models)
+- **Toolbox Tools**: Validated at registration time (YAML schema)
+- **OpenTelemetry Spans**: Validated by OTLP protocol (protobuf)
+
+---
+
 ## Summary
 
 ### Key Architectural Principles
@@ -1959,5 +2083,12 @@ mindmap
 ---
 
 *Generated: October 2025*  
-*Version: 2.0.0*  
-*Updated: Enhanced with Data Science Agent architecture and deployment topology*
+*Version: 2.1.0*  
+*Last Updated: October 24, 2025*
+
+**Changelog:**
+- **v2.1.0** (Oct 24, 2025): Consolidated ARCHITECTURE_DIAGRAM.md content (Security flow, Data schemas)
+- **v2.0.0** (Oct 2025): Enhanced with Data Science Agent architecture and deployment topology
+- **v1.0.0** (Oct 2025): Initial release with Mermaid diagrams
+
+**Replaces:** `ARCHITECTURE_DIAGRAM.md` (deprecated)
