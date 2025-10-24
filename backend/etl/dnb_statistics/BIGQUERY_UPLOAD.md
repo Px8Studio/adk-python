@@ -100,6 +100,8 @@ This installs:
 
 ## 🚀 Quick Start
 
+> **Note:** This guide now uses the professional GCP infrastructure managers located in `backend/gcp/` for all upload operations.
+
 ### 1. Configure Environment
 
 Copy and edit `.env.example`:
@@ -122,7 +124,7 @@ BQ_PARTITION_FIELD=period
 Preview what would be uploaded:
 
 ```powershell
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --all --dry-run
+poetry run python -m backend.gcp.upload_dnb_statistics --all --dry-run
 ```
 
 Or use the VS Code task: **📊 BigQuery: Dry Run (Preview Upload)**
@@ -132,7 +134,7 @@ Or use the VS Code task: **📊 BigQuery: Dry Run (Preview Upload)**
 Start with a smaller category to verify everything works:
 
 ```powershell
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --category market_data
+poetry run python -m backend.gcp.upload_dnb_statistics --category market_data
 ```
 
 Or use the VS Code task: **📊 BigQuery: Upload Category (Market Data)**
@@ -142,7 +144,7 @@ Or use the VS Code task: **📊 BigQuery: Upload Category (Market Data)**
 Once verified, upload everything:
 
 ```powershell
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --all
+poetry run python -m backend.gcp.upload_dnb_statistics --all
 ```
 
 Or use the VS Code task: **📊 BigQuery: Upload All DNB Statistics**
@@ -196,7 +198,7 @@ Schemas are auto-detected from parquet files with type mapping:
 See what parquet files are ready to upload:
 
 ```powershell
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --all --list
+poetry run python -m backend.gcp.upload_dnb_statistics --all --list
 ```
 
 ### Upload Specific Tables
@@ -204,7 +206,7 @@ poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --all --list
 Upload only specific endpoints:
 
 ```powershell
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --tables exchange_rates_day market_interest_rates_day
+poetry run python -m backend.gcp.upload_dnb_statistics --tables exchange_rates_day market_interest_rates_day
 ```
 
 ### Upload by Category
@@ -213,13 +215,13 @@ Upload all tables in a category:
 
 ```powershell
 # Insurance & Pensions
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --category insurance_pensions
+poetry run python -m backend.gcp.upload_dnb_statistics --category insurance_pensions
 
 # Market Data
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --category market_data
+poetry run python -m backend.gcp.upload_dnb_statistics --category market_data
 
 # Macroeconomic
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --category macroeconomic
+poetry run python -m backend.gcp.upload_dnb_statistics --category macroeconomic
 ```
 
 ### Custom Configuration
@@ -229,11 +231,11 @@ Override default settings via environment variables:
 ```powershell
 # Disable partitioning
 $env:BQ_PARTITION_FIELD=""
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --all
+poetry run python -m backend.gcp.upload_dnb_statistics --all
 
 # Add clustering
 $env:BQ_CLUSTERING_FIELDS="category,subcategory"
-poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --category market_data
+poetry run python -m backend.gcp.upload_dnb_statistics --category market_data
 ```
 
 ---
@@ -396,7 +398,7 @@ If your parquet schema changes:
 
 2. Re-upload with the new schema:
    ```powershell
-   poetry run python -m backend.etl.dnb_statistics.upload_to_bigquery --tables table_name
+   poetry run python -m backend.gcp.upload_dnb_statistics --tables table_name
    ```
 
 ### Cleaning Up
