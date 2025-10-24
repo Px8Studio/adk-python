@@ -821,7 +821,7 @@ class BigQueryManager:
         return stats
 
 
-auth = GCPAuth()
+
 # Example usage (for reference, do not execute at import time):
 # 
 # storage = StorageManager(auth)
