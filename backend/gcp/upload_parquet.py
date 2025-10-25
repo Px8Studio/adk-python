@@ -271,6 +271,7 @@ def upload_files(
                 clustering_fields=config.bigquery.table_defaults.clustering_fields,
                 write_disposition=config.bigquery.table_defaults.write_disposition,
                 auto_detect_table_name=True,
+                bronze_path=config.pipeline_config.bronze_path,
             )
             results.append(stats)
         

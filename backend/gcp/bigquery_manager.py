@@ -727,59 +727,70 @@ class BigQueryManager:
         return table_name
     
     @staticmethod
-    def parse_table_path(parquet_path: str) -> dict[str, str]:
+    def parse_table_path(parquet_path: str, bronze_path: str | None = None) -> dict[str, str]:
         """
-        Parse category/subcategory/endpoint from parquet file path.
+        Parse table information from parquet file path.
         
-        Expected structure:
-            data/1-bronze/dnb_statistics/{category}/{subcategory}/{endpoint}.parquet
-            OR
-            data/1-bronze/dnb_statistics/{category}/{endpoint}.parquet
+        Expected path structure: .../<bronze_path>/<dataset>/<table>.parquet
         
         Args:
-            parquet_path: Path to parquet file
-        
+          parquet_path: Path to the parquet file
+          bronze_path: Bronze layer folder name (e.g., 'dnb_statistics', 'dnb_public_register').
+                       If None, will attempt to auto-detect from common datasources.
+          
         Returns:
-            Dict with 'category', 'subcategory' (optional), 'endpoint', 'table_name'
-        
-        Example:
-            >>> info = BigQueryManager.parse_table_path(
-            ...     "data/1-bronze/dnb_statistics/insurance_pensions/insurers/balance.parquet"
-            ... )
-            >>> info["table_name"]
-            'insurance_pensions__insurers__balance'
+          Dictionary with 'dataset' and 'table' keys
+          
+        Raises:
+          ValueError: If path structure doesn't match expected format
         """
         from pathlib import Path
         
-        path = Path(parquet_path)
-        parts = path.parts
+        parts = Path(parquet_path).parts
         
-        # Find the index of 'dnb_statistics'
-        try:
-            stats_idx = parts.index("dnb_statistics")
-        except ValueError:
-            raise ValueError(f"Path does not contain 'dnb_statistics': {parquet_path}")
+        # Try to find the bronze_path in the path
+        datasource_idx = None
+        datasource = None
         
-        # Extract category and endpoint
-        category = parts[stats_idx + 1]
-        
-        # Check if there's a subcategory
-        if len(parts) - stats_idx == 4:  # category/subcategory/file.parquet
-            subcategory = parts[stats_idx + 2]
-            endpoint = path.stem
-        elif len(parts) - stats_idx == 3:  # category/file.parquet
-            subcategory = None
-            endpoint = path.stem
+        if bronze_path:
+            # Use provided bronze_path
+            try:
+                datasource_idx = parts.index(bronze_path)
+                datasource = bronze_path
+            except ValueError:
+                raise ValueError(
+                    f"Path does not contain bronze_path '{bronze_path}': {parquet_path}"
+                )
         else:
-            raise ValueError(f"Unexpected path structure: {parquet_path}")
+            # Auto-detect from common datasources (legacy behavior)
+            for ds in ['dnb_statistics', 'dnb_public_register']:
+                try:
+                    datasource_idx = parts.index(ds)
+                    datasource = ds
+                    break
+                except ValueError:
+                    continue
+            
+            if datasource_idx is None:
+                raise ValueError(
+                    f"Path does not contain known datasource folders. "
+                    f"Please provide bronze_path explicitly.\n"
+                    f"Path: {parquet_path}"
+                )
         
-        table_name = BigQueryManager.generate_table_name(category, subcategory, endpoint)
+        # Check if we have enough parts after the datasource
+        if len(parts) < datasource_idx + 3:
+            raise ValueError(
+                f"Invalid path structure. Expected: .../{datasource}/<dataset>/<table>.parquet, "
+                f"got: {parquet_path}"
+            )
+        
+        dataset = parts[datasource_idx + 1]
+        table = Path(parts[datasource_idx + 2]).stem  # Remove .parquet extension
         
         return {
-            "category": category,
-            "subcategory": subcategory,
-            "endpoint": endpoint,
-            "table_name": table_name,
+            'dataset': dataset,
+            'table': table
         }
     
     def load_parquet_from_local(
@@ -792,6 +803,7 @@ class BigQueryManager:
         clustering_fields: list[str] | None = None,
         write_disposition: str = "WRITE_TRUNCATE",
         auto_detect_table_name: bool = True,
+        bronze_path: str | None = None,
     ) -> dict[str, Any]:
         """
         Full pipeline: Load parquet from local file directly to BigQuery (no GCS staging).
@@ -809,7 +821,8 @@ class BigQueryManager:
             partition_field: Optional field for time partitioning
             clustering_fields: Optional fields for clustering
             write_disposition: How to handle existing data (WRITE_TRUNCATE, WRITE_APPEND)
-            auto_detect_table_name: Auto-detect table name from DNB path structure
+            auto_detect_table_name: Auto-detect table name from datasource path structure
+            bronze_path: Bronze layer folder name for path parsing (e.g., 'dnb_statistics')
         
         Returns:
             Dict with upload statistics
@@ -818,7 +831,8 @@ class BigQueryManager:
             >>> bq.load_parquet_from_local(
             ...     "data/1-bronze/dnb_statistics/market_data/rates/daily.parquet",
             ...     dataset_id="dnb_statistics",
-            ...     partition_field="period"
+            ...     partition_field="period",
+            ...     bronze_path="dnb_statistics"
             ... )
         """
         from pathlib import Path
@@ -832,24 +846,22 @@ class BigQueryManager:
         logger.info(f"LOADING PARQUET TO BIGQUERY: {local_path.name}")
         logger.info(f"{'=' * 70}\n")
         
-        # Auto-detect table name from DNB path structure
+        # Auto-detect table name from datasource path structure
         if auto_detect_table_name:
             try:
-                table_info = self.parse_table_path(str(local_path))
-                detected_table_id = table_info["table_name"]
+                table_info = self.parse_table_path(str(local_path), bronze_path=bronze_path)
+                detected_table_id = table_info["table"]
                 
                 if table_id is None:
                     table_id = detected_table_id
                     logger.info(f"Auto-detected table name: {table_id}")
-                    logger.info(f"  Category: {table_info['category']}")
-                    if table_info["subcategory"]:
-                        logger.info(f"  Subcategory: {table_info['subcategory']}")
-                    logger.info(f"  Endpoint: {table_info['endpoint']}\n")
+                    logger.info(f"  Dataset: {table_info['dataset']}")
+                    logger.info(f"  Table: {table_info['table']}\n")
             except ValueError as e:
                 if table_id is None:
                     raise ValueError(
                         f"Could not auto-detect table name from path: {e}\n"
-                        "Please provide table_id explicitly."
+                        "Please provide table_id explicitly or bronze_path for path parsing."
                     )
         
         if table_id is None:
