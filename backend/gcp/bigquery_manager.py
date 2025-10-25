@@ -14,7 +14,7 @@ Best Practices:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from google.cloud import bigquery
 from google.cloud.exceptions import Conflict, NotFound
@@ -727,54 +727,79 @@ class BigQueryManager:
         return table_name
     
     @staticmethod
-    def parse_table_path(parquet_path: str) -> Dict[str, str]:
+    def parse_table_path(
+        parquet_path: str,
+        bronze_path: str | None = None,
+    ) -> Dict[str, str]:
         """
         Parse table information from parquet file path.
         
-        Supports two path structures:
-        1. dnb_statistics: .../dnb_statistics/{dataset}/{table}.parquet
-        2. dnb_public_register: .../dnb_public_register/{dataset}/{table}.parquet
+        Path structure: .../{bronze_path}/{category}/{table}.parquet
+        
+        Examples:
+          .../dnb_statistics/market_data/rates.parquet -> dataset=market_data, table=rates
+          .../dnb_public_register/metadata/registers.parquet -> dataset=metadata, table=registers
+          .../eiopa_data/solvency_ii/qrt_data.parquet -> dataset=solvency_ii, table=qrt_data
         
         Args:
           parquet_path: Path to parquet file
+          bronze_path: Bronze layer folder name (e.g., 'dnb_statistics', 'eiopa_data')
+                       If not provided, attempts to auto-detect from path
           
         Returns:
           Dictionary with 'dataset' and 'table' keys
           
         Raises:
-          ValueError: If path structure doesn't match expected patterns
+          ValueError: If path structure doesn't match expected pattern
         """
         from pathlib import Path
         
         path = Path(parquet_path)
         parts = path.parts
         
-        # Try dnb_statistics pattern first (backward compatibility)
+        if bronze_path:
+            # Use provided bronze_path to parse structure
+            try:
+                bronze_idx = parts.index(bronze_path)
+                if len(parts) > bronze_idx + 2:
+                    dataset = parts[bronze_idx + 1]  # Category/subdirectory
+                    table = path.stem  # Filename without .parquet extension
+                    return {"dataset": dataset, "table": table}
+                else:
+                    raise ValueError(
+                        f"Path must have at least 2 components after '{bronze_path}': "
+                        f"{{bronze_path}}/{{category}}/{{table}}.parquet"
+                    )
+            except ValueError as e:
+                if bronze_path not in parts:
+                    raise ValueError(
+                        f"Path does not contain bronze_path '{bronze_path}': {parquet_path}"
+                    ) from e
+                raise
+        
+        # Auto-detect: Look for "1-bronze" in path and use next component
         try:
-            stats_idx = parts.index("dnb_statistics")
-            if len(parts) > stats_idx + 2:
-                dataset = parts[stats_idx + 1]
-                table = path.stem  # filename without .parquet extension
+            bronze_idx = parts.index("1-bronze")
+            if len(parts) > bronze_idx + 3:
+                # Structure: .../1-bronze/{datasource}/{category}/{table}.parquet
+                datasource = parts[bronze_idx + 1]
+                dataset = parts[bronze_idx + 2]
+                table = path.stem
                 return {"dataset": dataset, "table": table}
         except ValueError:
-            pass  # Not a dnb_statistics path
+            pass
         
-        # Try dnb_public_register pattern
-        try:
-            register_idx = parts.index("dnb_public_register")
-            if len(parts) > register_idx + 2:
-                dataset = parts[register_idx + 1]
-                table = path.stem  # filename without .parquet extension
-                return {"dataset": dataset, "table": table}
-        except ValueError:
-            pass  # Not a dnb_public_register path
+        # Fallback: Use last 2 path components
+        # Assumes structure: .../{category}/{table}.parquet
+        if len(parts) >= 2:
+            dataset = parts[-2]
+            table = path.stem
+            return {"dataset": dataset, "table": table}
         
-        # Neither pattern matched
         raise ValueError(
-            f"Path does not match expected patterns. "
-            f"Expected '.../dnb_statistics/{{dataset}}/{{table}}.parquet' "
-            f"or '.../dnb_public_register/{{dataset}}/{{table}}.parquet'. "
-            f"Got: {parquet_path}"
+            f"Could not parse table path structure. "
+            f"Expected: ...{{bronze_path}}/{{category}}/{{table}}.parquet "
+            f"or provide bronze_path parameter. Got: {parquet_path}"
         )
     
     def load_parquet_from_local(
