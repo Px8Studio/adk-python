@@ -162,6 +162,7 @@ def upload_files(
     datasource_id: str,
     parquet_files: list[Path],
     dry_run: bool = False,
+    project_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Upload multiple parquet files to BigQuery.
@@ -170,6 +171,7 @@ def upload_files(
         datasource_id: Datasource identifier
         parquet_files: List of parquet file paths
         dry_run: If True, only show what would be uploaded
+        project_id: GCP project ID (optional, will use env var if not provided)
     
     Returns:
         Upload statistics
@@ -203,13 +205,42 @@ def upload_files(
         logger.info("=" * 70 + "\n")
         return {"dry_run": True, "files": len(parquet_files)}
     
-    # Get GCP project from env (required for actual uploads)
-    project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    # Get GCP project ID (CLI arg takes precedence over env var)
     if not project_id:
-        raise ValueError(
-            "GOOGLE_CLOUD_PROJECT not set. "
-            "Set it in your .env file or environment."
-        )
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    
+    if not project_id:
+        # Find .env file location for helpful error message
+        env_file = Path.cwd() / ".env"
+        env_exists = env_file.exists()
+        
+        error_msg = [
+            "\n" + "=" * 70,
+            "ERROR: GOOGLE_CLOUD_PROJECT not configured",
+            "=" * 70,
+            "",
+            "The GCP project ID is required for uploading to BigQuery.",
+            "",
+            "Choose one of the following options:",
+            "",
+            "1. Add to .env file:",
+            f"   File: {env_file}",
+            f"   Status: {'EXISTS' if env_exists else 'NOT FOUND'}",
+            "   Add line: GOOGLE_CLOUD_PROJECT=your-project-id",
+            "",
+            "2. Set environment variable:",
+            "   $env:GOOGLE_CLOUD_PROJECT='your-project-id'",
+            "",
+            "3. Pass as command-line argument:",
+            f"   python -m backend.gcp.upload_parquet --datasource {datasource_id} --all --project-id your-project-id",
+            "",
+            "To find your project ID, run:",
+            "   gcloud config get-value project",
+            "   gcloud projects list",
+            "",
+            "=" * 70,
+        ]
+        raise ValueError("\n".join(error_msg))
     
     logger.info(f"Project: {project_id}")
     logger.info(f"Location: {config.bigquery.location}")
@@ -250,44 +281,27 @@ def upload_files(
             continue
     
     # Summary
-    overall_elapsed = (datetime.now() - overall_start).total_seconds()
+    overall_duration = (datetime.now() - overall_start).total_seconds()
     
     logger.info("\n" + "=" * 70)
-    logger.info("✓ UPLOAD COMPLETE")
-    logger.info(f"  Total time: {overall_elapsed:.2f}s ({overall_elapsed/60:.1f}m)")
-    logger.info(f"  Successful: {len(results)}/{len(parquet_files)}")
-    
-    if errors:
-        logger.warning(f"  Failed: {len(errors)}/{len(parquet_files)}")
-        logger.warning("\n  Failed files:")
-        for err in errors:
-            logger.warning(f"    • {err['file']}: {err['error']}")
-    
-    # Table summary
-    if results:
-        total_rows = sum(r["num_rows"] for r in results)
-        total_size = sum(r["size_bytes"] for r in results)
-        
-        logger.info(f"\n  Total rows loaded: {total_rows:,}")
-        logger.info(f"  Total size: {total_size / (1024**3):.2f} GB")
-        logger.info(f"\n  Tables created:")
-        for r in results:
-            logger.info(f"    • {r['table_name']}: {r['num_rows']:,} rows")
-    
+    logger.info("UPLOAD SUMMARY")
+    logger.info("=" * 70)
+    logger.info(f"Datasource: {config.datasource.name}")
+    logger.info(f"Successful: {len(results)}")
+    logger.info(f"Failed: {len(errors)}")
+    logger.info(f"Total time: {overall_duration:.2f}s")
     logger.info("=" * 70 + "\n")
     
-    # BigQuery UI link
-    logger.info(f"View in BigQuery UI:")
-    logger.info(f"https://console.cloud.google.com/bigquery?project={project_id}&d={config.bigquery.dataset_id}&p={project_id}&page=dataset")
-    logger.info("")
+    if errors:
+        logger.error("Failed uploads:")
+        for err in errors:
+            logger.error(f"  • {err['file']}: {err['error']}")
     
     return {
         "datasource": datasource_id,
-        "successes": len(results),
-        "failures": len(errors),
-        "total_rows": sum(r["num_rows"] for r in results) if results else 0,
-        "total_size_gb": sum(r["size_bytes"] for r in results) / (1024**3) if results else 0,
-        "elapsed_seconds": overall_elapsed,
+        "successful": len(results),
+        "failed": len(errors),
+        "duration_seconds": overall_duration,
         "results": results,
         "errors": errors,
     }
@@ -321,6 +335,9 @@ Examples:
 
   # Create new datasource profile
   python -m backend.gcp.upload_parquet --create-profile eiopa_data
+
+  # Specify project ID explicitly
+  python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --project-id your-project-id
         """,
     )
     
@@ -343,6 +360,14 @@ Examples:
         type=str,
         metavar="DATASOURCE_ID",
         help="Datasource to upload (e.g., dnb_statistics)",
+    )
+    
+    # GCP configuration
+    parser.add_argument(
+        "--project-id",
+        type=str,
+        metavar="PROJECT_ID",
+        help="GCP project ID (overrides GOOGLE_CLOUD_PROJECT env var)",
     )
     
     # Upload scope
@@ -473,6 +498,7 @@ def main():
             datasource_id=datasource_id,
             parquet_files=parquet_files,
             dry_run=args.dry_run,
+            project_id=args.project_id,
         )
     
     except KeyboardInterrupt:
