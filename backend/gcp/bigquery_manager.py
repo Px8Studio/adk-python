@@ -362,6 +362,59 @@ class BigQueryManager:
             "labels": table.labels,
         }
     
+    def get_dataset_storage_info(self, dataset_id: str) -> dict[str, Any]:
+        """
+        Get storage information for all tables in a dataset.
+        
+        Args:
+            dataset_id: Dataset ID
+        
+        Returns:
+            Dict with storage statistics including size in bytes, GB, rows, and table count
+        """
+        dataset_ref = f"{self.client.project}.{dataset_id}"
+        
+        # Get all tables in dataset
+        tables = list(self.client.list_tables(dataset_ref))
+        
+        total_bytes = 0
+        total_rows = 0
+        table_stats = []
+        
+        for table_item in tables:
+            # Get detailed table info
+            table = self.client.get_table(table_item.reference)
+            
+            table_bytes = table.num_bytes or 0
+            table_rows = table.num_rows or 0
+            
+            total_bytes += table_bytes
+            total_rows += table_rows
+            
+            table_stats.append({
+                "table_id": table.table_id,
+                "num_rows": table_rows,
+                "num_bytes": table_bytes,
+                "size_mb": table_bytes / (1024 * 1024),
+                "size_gb": table_bytes / (1024 * 1024 * 1024),
+                "created": table.created,
+                "modified": table.modified,
+            })
+        
+        # Sort by size descending
+        table_stats.sort(key=lambda x: x["num_bytes"], reverse=True)
+        
+        return {
+            "dataset_id": dataset_id,
+            "project": self.client.project,
+            "num_tables": len(tables),
+            "total_rows": total_rows,
+            "total_bytes": total_bytes,
+            "total_mb": total_bytes / (1024 * 1024),
+            "total_gb": total_bytes / (1024 * 1024 * 1024),
+            "tables": table_stats,
+        }
+    
     # ==========================================
     # Data Loading
     # ==========================================

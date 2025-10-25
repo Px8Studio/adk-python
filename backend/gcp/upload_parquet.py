@@ -20,6 +20,9 @@ Usage:
     # Dry run (preview without uploading)
     python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --dry-run
 
+    # Check BigQuery storage usage
+    python -m backend.gcp.upload_parquet --datasource dnb_statistics --storage-info
+
     # Create new datasource profile
     python -m backend.gcp.upload_parquet --create-profile eiopa_data
 """
@@ -332,6 +335,9 @@ Examples:
   # Dry run
   python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --dry-run
 
+  # Check BigQuery storage usage
+  python -m backend.gcp.upload_parquet --datasource dnb_statistics --storage-info
+
   # Create new datasource profile
   python -m backend.gcp.upload_parquet --create-profile eiopa_data
 
@@ -402,6 +408,12 @@ Examples:
         help="List all available parquet files for the datasource and exit",
     )
     
+    parser.add_argument(
+        "--storage-info",
+        action="store_true",
+        help="Show BigQuery storage usage for the datasource dataset",
+    )
+    
     return parser.parse_args()
 
 
@@ -458,6 +470,55 @@ def main():
         sys.exit(1)
     
     datasource_id = args.datasource
+    
+    # Storage info mode
+    if args.storage_info:
+        try:
+            config = load_datasource_config(datasource_id)
+            
+            # Get project ID
+            project_id = args.project_id or os.getenv("GOOGLE_CLOUD_PROJECT")
+            if not project_id:
+                logger.error("Error: GOOGLE_CLOUD_PROJECT not set")
+                logger.error("Set it in .env or pass --project-id")
+                sys.exit(1)
+            
+            # Initialize managers
+            auth = GCPAuth(project_id=project_id)
+            bq_mgr = BigQueryManager(auth, location=config.bigquery.location)
+            
+            # Get storage info
+            logger.info("\n" + "=" * 70)
+            logger.info(f"BIGQUERY STORAGE INFO: {config.datasource.name}")
+            logger.info("=" * 70)
+            
+            storage_info = bq_mgr.get_dataset_storage_info(config.bigquery.dataset_id)
+            
+            logger.info(f"Dataset: {storage_info['project']}.{storage_info['dataset_id']}")
+            logger.info(f"Tables: {storage_info['num_tables']}")
+            logger.info(f"Total Rows: {storage_info['total_rows']:,}")
+            logger.info(f"Total Size: {storage_info['total_gb']:.2f} GB ({storage_info['total_mb']:.2f} MB)")
+            logger.info("=" * 70)
+            logger.info("\nTop 10 Largest Tables:")
+            logger.info("-" * 70)
+            
+            for i, table in enumerate(storage_info['tables'][:10], 1):
+                logger.info(
+                    f"{i:2d}. {table['table_id']:50s} "
+                    f"{table['num_rows']:>10,} rows  "
+                    f"{table['size_mb']:>8.2f} MB"
+                )
+            
+            if len(storage_info['tables']) > 10:
+                logger.info(f"\n... and {len(storage_info['tables']) - 10} more tables")
+            
+            logger.info("=" * 70 + "\n")
+            
+        except Exception as exc:
+            logger.error(f"Failed to get storage info: {exc}", exc_info=True)
+            sys.exit(1)
+        
+        sys.exit(0)
     
     # Discover files
     try:
