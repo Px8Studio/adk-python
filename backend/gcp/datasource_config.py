@@ -44,15 +44,6 @@ class BigQueryConfig(BaseModel):
     table_defaults: TableDefaults = Field(default_factory=TableDefaults)
 
 
-class StorageConfig(BaseModel):
-    """Cloud Storage configuration for a datasource."""
-    bucket_name: str
-    location: str = "us-central1"
-    storage_class: str = "STANDARD"
-    staging_prefix: str = "bronze"
-    labels: dict[str, str] = Field(default_factory=dict)
-
-
 class SchemaConfig(BaseModel):
     """Schema detection configuration."""
     auto_detect: bool = True
@@ -105,18 +96,12 @@ class DatasourceConfig(BaseModel):
         super().__init__(**data)
         # Parse nested configs
         self._bigquery_config = BigQueryConfig(**self.gcp.get("bigquery", {}))
-        self._storage_config = StorageConfig(**self.gcp.get("storage", {}))
         self._pipeline_config = PipelineConfig(**self.pipeline)
     
     @property
     def bigquery(self) -> BigQueryConfig:
         """Get BigQuery configuration."""
         return self._bigquery_config
-    
-    @property
-    def storage(self) -> StorageConfig:
-        """Get Storage configuration."""
-        return self._storage_config
     
     @property
     def pipeline_config(self) -> PipelineConfig:

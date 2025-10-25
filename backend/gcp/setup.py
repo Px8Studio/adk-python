@@ -7,13 +7,7 @@ Usage:
     # List available datasources
     python -m backend.gcp.setup --list-datasources
 
-    # Setup all resources for a datasource
-    python -m backend.gcp.setup --datasource dnb_statistics --all
-
-    # Setup only storage
-    python -m backend.gcp.setup --datasource dnb_statistics --bucket
-
-    # Setup only BigQuery
+    # Setup BigQuery dataset for a datasource
     python -m backend.gcp.setup --datasource dnb_statistics --dataset
 
     # Validate existing setup
@@ -32,7 +26,6 @@ from dotenv import load_dotenv
 
 from .auth import GCPAuth
 from .bigquery_manager import BigQueryManager
-from .storage_manager import StorageManager
 from .datasource_config import (
     load_datasource_config,
     list_datasources,
@@ -91,40 +84,6 @@ def setup_authentication() -> GCPAuth:
     return auth
 
 
-def setup_storage(auth: GCPAuth, config: DatasourceConfig) -> bool:
-    """Create GCS bucket."""
-    logger.info("=" * 70)
-    logger.info("SETTING UP GOOGLE CLOUD STORAGE")
-    logger.info("=" * 70)
-    
-    storage_mgr = StorageManager(auth)
-    bucket_name = config.storage.bucket_name
-    location = config.storage.location
-    
-    try:
-        storage_mgr.create_bucket(
-            bucket_name,
-            location=location,
-            storage_class=config.storage.storage_class,
-            labels=config.storage.labels,
-        )
-        
-        # Verify
-        bucket_info = storage_mgr.get_bucket_info(bucket_name)
-        logger.info(f"\nBucket Details:")
-        logger.info(f"  Name: {bucket_info['name']}")
-        logger.info(f"  Location: {bucket_info['location']}")
-        logger.info(f"  Storage Class: {bucket_info['storage_class']}")
-        logger.info(f"  Created: {bucket_info['time_created']}")
-        
-        logger.info("\n✓ Storage setup complete")
-        return True
-    
-    except Exception as exc:
-        logger.error(f"✗ Failed to setup storage: {exc}", exc_info=True)
-        return False
-
-
 def setup_bigquery(auth: GCPAuth, config: DatasourceConfig) -> bool:
     """Create BigQuery dataset."""
     logger.info("=" * 70)
@@ -158,7 +117,7 @@ def setup_bigquery(auth: GCPAuth, config: DatasourceConfig) -> bool:
 
 
 def validate_setup(auth: GCPAuth, config: DatasourceConfig) -> bool:
-    """Validate the entire GCP setup."""
+    """Validate the GCP setup."""
     logger.info("=" * 70)
     logger.info("VALIDATING GCP SETUP")
     logger.info("=" * 70)
@@ -173,24 +132,8 @@ def validate_setup(auth: GCPAuth, config: DatasourceConfig) -> bool:
         logger.error(f"  ✗ Authentication failed: {exc}")
         all_valid = False
     
-    # Validate storage
-    logger.info("\n2. Cloud Storage")
-    try:
-        storage_mgr = StorageManager(auth)
-        if storage_mgr.bucket_exists(config.storage.bucket_name):
-            logger.info(f"  ✓ Bucket exists: gs://{config.storage.bucket_name}")
-            bucket_info = storage_mgr.get_bucket_info(config.storage.bucket_name)
-            logger.info(f"    Location: {bucket_info['location']}")
-            logger.info(f"    Storage Class: {bucket_info['storage_class']}")
-        else:
-            logger.error(f"  ✗ Bucket not found: {config.storage.bucket_name}")
-            all_valid = False
-    except Exception as exc:
-        logger.error(f"  ✗ Storage validation failed: {exc}")
-        all_valid = False
-    
     # Validate BigQuery
-    logger.info("\n3. BigQuery")
+    logger.info("\n2. BigQuery")
     try:
         bq_mgr = BigQueryManager(auth, location=config.bigquery.location)
         if bq_mgr.dataset_exists(config.bigquery.dataset_id):
@@ -233,13 +176,7 @@ Examples:
   # List available datasources
   python -m backend.gcp.setup --list-datasources
 
-  # Setup everything for a datasource
-  python -m backend.gcp.setup --datasource dnb_statistics --all
-
-  # Setup only storage
-  python -m backend.gcp.setup --datasource dnb_statistics --bucket
-
-  # Setup only BigQuery
+  # Setup BigQuery dataset for a datasource
   python -m backend.gcp.setup --datasource dnb_statistics --dataset
 
   # Validate existing setup
@@ -265,21 +202,9 @@ Environment Variables:
     )
     
     parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Setup all resources (bucket + dataset)",
-    )
-    
-    parser.add_argument(
-        "--bucket",
-        action="store_true",
-        help="Setup GCS bucket only",
-    )
-    
-    parser.add_argument(
         "--dataset",
         action="store_true",
-        help="Setup BigQuery dataset only",
+        help="Setup BigQuery dataset",
     )
     
     parser.add_argument(
@@ -307,7 +232,6 @@ def main():
                 try:
                     config = load_datasource_config(ds)
                     logger.info(f"  • {ds:30s} - {config.datasource.name}")
-                    logger.info(f"    Bucket: {config.storage.bucket_name}")
                     logger.info(f"    Dataset: {config.bigquery.dataset_id}")
                 except Exception as exc:
                     logger.info(f"  • {ds:30s} - (invalid profile: {exc})")
@@ -336,7 +260,6 @@ def main():
     logger.info(f"Datasource: {args.datasource}")
     logger.info(f"Project ID: {project_id}")
     logger.info(f"Location: {config.bigquery.location}")
-    logger.info(f"GCS Bucket: {config.storage.bucket_name}")
     logger.info(f"BQ Dataset: {config.bigquery.dataset_id}")
     logger.info("=" * 70 + "\n")
     
@@ -353,20 +276,14 @@ def main():
     if args.validate:
         success = validate_setup(auth, config)
     
-    elif args.all:
-        success = setup_storage(auth, config) and setup_bigquery(auth, config)
+    elif args.dataset:
+        success = setup_bigquery(auth, config)
         if success:
             logger.info("\n")
             validate_setup(auth, config)
     
-    elif args.bucket:
-        success = setup_storage(auth, config)
-    
-    elif args.dataset:
-        success = setup_bigquery(auth, config)
-    
     else:
-        logger.error("No operation specified. Use --all, --bucket, --dataset, or --validate")
+        logger.error("No operation specified. Use --dataset or --validate")
         sys.exit(1)
     
     # Exit with appropriate code

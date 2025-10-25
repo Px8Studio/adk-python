@@ -6,7 +6,7 @@
 
 ## 📋 Overview
 
-This guide covers uploading data from **any configured datasource** to BigQuery via Google Cloud Storage (GCS) staging using the **profile-based multi-datasource architecture**.
+This guide covers uploading data from **any configured datasource** to BigQuery **directly from local parquet files** using the **profile-based multi-datasource architecture**.
 
 **Supported Datasources:**
 - **DNB Statistics**: Economic and financial statistics (71 endpoints, time-series data)
@@ -19,10 +19,11 @@ This guide covers uploading data from **any configured datasource** to BigQuery 
 - 🔒 **Type-Safe Configuration** - Pydantic validation catches errors early
 - 🚀 **Zero Code Changes** - Add new datasources by creating YAML files
 - 📊 **Self-Documenting** - Profiles contain all metadata and configuration
+- ⚡ **Direct Upload** - No GCS staging required, straight from local to BigQuery
 
 **Pipeline Flow:**
 ```
-Bronze Layer (Parquet files)
+Bronze Layer (Local Parquet files)
   ↓
 Profile Loader (datasource_config.py)
   ↓
@@ -30,9 +31,7 @@ Configuration (profiles/{datasource}.yaml)
   ↓
 Generic Orchestrator (upload_parquet.py)
   ↓
-GCS Staging (gs://orkhon-{datasource}/bronze/)
-  ↓
-BigQuery Load Job
+Direct Upload (load_table_from_file)
   ↓
 BigQuery Tables ({datasource} dataset)
   ↓
@@ -54,7 +53,7 @@ Ready for Analysis (Data Science Agent, BI tools, etc.)
 
 2. **Enable required APIs**:
    ```powershell
-   gcloud services enable bigquery.googleapis.com storage.googleapis.com
+   gcloud services enable bigquery.googleapis.com
    ```
 
 3. **Set default project**:
@@ -81,10 +80,6 @@ gcloud projects add-iam-policy-binding your-project-id \
   --member="serviceAccount:orkhon-uploader@your-project-id.iam.gserviceaccount.com" \
   --role="roles/bigquery.jobUser"
 
-gcloud projects add-iam-policy-binding your-project-id \
-  --member="serviceAccount:orkhon-uploader@your-project-id.iam.gserviceaccount.com" \
-  --role="roles/storage.admin"
-
 # Download key
 gcloud iam service-accounts keys create orkhon-uploader-key.json \
   --iam-account=orkhon-uploader@your-project-id.iam.gserviceaccount.com
@@ -106,7 +101,7 @@ Only one environment variable is required:
 GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 ```
 
-All other configuration (bucket names, dataset IDs, partitioning, clustering, etc.) is defined in the datasource profile.
+All other configuration (dataset IDs, partitioning, clustering, etc.) is defined in the datasource profile.
 
 ### 4. Python Dependencies
 
@@ -147,20 +142,10 @@ Available datasources (2):
 
 ### 2. Setup Infrastructure
 
-Create GCS bucket and BigQuery dataset for a datasource:
+Create BigQuery dataset for a datasource:
 
 ```powershell
-# Setup everything
-poetry run python -m backend.gcp.setup --datasource <datasource_id> --all
-
-# Or individually
-poetry run python -m backend.gcp.setup --datasource <datasource_id> --bucket
-poetry run python -m backend.gcp.setup --datasource <datasource_id> --dataset
-```
-
-**Example:**
-```powershell
-poetry run python -m backend.gcp.setup --datasource dnb_statistics --all
+poetry run python -m backend.gcp.setup --datasource dnb_statistics --dataset
 ```
 
 ### 3. Test with Dry Run

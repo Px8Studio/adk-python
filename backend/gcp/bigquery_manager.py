@@ -20,7 +20,6 @@ from google.cloud import bigquery
 from google.cloud.exceptions import Conflict, NotFound
 
 from backend.gcp.auth import GCPAuth
-from backend.gcp.storage_manager import StorageManager
 
 logger = logging.getLogger(__name__)
 
@@ -418,6 +417,69 @@ class BigQueryManager:
         
         return load_job
     
+    def load_table_from_file(
+        self,
+        file_path: str,
+        dataset_id: str,
+        table_id: str,
+        *,
+        source_format: str = "PARQUET",
+        write_disposition: str = "WRITE_TRUNCATE",
+        autodetect: bool = True,
+    ) -> bigquery.LoadJob:
+        """
+        Load data from local file directly into BigQuery table (no GCS staging).
+        
+        Args:
+            file_path: Local file path
+            dataset_id: Dataset ID
+            table_id: Table ID
+            source_format: Source format (PARQUET, CSV, JSON, AVRO)
+            write_disposition: WRITE_TRUNCATE, WRITE_APPEND, WRITE_EMPTY
+            autodetect: Auto-detect schema
+        
+        Returns:
+            Completed LoadJob
+        
+        Note:
+            This method uploads directly from local file to BigQuery without GCS staging.
+            Best for files under 10 GB. For larger files, consider streaming or GCS staging.
+        """
+        from pathlib import Path
+        
+        local_file = Path(file_path)
+        if not local_file.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        table_ref = f"{self.client.project}.{dataset_id}.{table_id}"
+        
+        job_config = bigquery.LoadJobConfig(
+            source_format=getattr(bigquery.SourceFormat, source_format),
+            write_disposition=write_disposition,
+            autodetect=autodetect,
+        )
+        
+        logger.info(f"Loading {local_file.name} into {table_ref}")
+        logger.info(f"  Format: {source_format}")
+        logger.info(f"  Write mode: {write_disposition}")
+        logger.info(f"  File size: {local_file.stat().st_size / (1024**2):.2f} MB")
+        
+        with open(file_path, "rb") as source_file:
+            load_job = self.client.load_table_from_file(
+                source_file,
+                table_ref,
+                job_config=job_config,
+            )
+        
+        # Wait for completion
+        load_job.result()
+        
+        # Get final table info
+        table = self.client.get_table(table_ref)
+        logger.info(f"✓ Loaded {table.num_rows:,} rows into {table_ref}")
+        
+        return load_job
+    
     # ==========================================
     # Query Operations
     # ==========================================
@@ -669,29 +731,24 @@ class BigQueryManager:
         dataset_id: str,
         *,
         table_id: str | None = None,
-        gcs_bucket: str | None = None,
-        gcs_staging_prefix: str = "bronze",
         partition_field: str | None = None,
         clustering_fields: list[str] | None = None,
         write_disposition: str = "WRITE_TRUNCATE",
         auto_detect_table_name: bool = True,
     ) -> dict[str, Any]:
         """
-        Full pipeline: Load parquet from local file to BigQuery.
+        Full pipeline: Load parquet from local file directly to BigQuery (no GCS staging).
         
         Workflow:
         1. Auto-detect table name from path (if enabled)
         2. Infer BigQuery schema from parquet
-        3. Upload parquet to GCS staging
-        4. Create BigQuery table with schema/partitioning
-        5. Load data from GCS into BigQuery
+        3. Create BigQuery table with schema/partitioning
+        4. Load data directly from local file into BigQuery
         
         Args:
             parquet_path: Local parquet file path
             dataset_id: BigQuery dataset ID
             table_id: Table ID (auto-detected from path if not provided)
-            gcs_bucket: GCS bucket name (uses dataset_id-data if not provided)
-            gcs_staging_prefix: GCS path prefix (default: 'bronze')
             partition_field: Optional field for time partitioning
             clustering_fields: Optional fields for clustering
             write_disposition: How to handle existing data (WRITE_TRUNCATE, WRITE_APPEND)
@@ -741,11 +798,6 @@ class BigQueryManager:
         if table_id is None:
             raise ValueError("table_id must be provided or auto_detect_table_name must be True")
         
-        # Default GCS bucket
-        if gcs_bucket is None:
-            gcs_bucket = f"{dataset_id}-data"
-            logger.info(f"Using default GCS bucket: {gcs_bucket}")
-        
         # Step 1: Infer schema from parquet
         logger.info("Step 1: Inferring schema from parquet...")
         schema = self.parquet_to_bigquery_schema(str(local_path))
@@ -762,38 +814,17 @@ class BigQueryManager:
         )
         logger.info(f"  ✓ Table ready: {dataset_id}.{table_id}\n")
         
-        # Step 3: Upload to GCS
-        logger.info("Step 3: Uploading to GCS staging...")
-        storage = StorageManager(self.auth)
+        # Step 3: Load data directly from local file
+        logger.info("Step 3: Loading data directly into BigQuery...")
+        logger.info(f"  File size: {local_path.stat().st_size / (1024**2):.2f} MB")
         
-        # Build GCS path
-        if auto_detect_table_name:
-            try:
-                table_info = self.parse_table_path(str(local_path))
-                gcs_path = f"{gcs_staging_prefix}/{table_info['category']}"
-                if table_info["subcategory"]:
-                    gcs_path += f"/{table_info['subcategory']}"
-                gcs_path += f"/{local_path.name}"
-            except ValueError:
-                gcs_path = f"{gcs_staging_prefix}/{local_path.name}"
-        else:
-            gcs_path = f"{gcs_staging_prefix}/{local_path.name}"
-        
-        gcs_uri = storage.upload_file(
-            local_path=str(local_path),
-            bucket_name=gcs_bucket,
-            blob_path=gcs_path,
-        )
-        logger.info(f"  ✓ Uploaded to: {gcs_uri}\n")
-        
-        # Step 4: Load into BigQuery
-        logger.info("Step 4: Loading into BigQuery...")
-        load_job = self.load_table_from_gcs(
-            gcs_uri=gcs_uri,
+        load_job = self.load_table_from_file(
+            file_path=str(local_path),
             dataset_id=dataset_id,
             table_id=table_id,
             source_format="PARQUET",
             write_disposition=write_disposition,
+            autodetect=False,  # We already created table with schema
         )
         
         # Get final table info
@@ -803,7 +834,6 @@ class BigQueryManager:
         stats = {
             "table_name": table_id,
             "table_ref": table_ref,
-            "gcs_uri": gcs_uri,
             "num_rows": final_table.num_rows,
             "size_bytes": final_table.num_bytes,
             "schema_fields": len(schema),

@@ -213,7 +213,6 @@ def upload_files(
     
     logger.info(f"Project: {project_id}")
     logger.info(f"Location: {config.bigquery.location}")
-    logger.info(f"GCS Bucket: {config.storage.bucket_name}")
     logger.info(f"BQ Dataset: {config.bigquery.dataset_id}")
     logger.info(f"Files to upload: {len(parquet_files)}")
     logger.info("=" * 70 + "\n")
@@ -235,7 +234,6 @@ def upload_files(
             stats = bq_mgr.load_parquet_from_local(
                 parquet_path=str(parquet_file),
                 dataset_id=config.bigquery.dataset_id,
-                gcs_bucket=config.storage.bucket_name,
                 partition_field=config.bigquery.table_defaults.partition_field,
                 clustering_fields=config.bigquery.table_defaults.clustering_fields,
                 write_disposition=config.bigquery.table_defaults.write_disposition,

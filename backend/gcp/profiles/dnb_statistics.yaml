@@ -31,18 +31,6 @@ gcp:
       
       # Replace existing data on upload
       write_disposition: WRITE_TRUNCATE
-  
-  # Cloud Storage Configuration
-  storage:
-    bucket_name: orkhon-dnb-statistics
-    location: us-central1
-    storage_class: STANDARD
-    staging_prefix: bronze
-    labels:
-      datasource: dnb-statistics
-      purpose: etl-staging
-      project: orkhon
-      environment: development
 
 # Data Pipeline Configuration
 pipeline:
