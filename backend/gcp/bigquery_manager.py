@@ -569,6 +569,10 @@ class BigQueryManager:
         Returns:
             List of BigQuery SchemaField objects
         
+        Note:
+            Schema is inferred directly from Parquet types. String columns stay as STRING.
+            To use timestamp partitioning, the source Parquet must have proper datetime types.
+        
         Example:
             >>> schema = BigQueryManager.parquet_to_bigquery_schema("data.parquet")
             >>> bq.create_table("dataset", "table", schema=schema)
@@ -803,16 +807,22 @@ class BigQueryManager:
         schema = self.parquet_to_bigquery_schema(str(local_path))
         logger.info(f"  ✓ Found {len(schema)} columns\n")
         
-        # Step 2: Create BigQuery table
-        logger.info("Step 2: Creating/verifying BigQuery table...")
-        self.create_table(
-            dataset_id=dataset_id,
-            table_id=table_id,
-            schema=schema,
-            partition_field=partition_field,
-            clustering_fields=clustering_fields,
-        )
-        logger.info(f"  ✓ Table ready: {dataset_id}.{table_id}\n")
+        # Step 2: Create BigQuery table (only if partitioning/clustering needed)
+        # For simple loads, we'll let BigQuery create the table automatically
+        if partition_field or clustering_fields:
+            logger.info("Step 2: Creating/verifying BigQuery table...")
+            self.create_table(
+                dataset_id=dataset_id,
+                table_id=table_id,
+                schema=schema,
+                partition_field=partition_field,
+                clustering_fields=clustering_fields,
+            )
+            logger.info(f"  ✓ Table ready: {dataset_id}.{table_id}\n")
+            autodetect_schema = False  # Use our pre-created schema
+        else:
+            logger.info("Step 2: Skipping table creation (will auto-create during load)\n")
+            autodetect_schema = True  # Let BigQuery infer schema from Parquet
         
         # Step 3: Load data directly from local file
         logger.info("Step 3: Loading data directly into BigQuery...")
@@ -824,7 +834,7 @@ class BigQueryManager:
             table_id=table_id,
             source_format="PARQUET",
             write_disposition=write_disposition,
-            autodetect=False,  # We already created table with schema
+            autodetect=autodetect_schema,
         )
         
         # Get final table info

@@ -186,7 +186,6 @@ def upload_files(
     
     if dry_run:
         logger.info(f"Location: {config.bigquery.location}")
-        logger.info(f"GCS Bucket: {config.storage.bucket_name}")
         logger.info(f"BQ Dataset: {config.bigquery.dataset_id}")
         logger.info(f"Files to upload: {len(parquet_files)}")
         logger.info("=" * 70 + "\n")
