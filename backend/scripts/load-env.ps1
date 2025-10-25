@@ -1,50 +1,47 @@
-#!/usr/bin/env pwsh
-<#
-.SYNOPSIS
-    Load environment variables from .env file into current PowerShell session
+# Load environment variables from .env file
 
-.DESCRIPTION
-    Reads .env file and sets environment variables for the current session.
-    Useful for running Python scripts that expect environment variables to be set.
+param(
+    [string]$EnvFile = ".env"
+)
 
-.EXAMPLE
-    . .\backend\scripts\load-env.ps1
-    poetry run python -m backend.gcp.upload_parquet --datasource dnb_statistics --all
-#>
-
-$ErrorActionPreference = 'Stop'
-
-$EnvFile = Join-Path $PSScriptRoot ".." ".." ".env"
-
+# Check if .env file exists
 if (-not (Test-Path $EnvFile)) {
-    Write-Warning ".env file not found at: $EnvFile"
+    Write-Host "Error: $EnvFile file not found" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "Loading environment variables from .env..." -ForegroundColor Cyan
+Write-Host "Loading environment variables from $EnvFile..." -ForegroundColor Green
 
+# Read and parse .env file
 Get-Content $EnvFile | ForEach-Object {
     $line = $_.Trim()
     
     # Skip empty lines and comments
-    if ($line -eq "" -or $line.StartsWith("#")) {
+    if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith('#')) {
         return
     }
     
-    # Parse KEY=VALUE
+    # Parse KEY=VALUE format
     if ($line -match '^([^=]+)=(.*)$') {
-        $key = $Matches[1].Trim()
-        $value = $Matches[2].Trim()
+        $key = $matches[1].Trim()
+        $value = $matches[2].Trim()
         
         # Remove quotes if present
-        $value = $value -replace '^"(.*)"$', '$1'
-        $value = $value -replace "^'(.*)'$", '$1'
+        $value = $value -replace '^[''"]|[''"]$', ''
         
         # Set environment variable
-        Set-Item -Path "env:$key" -Value $value
-        Write-Host "  ✓ $key" -ForegroundColor Green
+        [Environment]::SetEnvironmentVariable($key, $value, 'Process')
+        Write-Host "  Set $key" -ForegroundColor Gray
     }
 }
 
 Write-Host "`nEnvironment variables loaded successfully!" -ForegroundColor Green
-Write-Host "Project ID: $env:GOOGLE_CLOUD_PROJECT" -ForegroundColor Yellow
+
+# Display key variables (without exposing sensitive values)
+if ($env:GOOGLE_CLOUD_PROJECT) {
+    Write-Host "Project ID: $env:GOOGLE_CLOUD_PROJECT" -ForegroundColor Yellow
+}
+
+if ($env:GOOGLE_APPLICATION_CREDENTIALS) {
+    Write-Host "Credentials file: $env:GOOGLE_APPLICATION_CREDENTIALS" -ForegroundColor Yellow
+}
