@@ -727,71 +727,55 @@ class BigQueryManager:
         return table_name
     
     @staticmethod
-    def parse_table_path(parquet_path: str, bronze_path: str | None = None) -> dict[str, str]:
+    def parse_table_path(parquet_path: str) -> Dict[str, str]:
         """
         Parse table information from parquet file path.
         
-        Expected path structure: .../<bronze_path>/<dataset>/<table>.parquet
+        Supports two path structures:
+        1. dnb_statistics: .../dnb_statistics/{dataset}/{table}.parquet
+        2. dnb_public_register: .../dnb_public_register/{dataset}/{table}.parquet
         
         Args:
-          parquet_path: Path to the parquet file
-          bronze_path: Bronze layer folder name (e.g., 'dnb_statistics', 'dnb_public_register').
-                       If None, will attempt to auto-detect from common datasources.
+          parquet_path: Path to parquet file
           
         Returns:
           Dictionary with 'dataset' and 'table' keys
           
         Raises:
-          ValueError: If path structure doesn't match expected format
+          ValueError: If path structure doesn't match expected patterns
         """
         from pathlib import Path
         
-        parts = Path(parquet_path).parts
+        path = Path(parquet_path)
+        parts = path.parts
         
-        # Try to find the bronze_path in the path
-        datasource_idx = None
-        datasource = None
+        # Try dnb_statistics pattern first (backward compatibility)
+        try:
+            stats_idx = parts.index("dnb_statistics")
+            if len(parts) > stats_idx + 2:
+                dataset = parts[stats_idx + 1]
+                table = path.stem  # filename without .parquet extension
+                return {"dataset": dataset, "table": table}
+        except ValueError:
+            pass  # Not a dnb_statistics path
         
-        if bronze_path:
-            # Use provided bronze_path
-            try:
-                datasource_idx = parts.index(bronze_path)
-                datasource = bronze_path
-            except ValueError:
-                raise ValueError(
-                    f"Path does not contain bronze_path '{bronze_path}': {parquet_path}"
-                )
-        else:
-            # Auto-detect from common datasources (legacy behavior)
-            for ds in ['dnb_statistics', 'dnb_public_register']:
-                try:
-                    datasource_idx = parts.index(ds)
-                    datasource = ds
-                    break
-                except ValueError:
-                    continue
-            
-            if datasource_idx is None:
-                raise ValueError(
-                    f"Path does not contain known datasource folders. "
-                    f"Please provide bronze_path explicitly.\n"
-                    f"Path: {parquet_path}"
-                )
+        # Try dnb_public_register pattern
+        try:
+            register_idx = parts.index("dnb_public_register")
+            if len(parts) > register_idx + 2:
+                dataset = parts[register_idx + 1]
+                table = path.stem  # filename without .parquet extension
+                return {"dataset": dataset, "table": table}
+        except ValueError:
+            pass  # Not a dnb_public_register path
         
-        # Check if we have enough parts after the datasource
-        if len(parts) < datasource_idx + 3:
-            raise ValueError(
-                f"Invalid path structure. Expected: .../{datasource}/<dataset>/<table>.parquet, "
-                f"got: {parquet_path}"
-            )
-        
-        dataset = parts[datasource_idx + 1]
-        table = Path(parts[datasource_idx + 2]).stem  # Remove .parquet extension
-        
-        return {
-            'dataset': dataset,
-            'table': table
-        }
+        # Neither pattern matched
+        raise ValueError(
+            f"Path does not match expected patterns. "
+            f"Expected '.../dnb_statistics/{{dataset}}/{{table}}.parquet' "
+            f"or '.../dnb_public_register/{{dataset}}/{{table}}.parquet'. "
+            f"Got: {parquet_path}"
+        )
     
     def load_parquet_from_local(
         self,
