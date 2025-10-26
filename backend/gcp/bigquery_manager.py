@@ -316,6 +316,87 @@ class BigQueryManager:
         logger.info(f"✓ Deleted table: {table_ref}")
         return True
     
+    def delete_all_tables(self, dataset_id: str, *, dry_run: bool = False) -> dict[str, Any]:
+        """
+        Delete all tables in a dataset.
+        
+        Useful for cleaning up a dataset before a fresh upload to avoid orphaned tables.
+        
+        Args:
+            dataset_id: Dataset ID
+            dry_run: If True, only list tables that would be deleted without actually deleting
+        
+        Returns:
+            Dict with deletion statistics
+        """
+        if not self.dataset_exists(dataset_id):
+            logger.warning(f"Dataset not found: {dataset_id}")
+            return {
+                "dataset_id": dataset_id,
+                "deleted": 0,
+                "failed": 0,
+                "tables": [],
+            }
+        
+        dataset_ref = f"{self.client.project}.{dataset_id}"
+        tables = list(self.client.list_tables(dataset_ref))
+        table_ids = [table.table_id for table in tables]
+        
+        if not table_ids:
+            logger.info(f"No tables found in dataset: {dataset_id}")
+            return {
+                "dataset_id": dataset_id,
+                "deleted": 0,
+                "failed": 0,
+                "tables": [],
+            }
+        
+        if dry_run:
+            logger.info(f"\n{'=' * 70}")
+            logger.info(f"DRY RUN: Would delete {len(table_ids)} table(s) from {dataset_id}")
+            logger.info(f"{'=' * 70}")
+            for i, table_id in enumerate(sorted(table_ids), 1):
+                logger.info(f"  [{i}/{len(table_ids)}] {table_id}")
+            logger.info(f"{'=' * 70}\n")
+            
+            return {
+                "dataset_id": dataset_id,
+                "dry_run": True,
+                "deleted": 0,
+                "failed": 0,
+                "tables": table_ids,
+            }
+        
+        # Actual deletion
+        logger.info(f"\n{'=' * 70}")
+        logger.info(f"DELETING {len(table_ids)} table(s) from dataset: {dataset_id}")
+        logger.info(f"{'=' * 70}")
+        
+        deleted = []
+        failed = []
+        
+        for i, table_id in enumerate(table_ids, 1):
+            try:
+                table_ref = f"{self.client.project}.{dataset_id}.{table_id}"
+                self.client.delete_table(table_ref, not_found_ok=True)
+                deleted.append(table_id)
+                logger.info(f"  [{i}/{len(table_ids)}] ✓ Deleted: {table_id}")
+            except Exception as exc:
+                failed.append({"table_id": table_id, "error": str(exc)})
+                logger.error(f"  [{i}/{len(table_ids)}] ✗ Failed: {table_id} - {exc}")
+        
+        logger.info(f"{'=' * 70}")
+        logger.info(f"✓ Cleanup complete: {len(deleted)} deleted, {len(failed)} failed")
+        logger.info(f"{'=' * 70}\n")
+        
+        return {
+            "dataset_id": dataset_id,
+            "deleted": len(deleted),
+            "failed": len(failed),
+            "tables": deleted,
+            "errors": failed,
+        }
+    
     def list_tables(self, dataset_id: str) -> list[str]:
         """
         List all tables in a dataset.

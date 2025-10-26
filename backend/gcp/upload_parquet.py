@@ -165,6 +165,7 @@ def upload_files(
     datasource_id: str,
     parquet_files: list[Path],
     dry_run: bool = False,
+    clean: bool = False,
     project_id: str | None = None,
 ) -> dict[str, Any]:
     """
@@ -174,6 +175,7 @@ def upload_files(
         datasource_id: Datasource identifier
         parquet_files: List of parquet file paths
         dry_run: If True, only show what would be uploaded
+        clean: If True, delete all existing tables before upload
         project_id: GCP project ID (optional, will use env var if not provided)
     
     Returns:
@@ -187,7 +189,13 @@ def upload_files(
     logger.info("=" * 70)
     logger.info(f"Datasource: {datasource_id}")
     
-    if dry_run:
+    # Get GCP project ID (CLI arg takes precedence over env var)
+    # We need this even for dry-run if cleanup is requested
+    if not project_id:
+        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    
+    # For simple dry-run without cleanup, we can skip GCP connection
+    if dry_run and not clean:
         logger.info(f"Location: {config.bigquery.location}")
         logger.info(f"BQ Dataset: {config.bigquery.dataset_id}")
         logger.info(f"Files to upload: {len(parquet_files)}")
@@ -207,10 +215,7 @@ def upload_files(
         logger.info("=" * 70 + "\n")
         return {"dry_run": True, "files": len(parquet_files)}
     
-    # Get GCP project ID (CLI arg takes precedence over env var)
-    if not project_id:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-    
+    # For cleanup or actual upload, we need project ID
     if not project_id:
         # Find .env file location for helpful error message
         env_file = Path.cwd() / ".env"
@@ -256,6 +261,20 @@ def upload_files(
     bq_mgr = BigQueryManager(auth, location=config.bigquery.location)
     logger.info(f"✓ Connected to project: {project_id}\n")
     
+    # Cleanup existing tables if requested
+    cleanup_stats = None
+    if clean:
+        logger.info("🧹 CLEANUP MODE: Removing all existing tables from dataset...")
+        cleanup_stats = bq_mgr.delete_all_tables(
+            dataset_id=config.bigquery.dataset_id,
+            dry_run=dry_run,
+        )
+        
+        if not dry_run and cleanup_stats["deleted"] > 0:
+            logger.info(f"✓ Cleaned up {cleanup_stats['deleted']} existing table(s)\n")
+        elif dry_run:
+            logger.info("✓ Cleanup preview complete (dry run)\n")
+    
     overall_start = datetime.now()
     results = []
     errors = []
@@ -290,6 +309,8 @@ def upload_files(
     logger.info("UPLOAD SUMMARY")
     logger.info("=" * 70)
     logger.info(f"Datasource: {config.datasource.name}")
+    if cleanup_stats:
+        logger.info(f"Cleaned: {cleanup_stats.get('deleted', 0)} table(s)")
     logger.info(f"Successful: {len(results)}")
     logger.info(f"Failed: {len(errors)}")
     logger.info(f"Total time: {overall_duration:.2f}s")
@@ -302,6 +323,7 @@ def upload_files(
     
     return {
         "datasource": datasource_id,
+        "cleanup": cleanup_stats,
         "successful": len(results),
         "failed": len(errors),
         "duration_seconds": overall_duration,
@@ -333,8 +355,14 @@ Examples:
   # Upload specific tables
   python -m backend.gcp.upload_parquet --datasource dnb_statistics --tables table1 table2
 
-  # Dry run
+  # Clean dataset before upload (removes orphaned tables)
+  python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --clean
+
+  # Dry run (preview without uploading)
   python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --dry-run
+
+  # Dry run with cleanup preview
+  python -m backend.gcp.upload_parquet --datasource dnb_statistics --all --clean --dry-run
 
   # Check BigQuery storage usage
   python -m backend.gcp.upload_parquet --datasource dnb_statistics --storage-info
@@ -401,6 +429,12 @@ Examples:
         "--dry-run",
         action="store_true",
         help="Show what would be uploaded without actually doing it",
+    )
+    
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Delete all existing tables in the dataset before uploading (prevents orphaned tables)",
     )
     
     parser.add_argument(
@@ -559,6 +593,7 @@ def main():
             datasource_id=datasource_id,
             parquet_files=parquet_files,
             dry_run=args.dry_run,
+            clean=args.clean,
             project_id=args.project_id,
         )
     
