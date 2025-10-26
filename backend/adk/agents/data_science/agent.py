@@ -59,7 +59,7 @@ def load_dataset_config() -> dict:
   dataset_config_file = os.getenv(
       "DATASET_CONFIG_FILE",
       os.path.join(
-          os.path.dirname(__file__), "dnb_statistics_dataset_config.json"
+          os.path.dirname(__file__), "dnb_datasets_config.json"
       ),
   )
 
@@ -109,7 +109,11 @@ def get_database_settings(db_type: str) -> dict:
     raise ValueError(f"Unsupported database type: {db_type}")
 
   if db_type == "bigquery":
-    return get_bq_database_settings()
+    # Get BigQuery dataset configurations from the dataset config
+    bq_datasets = [
+        ds for ds in _dataset_config["datasets"] if ds.get("type") == "bigquery"
+    ]
+    return get_bq_database_settings(dataset_configs=bq_datasets)
 
   return {}
 
