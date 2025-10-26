@@ -22,6 +22,7 @@ import os
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools import ToolContext
+from google.adk.tools import load_artifacts_tool
 from google.adk.code_executors.vertex_ai_code_executor import VertexAiCodeExecutor
 from google.genai import types
 
@@ -72,6 +73,7 @@ def get_analytics_agent() -> LlmAgent:
       name="analytics_agent",
       instruction=return_instructions_analytics(),
       code_executor=code_executor,
+      tools=[load_artifacts_tool],  # Enable artifact loading for chart references
       before_agent_callback=setup_before_agent_call,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )

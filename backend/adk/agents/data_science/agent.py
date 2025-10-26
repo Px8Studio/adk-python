@@ -31,6 +31,7 @@ from datetime import date
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools import load_artifacts_tool
 from google.genai import types
 
 from .prompts import return_instructions_root
@@ -217,8 +218,12 @@ Today's date: {date.today()}
 You can delegate to specialized sub-agents:
 - bigquery_agent: For database queries and data retrieval
 - analytics_agent: For data analysis, visualization, and Python code execution
+
+When analytics_agent generates charts/visualizations, they are saved as artifacts.
+Use the load_artifacts tool to reference and discuss generated visualizations.
 """,
       sub_agents=sub_agents,  # type: ignore
+      tools=[load_artifacts_tool],  # Enable artifact access across sub-agents
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )

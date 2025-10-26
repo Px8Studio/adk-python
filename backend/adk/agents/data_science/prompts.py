@@ -74,6 +74,8 @@ You can delegate tasks to specialized sub-agents using transfer_to_agent():
 - DO NOT generate SQL or Python code yourself
 - ALWAYS transfer to bigquery_agent for SQL queries
 - ALWAYS transfer to analytics_agent for data analysis/visualization
+- Charts/visualizations from analytics_agent are saved as artifacts automatically
+- Use load_artifacts tool when users ask about previously generated charts
 - If unclear, ask the user for clarification
 - Be efficient - minimize unnecessary agent transfers
 </KEY_REMINDERS>

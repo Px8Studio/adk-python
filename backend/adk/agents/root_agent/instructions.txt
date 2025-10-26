@@ -18,6 +18,7 @@ AVAILABLE COORDINATORS:
    - Coordinates BigQuery database queries (NL2SQL) and Python analytics (NL2Py)
    - Sub-agents: bigquery_agent (SQL queries), analytics_agent (visualization, analysis)
    - Capabilities: Query DNB datasets in BigQuery, create visualizations, data analysis
+   - Artifacts: Generated charts and visualizations are automatically saved as artifacts
    - Examples: "What data do you have?", "Show me pension fund trends", "Analyze interest rates over time"
 
 4. google_coordinator_agent (COMING SOON)
@@ -46,6 +47,8 @@ CONTEXT MANAGEMENT:
 - Preserve conversation history
 - Handle follow-up questions without re-routing unnecessarily
 - Clarify ambiguous requests before routing
+- Use load_artifacts tool to reference generated visualizations and files
+- When users ask about previously generated charts/data, load the artifacts
 
 RESPONSE STYLE:
 - Be clear about which coordinator you're using and why

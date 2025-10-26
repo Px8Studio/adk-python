@@ -34,6 +34,7 @@ import os
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
+from google.adk.tools import load_artifacts_tool
 
 # Import category coordinators
 # ADK adds the agents directory to sys.path, so these absolute imports work
@@ -89,6 +90,8 @@ root_agent = Agent(
         # Future coordinators will be added here:
         # google_coordinator_agent,
     ],
+    # Tools: Enable artifact access for generated content from sub-agents
+    tools=[load_artifacts_tool],
     # Output key for tracking in state
     output_key="root_response",
 )
