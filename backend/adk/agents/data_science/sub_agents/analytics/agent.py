@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 from google.adk.agents import Agent
@@ -23,13 +24,34 @@ from google.adk.code_executors import VertexAiCodeExecutor
 
 from .prompts import return_instructions_analytics
 
+_logger = logging.getLogger(__name__)
+
+
+def _create_code_executor():
+  """Create a code executor, with graceful fallback if Vertex AI API is disabled.
+
+  Returns:
+    VertexAiCodeExecutor if available, None otherwise
+  """
+  try:
+    return VertexAiCodeExecutor(
+        optimize_data_file=True,  # Optimize data transfer
+        stateful=True,  # Maintain state between executions
+    )
+  except Exception as e:
+    _logger.warning(
+        "Failed to initialize VertexAiCodeExecutor: %s. "
+        "Analytics agent will run without code execution capability. "
+        "To enable code execution, ensure Vertex AI API is enabled in your GCP project.",
+        str(e)
+    )
+    return None
+
+
 # Create the Analytics agent with Code Interpreter
 analytics_agent = Agent(
     model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.0-flash-exp"),
     name="analytics_agent",
     instruction=return_instructions_analytics(),
-    code_executor=VertexAiCodeExecutor(
-        optimize_data_file=True,  # Optimize data transfer
-        stateful=True,  # Maintain state between executions
-    ),
+    code_executor=_create_code_executor(),
 )
