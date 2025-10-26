@@ -20,6 +20,7 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
+from google.cloud import bigquery
 from google.adk.tools import ToolContext
 
 if TYPE_CHECKING:
