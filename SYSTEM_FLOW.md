@@ -140,42 +140,71 @@ Once running, a typical request flows through the system as follows:
 └──────┬───────┘
           │ HTTP Request
           ▼
-┌──────────────────────────┐
-│   ADK Web Server         │
-│   http://localhost:8000  │
-│                          │
-│   • Multi-Agent System   │
-│   • Root Agent           │
-│   • Coordinators         │
-│   • API Agents           │
-│   • Tool Orchestration   │
-│   • Session Management   │
-└──────┬───────────────────┘
-          │ Tool Invocation
-          │ (via ToolboxClient)
-          ▼
-┌───────────────────────────────────────┐
-│   GenAI Toolbox MCP Server            │
-│   http://localhost:5000               │
-│                                       │
-│   • 87 DNB API Tools                  │
-│   • Multiple Toolsets                 │
-│   • Request validation                │
-│   • OpenTelemetry tracing             │
-└──────┬────────────────────┬───────────┘
-          │                    │
-          │ API Calls          │ Traces (OTLP)
-          │                    │
-          ▼                    ▼
-┌──────────────┐    ┌──────────────────┐
-│  DNB APIs    │    │  Jaeger          │
-│              │    │  http://16686    │
-│  • Statistics│    │                  │
-│  • Public    │    │  • Trace storage │
-│    Register  │    │  • UI rendering  │
-│  • Echo      │    │  • Query API     │
-└──────────────┘    └──────────────────┘
+┌──────────────────────────────────────────────────────┐
+│   ADK Web Server (http://localhost:8000)             │
+│                                                       │
+│   ┌─────────────────────────────────────────────┐   │
+│   │         Root Agent Hierarchy                 │   │
+│   │                                               │   │
+│   │  root_agent                                   │   │
+│   │  ├─ dnb_coordinator (MCP Toolbox)            │   │
+│   │  ├─ dnb_openapi_coordinator (Runtime)        │   │
+│   │  └─ data_science_coordinator                 │   │
+│   │     ├─ bigquery_agent (NL2SQL)               │   │
+│   │     └─ analytics_agent (NL2Py)               │   │
+│   └─────────────────────────────────────────────┘   │
+│                                                       │
+│   • Session Management                                │
+│   • Context Tracking                                  │
+│   • Response Synthesis                                │
+└──────┬────────────────────────┬─────────────────────┘
+          │                          │
+          │ Tool Invocation          │ BigQuery Queries
+          │ (via ToolboxClient)      │ (via bigquery_agent)
+          ▼                          ▼
+┌────────────────────────┐   ┌──────────────────────┐
+│ GenAI Toolbox MCP      │   │  Google BigQuery     │
+│ http://localhost:5000  │   │                      │
+│                        │   │  • DNB Statistics    │
+│ • 87 DNB API Tools     │   │  • DNB Public        │
+│ • Multiple Toolsets    │   │    Register          │
+│ • Request validation   │   │  • Parquet Tables    │
+│ • OpenTelemetry        │   └──────────────────────┘
+└──────┬─────────┬───────┘
+          │           │
+          │ API       │ Traces (OTLP)
+          ▼           ▼
+┌─────────────┐  ┌──────────────────┐
+│  DNB APIs   │  │  Jaeger          │
+│             │  │  http://16686    │
+│ • Statistics│  │                  │
+│ • Public    │  │  • Trace storage │
+│   Register  │  │  • UI rendering  │
+│ • Echo      │  │  • Query API     │
+└─────────────┘  └──────────────────┘
 ```
+
+### Agent Routing Logic
+
+The root agent intelligently routes requests based on intent:
+
+**DNB API Operations** → `dnb_coordinator` or `dnb_openapi_coordinator`
+- "Get exchange rates"
+- "Find pension fund statistics"
+- "Search DNB licenses"
+
+**Data Science Operations** → `data_science_coordinator`
+- "What data do you have?"
+- "Show me pension fund trends over time"
+- "Analyze interest rates and create a visualization"
+- Sub-delegation:
+  - SQL queries → `bigquery_agent`
+  - Analytics/viz → `analytics_agent`
+
+**Multi-domain Workflows** → Sequential coordination
+- Example: "Get latest statistics from DNB API and analyze trends"
+  1. Root agent → dnb_coordinator (fetch data)
+  2. Root agent → data_science_coordinator → analytics_agent (analyze)
 
 ## 🎛️ Health Check Mechanism
 

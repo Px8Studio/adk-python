@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Top-level root coordinator agent for Orkhon Data Science Multi-Agent System.
+"""Top-level data science coordinator agent for Orkhon Data Science Multi-Agent System.
 
 This agent coordinates between specialized sub-agents for:
 - BigQuery database access (NL2SQL)
 - Analytics and visualization (NL2Py with Code Interpreter)
+
+Note: This agent is typically accessed as a sub-agent of the main root_agent,
+but can also be run standalone for data science-specific workflows.
 """
 
 from __future__ import annotations
@@ -204,7 +207,7 @@ def get_root_agent() -> LlmAgent:
   # NO manual tools needed - ADK handles agent communication
   agent = LlmAgent(
       model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="data_science_root_agent",
+      name="data_science_coordinator",
       instruction=return_instructions_root()
       + get_dataset_definitions_for_instructions(),
       global_instruction=f"""

@@ -6,18 +6,28 @@ A multi-agent architecture for sophisticated data analysis, integrating BigQuery
 
 This implementation follows the ADK samples pattern for data science agents, adapted for the Orkhon project's DNB Statistics dataset. The system coordinates between specialized sub-agents to handle different aspects of data analysis.
 
+**Note**: This agent can be used standalone or as a sub-agent of the main `root_agent` for integrated multi-domain workflows.
+
 ### Architecture
 
 ```
-data_science_root_agent (Coordinator)
-├── bigquery_agent (NL2SQL)
-│   ├── BigQuery Built-in Tools (execute_sql)
-│   └── Schema-aware query generation
-└── analytics_agent (NL2Py)
-    └── Vertex AI Code Interpreter
-        ├── pandas, numpy, matplotlib
-        └── Stateful execution
+root_agent (Main System Coordinator)
+├── dnb_coordinator (DNB API operations via MCP)
+├── dnb_openapi_coordinator (DNB API operations via Runtime)
+└── data_science_coordinator (This agent)
+    ├── bigquery_agent (NL2SQL)
+    │   ├── BigQuery Built-in Tools (execute_sql)
+    │   └── Schema-aware query generation
+    └── analytics_agent (NL2Py)
+        └── Vertex AI Code Interpreter
+            ├── pandas, numpy, matplotlib
+            └── Stateful execution
 ```
+
+### Standalone vs Integrated Usage
+
+**Standalone**: Run `run_data_science_agent.py` for data science-only workflows
+**Integrated**: Access via main `root_agent` which routes data science requests automatically
 
 ### Current Features (MVP)
 

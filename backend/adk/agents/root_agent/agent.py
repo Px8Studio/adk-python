@@ -20,9 +20,12 @@ Routes requests to specialized category coordinators.
 
 Hierarchy:
   root_agent (this)
-  ├─ dnb_coordinator       (DNB API operations)
-  ├─ google_coordinator    (Google API operations - future)
-  └─ data_coordinator      (Data processing - future)
+  ├─ dnb_coordinator       (DNB API operations via MCP Toolbox)
+  ├─ dnb_openapi_coordinator (DNB API operations via Runtime OpenAPI)
+  ├─ data_science_agent    (BigQuery & Analytics operations)
+  │  ├─ bigquery_agent     (NL2SQL for BigQuery)
+  │  └─ analytics_agent    (NL2Py with Code Interpreter)
+  └─ google_coordinator    (Google API operations - future)
 """
 
 from __future__ import annotations
@@ -38,6 +41,7 @@ from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent  # type
 from api_coordinators.dnb_openapi_coordinator.agent import (  # type: ignore
     dnb_openapi_coordinator_agent,
 )
+from data_science.agent import root_agent as data_science_agent  # type: ignore
 
 # Model configuration
 MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
@@ -81,9 +85,9 @@ root_agent = Agent(
     sub_agents=[
         dnb_coordinator_agent,
         dnb_openapi_coordinator_agent,
+        data_science_agent,
         # Future coordinators will be added here:
         # google_coordinator_agent,
-        # data_coordinator_agent,
     ],
     # Output key for tracking in state
     output_key="root_response",

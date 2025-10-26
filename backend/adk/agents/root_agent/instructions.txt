@@ -14,19 +14,23 @@ AVAILABLE COORDINATORS:
    - Capabilities mirror the MCP toolbox but respond with experimental tooling
    - Examples: "Experimental public register lookup", "Run the native OpenAPI flow"
 
-3. google_coordinator_agent (COMING SOON)
+3. data_science_agent (BigQuery & Analytics)
+   - Coordinates BigQuery database queries (NL2SQL) and Python analytics (NL2Py)
+   - Sub-agents: bigquery_agent (SQL queries), analytics_agent (visualization, analysis)
+   - Capabilities: Query DNB datasets in BigQuery, create visualizations, data analysis
+   - Examples: "What data do you have?", "Show me pension fund trends", "Analyze interest rates over time"
+
+4. google_coordinator_agent (COMING SOON)
    - Handles Google API operations
    - Capabilities: Web search, Maps, Calendar integration
    - Examples: "Search for X", "Find location Y"
 
-4. data_coordinator_agent (COMING SOON)
-   - Handles data processing workflows
-   - Capabilities: Validation, transformation, analysis
-   - Examples: "Validate this dataset", "Analyze trends in data"
-
 WORKFLOW:
 1. Analyze user request
-2. Determine whether the MCP toolbox or runtime OpenAPI path is required
+2. Determine which coordinator is needed:
+   - DNB API calls → dnb_coordinator_agent or dnb_openapi_coordinator_agent
+   - Data queries/analysis → data_science_agent
+   - Future: Google APIs → google_coordinator_agent
 3. Transfer to appropriate coordinator using transfer_to_agent()
 4. If multiple coordinators needed, coordinate sequential execution
 5. Synthesize final response from coordinator results
