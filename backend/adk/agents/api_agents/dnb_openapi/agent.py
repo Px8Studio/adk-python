@@ -21,7 +21,9 @@ Notes:
 
 from __future__ import annotations
 
+import hashlib
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
@@ -68,38 +70,68 @@ def _safe_agent_name(api: str) -> str:
   return f"dnb_openapi_{api.replace('-', '_')}_agent"
 
 
+# Option A: Pure caching (simplest)
+_TOOLSET_CACHE: dict[str, OpenAPIToolset] = {}
+
 def build_openapi_toolset(api: str) -> OpenAPIToolset:
-  """Build ADK OpenAPIToolset from the local OpenAPI spec file."""
-  spec_file = _API_TO_SPEC.get(api)
-  if not spec_file:
-    raise ValueError(
-      f"Unknown API '{api}'. Expected one of: {', '.join(_API_TO_SPEC)}"
+    """Build ADK OpenAPIToolset with caching for performance."""
+    if api not in _TOOLSET_CACHE:
+        spec_content = _load_spec_content(api)
+        api_key = _get_api_key()
+
+        auth_scheme = None
+        auth_credential = None
+        if api_key:
+          auth_scheme, auth_credential = token_to_scheme_credential(
+            token_type="apikey",
+            location="header",
+            name="Ocp-Apim-Subscription-Key",
+            credential_value=api_key,
+          )
+
+        _TOOLSET_CACHE[api] = OpenAPIToolset(
+            spec_str=spec_content,
+            spec_str_type="yaml",
+            auth_scheme=auth_scheme,
+            auth_credential=auth_credential,
+        )
+    return _TOOLSET_CACHE[api]
+
+
+# Option B: Use Python's built-in LRU cache (even simpler!)
+@lru_cache(maxsize=10)
+def _get_cached_toolset(api: str, api_key_hash: str) -> OpenAPIToolset:
+    """LRU-cached toolset builder. api_key_hash forces cache invalidation on credential change."""
+    spec_content = _load_spec_content(api)
+    api_key = _get_api_key()
+
+    auth_scheme = None
+    auth_credential = None
+    if api_key:
+      auth_scheme, auth_credential = token_to_scheme_credential(
+        token_type="apikey",
+        location="header",
+        name="Ocp-Apim-Subscription-Key",
+        credential_value=api_key,
+      )
+
+    return OpenAPIToolset(
+      spec_str=spec_content,
+      spec_str_type="yaml",
+      auth_scheme=auth_scheme,
+      auth_credential=auth_credential,
     )
 
-  spec_content = _load_spec_content(api)
-  api_key = _get_api_key()
 
-  auth_scheme = None
-  auth_credential = None
-  if api_key:
-    # Use the helper function to create both AuthScheme and AuthCredential
-    # for API key authentication in the header
-    auth_scheme, auth_credential = token_to_scheme_credential(
-      token_type="apikey",
-      location="header",
-      name="Ocp-Apim-Subscription-Key",
-      credential_value=api_key,
-    )
-
-  # OpenAPIToolset constructor accepts spec_str (not spec_content)
-  # and auth_credential (singular, not plural credentials).
-  # All specs are YAML format.
-  return OpenAPIToolset(
-    spec_str=spec_content,
-    spec_str_type="yaml",
-    auth_scheme=auth_scheme,
-    auth_credential=auth_credential,
-  )
+def build_openapi_toolset(api: str) -> OpenAPIToolset:
+  """Build ADK OpenAPIToolset from the local OpenAPI spec file with caching.
+  
+  Performance optimization: Parses each spec only once per process lifetime.
+  Subsequent calls return cached instances unless spec or credentials change.
+  """
+  api_key = _get_api_key() or ""
+  api_key_hash = hashlib.md5(api_key.encode()).hexdigest()
+  return _get_cached_toolset(api, api_key_hash)
 
 
 def _default_instruction(api: str) -> str:

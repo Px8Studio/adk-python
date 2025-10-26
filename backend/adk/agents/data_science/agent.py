@@ -39,6 +39,7 @@ from .sub_agents.analytics.agent import get_analytics_agent
 from .sub_agents.bigquery.agent import get_bigquery_agent
 from .sub_agents.bigquery.tools import (
     get_database_settings as get_bq_database_settings,
+    get_dataset_definitions,
 )
 
 _logger = logging.getLogger(__name__)
@@ -176,42 +177,63 @@ def get_dataset_definitions_for_instructions() -> str:
 
 
 def load_database_settings_in_context(callback_context: CallbackContext) -> None:
-  """Load database settings into callback context.
-
-  Args:
-    callback_context: ADK callback context to store settings
+  """Load database settings into callback context for sub-agents.
+  
+  This callback pre-loads database schemas to avoid repeated fetches
+  during agent execution. Failures are logged but don't block agent startup.
   """
-  if "database_settings" not in callback_context.state:
-    callback_context.state["database_settings"] = _database_settings
-    _logger.debug("Loaded database settings into context")
+  try:
+    # Store database settings in context for sub-agents
+    if _database_settings:
+      callback_context.custom_data["database_settings"] = _database_settings
+      _logger.debug(
+          "Loaded database settings for %d datasets into context",
+          len(_database_settings.get("bigquery", {}).get("datasets", []))
+      )
+  except Exception as e:
+    _logger.error(
+        "Failed to load database settings in callback: %s. "
+        "Agent will proceed but may have degraded performance.",
+        e,
+        exc_info=True
+    )
+    # Don't raise - allow agent to continue
 
 
 def get_root_agent() -> LlmAgent:
-  """Create and configure the root coordinator agent.
+  """Create and configure the root data science coordinator agent.
 
   Returns:
-    Configured LlmAgent instance with fresh sub-agent instances
+    Configured LlmAgent for coordinating data science operations
   """
+  # Get dataset definitions using cached schemas
+  dataset_definitions = get_dataset_definitions()
+
+  # Configure sub-agents based on environment
   sub_agents = []
 
-  # Configure sub-agents based on dataset configuration
-  for dataset in _dataset_config["datasets"]:
-    if dataset["type"] == "bigquery":
-      # Create fresh instance to avoid parent conflicts
-      sub_agents.append(get_bigquery_agent())
+  # BigQuery agent for database operations
+  if os.getenv("DISABLE_BIGQUERY_AGENT", "").lower() != "true":
+    bigquery_agent = get_bigquery_agent()
+    sub_agents.append(bigquery_agent)
+    _logger.info("BigQuery agent enabled")
+  else:
+    _logger.info("BigQuery agent disabled via DISABLE_BIGQUERY_AGENT")
 
-  # Always include analytics agent
-  sub_agents.append(get_analytics_agent())
+  # Analytics agent for data analysis and visualization
+  if os.getenv("DISABLE_ANALYTICS_AGENT", "").lower() != "true":
+    analytics_agent_instance = get_analytics_agent()
+    sub_agents.append(analytics_agent_instance)
+    _logger.info("Analytics agent enabled")
+  else:
+    _logger.info("Analytics agent disabled via DISABLE_ANALYTICS_AGENT")
 
-  # ADK Pattern: Use sub_agents for LLM-driven delegation
-  # The LLM automatically gets transfer_to_agent() function
-  # NO manual tools needed - ADK handles agent communication
   agent = LlmAgent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
       name="root_agent",
       description=(
-          "Root coordinator for data science operations. Delegates to specialized "
-          "sub-agents for database queries and analytics tasks."
+          "Root coordinator for data science operations. Delegates to "
+          "specialized sub-agents for database queries and analytics tasks."
       ),
       instruction=f"""
 You are a data science coordinator managing specialized sub-agents.
@@ -225,19 +247,17 @@ You can delegate to specialized sub-agents:
 - bigquery_agent: For database queries and data retrieval
 - analytics_agent: For data analysis, visualization, and Python code execution
 
-When analytics_agent generates charts/visualizations, they are saved as artifacts.
-Use the load_artifacts tool to reference and discuss generated visualizations.
+When analytics_agent generates charts/visualizations, they are saved as 
+artifacts. Use the load_artifacts tool to reference and discuss generated 
+visualizations.
 """,
       sub_agents=sub_agents,  # type: ignore
-      tools=[load_artifacts_tool],  # ✅ Now passing the tool instance
+      tools=[load_artifacts_tool],
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
 
-  _logger.info(
-      "Initialized root agent with %d sub-agents",
-      len(sub_agents),
-  )
+  _logger.info("Initialized root agent with %d sub-agents", len(sub_agents))
   return agent
 
 

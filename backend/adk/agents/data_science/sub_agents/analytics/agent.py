@@ -19,10 +19,10 @@ from __future__ import annotations
 import logging
 import os
 
-from google.adk.agents import LlmAgent
+from google.adk.agents.llm_agent import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
-from google.adk.tools import ToolContext
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool
+from google.adk.tools.tool_context import ToolContext
 from google.adk.code_executors.vertex_ai_code_executor import VertexAiCodeExecutor
 from google.genai import types
 
@@ -46,12 +46,32 @@ def _create_code_executor():
     return None
 
   try:
-    # Create executor with project and region from environment
+    # Check if we have a cached extension ID to reuse
+    cached_extension = os.getenv("CODE_INTERPRETER_EXTENSION_NAME")
+    
+    # Create executor with optional resource_name for caching
     executor = VertexAiCodeExecutor(
-        project_id=os.getenv("GCP_PROJECT_ID"),
-        region=os.getenv("GCP_REGION", "us-central1"),
+        resource_name=cached_extension,
     )
-    _logger.info("Vertex AI Code Executor initialized successfully")
+    
+    # Log the extension ID for reuse in future sessions
+    if hasattr(executor, '_code_interpreter_extension') and executor._code_interpreter_extension:
+      extension_id = executor._code_interpreter_extension.resource_name
+      if cached_extension:
+        _logger.info(
+            "Vertex AI Code Executor initialized (using cached extension: %s)",
+            extension_id
+        )
+      else:
+        _logger.info(
+            "Vertex AI Code Executor initialized (new extension created). "
+            "To reuse this extension, add to your .env file:\n"
+            "CODE_INTERPRETER_EXTENSION_NAME=%s",
+            extension_id
+        )
+    else:
+      _logger.info("Vertex AI Code Executor initialized successfully")
+    
     return executor
   except Exception as e:
     _logger.error(f"Failed to initialize code executor: {e}")
@@ -77,7 +97,7 @@ def get_analytics_agent() -> LlmAgent:
       name="analytics_agent",
       instruction=return_instructions_analytics(),
       code_executor=code_executor,
-      tools=[load_artifacts_tool],  # ✅ Now passing the tool instance
+      tools=[load_artifacts_tool],
       before_agent_callback=setup_before_agent_call,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
