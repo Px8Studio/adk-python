@@ -90,7 +90,7 @@ bigquery_toolset = BigQueryToolset(
     bigquery_tool_config=bigquery_tool_config,
 )
 
-# Create the BigQuery agent
+# For backwards compatibility, create a default instance
 bigquery_agent = LlmAgent(
     model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.0-flash-exp"),
     name="bigquery_agent",
@@ -103,3 +103,36 @@ bigquery_agent = LlmAgent(
     after_tool_callback=store_results_in_context,
     generate_content_config=types.GenerateContentConfig(temperature=0.01),
 )
+
+def get_bigquery_agent() -> LlmAgent:
+  """Create a new BigQuery agent instance.
+  
+  Returns a fresh instance each time to avoid parent conflicts.
+  """
+  # Configure BigQuery toolset
+  tool_filter = [ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL]
+  
+  bigquery_tool_config = BigQueryToolConfig(
+      write_mode=WriteMode.ALLOWED,
+      max_query_result_rows=100,
+      application_name="orkhon-data-science-agent",
+  )
+  
+  bigquery_toolset = BigQueryToolset(
+      tool_filter=tool_filter,
+      bigquery_tool_config=bigquery_tool_config,
+  )
+
+  # Create the BigQuery agent
+  return LlmAgent(
+      model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.0-flash-exp"),
+      name="bigquery_agent",
+      instruction=return_instructions_bigquery(),
+      tools=[
+          tools.bigquery_nl2sql,
+          bigquery_toolset,
+      ],
+      before_agent_callback=setup_before_agent_call,
+      after_tool_callback=store_results_in_context,
+      generate_content_config=types.GenerateContentConfig(temperature=0.01),
+  )

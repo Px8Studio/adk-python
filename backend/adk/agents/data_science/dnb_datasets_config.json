@@ -3,7 +3,7 @@
     {
       "type": "bigquery",
       "name": "dnb_statistics",
-      "description": "DNB (De Nederlandsche Bank) Statistics dataset containing Dutch financial and economic data across multiple categories including insurance & pensions, financial markets, balance of payments, and monetary statistics. Tables follow the naming convention: {category}__{subcategory}__{endpoint_name}. Example tables: insurance_pensions__insurers__insurance_corps_balance_sheet_quarter, financial_markets__interest_rates__market_interest_rates, financial_markets__bond_yields__dutch_state_loans."
+      "description": "DNB (De Nederlandsche Bank) Statistics dataset containing Dutch financial and economic data across multiple categories including insurance & pensions, financial markets, balance of payments, and monetary statistics. Tables follow the naming convention: category__subcategory__endpoint_name. Example tables: insurance_pensions__insurers__insurance_corps_balance_sheet_quarter, financial_markets__interest_rates__market_interest_rates, financial_markets__bond_yields__dutch_state_loans."
     },
     {
       "type": "bigquery",

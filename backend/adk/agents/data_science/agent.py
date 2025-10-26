@@ -31,12 +31,11 @@ from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
 from .prompts import return_instructions_root
-from .sub_agents.analytics.agent import analytics_agent
-from .sub_agents.bigquery.agent import bigquery_agent
+from .sub_agents.analytics.agent import get_analytics_agent
+from .sub_agents.bigquery.agent import get_bigquery_agent
 from .sub_agents.bigquery.tools import (
     get_database_settings as get_bq_database_settings,
 )
-from .tools import call_analytics_agent, call_bigquery_agent
 
 _logger = logging.getLogger(__name__)
 
@@ -187,17 +186,22 @@ def get_root_agent() -> LlmAgent:
   """Create and configure the root coordinator agent.
 
   Returns:
-    Configured LlmAgent instance
+    Configured LlmAgent instance with fresh sub-agent instances
   """
-  tools = [call_analytics_agent]
   sub_agents = []
 
-  # Configure tools and sub-agents based on dataset configuration
+  # Configure sub-agents based on dataset configuration
   for dataset in _dataset_config["datasets"]:
     if dataset["type"] == "bigquery":
-      tools.append(call_bigquery_agent)
-      sub_agents.append(bigquery_agent)
+      # Create fresh instance to avoid parent conflicts
+      sub_agents.append(get_bigquery_agent())
 
+  # Always include analytics agent
+  sub_agents.append(get_analytics_agent())
+
+  # ADK Pattern: Use sub_agents for LLM-driven delegation
+  # The LLM automatically gets transfer_to_agent() function
+  # NO manual tools needed - ADK handles agent communication
   agent = LlmAgent(
       model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash-exp"),
       name="data_science_root_agent",
@@ -206,16 +210,18 @@ def get_root_agent() -> LlmAgent:
       global_instruction=f"""
 You are the Orkhon Data Science and Data Analytics Multi-Agent System.
 Today's date: {date.today()}
+
+You can delegate to specialized sub-agents:
+- bigquery_agent: For database queries and data retrieval
+- analytics_agent: For data analysis, visualization, and Python code execution
 """,
       sub_agents=sub_agents,  # type: ignore
-      tools=tools,  # type: ignore
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
 
   _logger.info(
-      "Initialized root agent with %d tools and %d sub-agents",
-      len(tools),
+      "Initialized root agent with %d sub-agents",
       len(sub_agents),
   )
   return agent

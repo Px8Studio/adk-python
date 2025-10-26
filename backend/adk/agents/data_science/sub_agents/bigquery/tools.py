@@ -20,10 +20,11 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from google.cloud import bigquery
+from google.adk.tools import ToolContext
 
 if TYPE_CHECKING:
-  from google.adk.tools.tool_context import ToolContext
+  # Import again under TYPE_CHECKING to satisfy both linter and runtime
+  from google.adk.tools import ToolContext
 
 _logger = logging.getLogger(__name__)
 
