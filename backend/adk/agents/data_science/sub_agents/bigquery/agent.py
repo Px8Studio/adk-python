@@ -47,7 +47,12 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
   _logger.info("Setting up BigQuery agent context")
   
   # Load project and dataset info from environment
-  project_id = os.getenv("BQ_DATA_PROJECT_ID")
+  # Support multiple env var names for flexibility
+  project_id = (
+      os.getenv("BQ_DATA_PROJECT_ID")
+      or os.getenv("BQ_PROJECT_ID")
+      or os.getenv("GOOGLE_CLOUD_PROJECT")
+  )
   dataset_id = os.getenv("BQ_DATASET_ID")
   
   if project_id and dataset_id:

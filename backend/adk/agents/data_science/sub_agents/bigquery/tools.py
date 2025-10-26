@@ -107,12 +107,16 @@ def get_database_settings(
   if not dataset_configs:
     # Fallback to environment variables
     dataset_id = os.getenv("BQ_DATASET_ID")
-    project_id = os.getenv("GCP_PROJECT_ID")
+    project_id = (
+        os.getenv("BQ_DATA_PROJECT_ID")
+        or os.getenv("BQ_PROJECT_ID")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
     
     if not dataset_id or not project_id:
       _logger.warning(
           "No datasets configured. Provide dataset_configs or set "
-          "BQ_DATASET_ID."
+          "BQ_DATASET_ID and BQ_DATA_PROJECT_ID (or BQ_PROJECT_ID/GOOGLE_CLOUD_PROJECT)."
       )
       return {"datasets": []}
     
@@ -134,7 +138,22 @@ def get_database_settings(
       # Support both legacy (dataset_id) and new (name) schema
       dataset_name = config.get("name", config.get("dataset_id"))
       dataset_id = config.get("dataset_id", dataset_name)
-      project_id = config["project_id"]
+      
+      # Get project_id from config or fall back to environment variable
+      project_id = config.get("project_id")
+      if not project_id:
+        project_id = (
+            os.getenv("BQ_DATA_PROJECT_ID") 
+            or os.getenv("BQ_PROJECT_ID") 
+            or os.getenv("GOOGLE_CLOUD_PROJECT")
+        )
+      
+      if not project_id:
+        raise ValueError(
+            f"No project_id found for dataset '{dataset_name}'. "
+            "Set BQ_DATA_PROJECT_ID, BQ_PROJECT_ID, or GOOGLE_CLOUD_PROJECT "
+            "in your .env file."
+        )
       
       # Get or create schema for this dataset
       schema_key = f"{project_id}.{dataset_id}"
@@ -185,3 +204,27 @@ def get_dataset_definitions() -> str:
     definitions.append(f"- {name}: {desc} ({table_count} tables)")
   
   return "\n".join(definitions)
+
+# Module-level schema cache to avoid NameError and enable reuse across calls.
+_schema_cache: dict[str, dict] = {}
+
+def _get_from_schema_cache(key: str):
+  # Simple helper; avoids KeyError patterns scattered across code.
+  return _schema_cache.get(key)
+
+def _set_in_schema_cache(key: str, value: dict) -> None:
+  _schema_cache[key] = value
+
+# Example usage inside your existing schema retrieval function:
+def get_dataset_schema(project_id: str, dataset_id: str) -> dict:
+  # ...existing code...
+  cache_key = f"{project_id}.{dataset_id}"
+  cached = _get_from_schema_cache(cache_key)
+  if cached is not None:
+    return cached
+
+  # ...existing code to fetch schema from BigQuery...
+  schema = fetched_schema_dict  # replace with your existing variable
+
+  _set_in_schema_cache(cache_key, schema)
+  return schema

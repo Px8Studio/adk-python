@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Orkhon Agent Package
+"""Coordinator agent package for Orkhon DNB integrations."""
 
-This package contains all ADK agents for the Orkhon project.
-"""
 from __future__ import annotations
 
-from ..adk_patch import apply_runtime_patches
+from .dnb_coordinator.agent import dnb_coordinator_agent, get_dnb_coordinator_agent
+from .dnb_openapi_coordinator.agent import (
+    dnb_openapi_coordinator_agent,
+    get_dnb_openapi_coordinator_agent,
+)
 
-apply_runtime_patches()
-
-__all__: list[str] = []
+__all__ = [
+    "dnb_coordinator_agent",
+    "dnb_openapi_coordinator_agent",
+    "get_dnb_coordinator_agent",
+    "get_dnb_openapi_coordinator_agent",
+]

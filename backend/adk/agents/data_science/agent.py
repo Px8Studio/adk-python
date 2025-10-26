@@ -29,7 +29,6 @@ import logging
 import os
 from datetime import date
 
-from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
 from google.genai import types
@@ -176,31 +175,21 @@ def get_dataset_definitions_for_instructions() -> str:
   return dataset_definitions
 
 
+def emit_progress_event(callback_context: CallbackContext, message: str) -> None:
+  """Emit progress update to user (placeholder for future ADK feature)."""
+  # This is a workaround - ADK doesn't officially support progress events yet
+  # But we can log them for observability
+  _logger.info(f"[PROGRESS] {message}")
+  # TODO: When ADK supports custom events, emit to SSE stream
+
 def load_database_settings_in_context(callback_context: CallbackContext) -> None:
-  """Load database settings into callback context for sub-agents.
-  
-  This callback pre-loads database schemas to avoid repeated fetches
-  during agent execution. Failures are logged but don't block agent startup.
-  """
-  try:
-    # Store database settings in context for sub-agents
-    if _database_settings:
-      callback_context.custom_data["database_settings"] = _database_settings
-      _logger.debug(
-          "Loaded database settings for %d datasets into context",
-          len(_database_settings.get("bigquery", {}).get("datasets", []))
-      )
-  except Exception as e:
-    _logger.error(
-        "Failed to load database settings in callback: %s. "
-        "Agent will proceed but may have degraded performance.",
-        e,
-        exc_info=True
-    )
-    # Don't raise - allow agent to continue
+  """Load database settings into callback context for sub-agents."""
+  db_settings = get_database_settings("bigquery")
+  callback_context.set_value("database_settings", db_settings)
+  emit_progress_event(callback_context, "Database connection initialized")
 
 
-def get_root_agent() -> LlmAgent:
+def get_root_agent() -> Agent:
   """Create and configure the root data science coordinator agent.
 
   Returns:
@@ -228,7 +217,7 @@ def get_root_agent() -> LlmAgent:
   else:
     _logger.info("Analytics agent disabled via DISABLE_ANALYTICS_AGENT")
 
-  agent = LlmAgent(
+  agent = Agent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
       name="root_agent",
       description=(
@@ -260,6 +249,63 @@ visualizations.
   _logger.info("Initialized root agent with %d sub-agents", len(sub_agents))
   return agent
 
+
+# Ensure ADK Agent class is available as `Agent`
+try:
+  # Preferred: use ADK LlmAgent
+  from google.adk.agents.llm_agent import LlmAgent as Agent  # type: ignore
+except Exception:
+  # Fallback (kept for compatibility if package structure changes)
+  from google.adk.agents.llm_agent import LlmAgent as Agent  # type: ignore
+
+# Provide missing helper to avoid NameError and reduce noisy retries
+def _get_bigquery_schema(project_id: str, dataset_id: str):
+  """Best-effort dataset schema fetch. Returns None on any issue.
+  
+  - If project is 'unknown' or empty, return None.
+  - If google-cloud-bigquery is unavailable, return None.
+  - On any API error, log debug and return None.
+  """
+  try:
+    if not project_id or project_id.strip().lower() == "unknown":
+      logger.debug("BigQuery schema skip: invalid project_id=%r dataset_id=%r", project_id, dataset_id)
+      return None
+
+    try:
+      from google.cloud import bigquery  # type: ignore
+    except Exception:
+      logger.debug("google-cloud-bigquery not installed; skipping schema fetch")
+      return None
+
+    client = bigquery.Client(project=project_id)
+    # Attempt to fetch dataset and enumerate tables (best-effort)
+    ds_ref = f"{project_id}.{dataset_id}"
+    ds = client.get_dataset(ds_ref)  # may raise
+    tables = list(client.list_tables(ds))  # may raise
+
+    schema_summary = {}
+    for t in tables:
+      full_table_id = f"{t.project}.{t.dataset_id}.{t.table_id}"
+      try:
+        table = client.get_table(full_table_id)
+        fields = [
+          {
+            "name": f.name,
+            "type": f.field_type,
+            "mode": f.mode,
+            "description": getattr(f, "description", None),
+          }
+          for f in table.schema or []
+        ]
+        schema_summary[full_table_id] = {"table": full_table_id, "fields": fields}
+      except Exception as table_err:
+        logger.debug("Failed to fetch table schema for %s: %s", full_table_id, table_err)
+
+    return {"dataset": ds_ref, "tables": schema_summary}
+
+  except Exception as e:
+    logger.debug("BigQuery schema fetch failed for %s.%s: %s", project_id, dataset_id, e)
+    return None
 
 # Initialize configuration on module load
 _logger.info("Loading Orkhon Data Science Multi-Agent System...")

@@ -36,14 +36,6 @@ from pathlib import Path
 from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
 
-# Import category coordinators
-# ADK adds the agents directory to sys.path, so these absolute imports work
-from api_coordinators.dnb_coordinator.agent import dnb_coordinator_agent  # type: ignore
-from api_coordinators.dnb_openapi_coordinator.agent import (  # type: ignore
-    dnb_openapi_coordinator_agent,
-)
-from data_science.agent import root_agent as data_science_agent  # type: ignore
-
 # Model configuration
 MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
 
@@ -71,27 +63,42 @@ Guidelines:
 - Preserve context for follow-up questions
 """
 
-# Root agent definition
-root_agent = Agent(
-    model=MODEL,
-    name="root_agent",
-    description=(
-        "Primary system coordinator that routes user requests to "
-        "specialized domain coordinators for API integrations, data processing, "
-        "and utility operations. Handles multi-domain workflows and maintains "
-        "conversational context."
-    ),
-    instruction=INSTRUCTION,
-    # Sub-agents: LLM will use transfer_to_agent() to delegate
-    sub_agents=[
-        dnb_coordinator_agent,
-        dnb_openapi_coordinator_agent,
-        data_science_agent,
-        # Future coordinators will be added here:
-        # google_coordinator_agent,
-    ],
-    # Tools: Enable artifact access for generated content from sub-agents
-    tools=[load_artifacts_tool],  # ✅ Now passing the tool instance
-    # Output key for tracking in state
-    output_key="root_response",
-)
+def get_root_agent() -> Agent:
+    """Create a fresh root agent instance.
+    
+    Returns a new instance each time to avoid parent conflicts during hot-reload.
+    """
+    # Import coordinators here to get fresh instances
+    from api_coordinators import (  # type: ignore
+        get_dnb_coordinator_agent,
+        get_dnb_openapi_coordinator_agent,
+    )
+    from data_science.agent import get_root_agent as get_data_science_agent  # type: ignore
+    
+    # Example (names are illustrative; keep your existing construction):
+    # bigquery_agent = get_bigquery_agent()
+    # data_science_agent = get_analytics_agent()  # returns an Agent/LlmAgent
+    
+    # Build the root agent. Fix: use sub_agents= instead of agents=
+    root = Agent(
+        model=MODEL,
+        name="root_agent",
+        description=(
+            "Primary system coordinator that routes user requests to "
+            "specialized domain coordinators for API integrations, data processing, "
+            "and utility operations. Executes tasks autonomously with minimal confirmation."
+        ),
+        instruction=INSTRUCTION,
+        sub_agents=[
+            get_dnb_coordinator_agent(),
+            get_dnb_openapi_coordinator_agent(),
+            get_data_science_agent(),
+        ],
+        tools=[load_artifacts_tool],
+        output_key="root_response",
+    )
+    return root
+
+
+# Export for ADK web loader
+root_agent = get_root_agent()
