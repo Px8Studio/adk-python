@@ -21,8 +21,8 @@ import os
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
 from google.adk.tools import ToolContext
-from google.adk.tools import load_artifacts_tool
 from google.adk.code_executors.vertex_ai_code_executor import VertexAiCodeExecutor
 from google.genai import types
 
@@ -35,29 +35,33 @@ USER_AGENT = "orkhon-data-science-agent"
 
 
 def _create_code_executor():
-  """Create a code executor, with graceful fallback if Vertex AI API is disabled.
+  """Create and configure the Vertex AI Code Executor.
 
   Returns:
-    VertexAiCodeExecutor if available, None otherwise
+    Configured VertexAiCodeExecutor instance, or None if disabled
   """
+  # Check if code execution is disabled via environment variable
+  if os.getenv("DISABLE_CODE_EXECUTION", "").lower() == "true":
+    _logger.info("Code execution is disabled via DISABLE_CODE_EXECUTION env var")
+    return None
+
   try:
-    return VertexAiCodeExecutor(
-        optimize_data_file=True,
-        stateful=True,
+    # Create executor with project and region from environment
+    executor = VertexAiCodeExecutor(
+        project_id=os.getenv("GCP_PROJECT_ID"),
+        region=os.getenv("GCP_REGION", "us-central1"),
     )
+    _logger.info("Vertex AI Code Executor initialized successfully")
+    return executor
   except Exception as e:
-    _logger.warning(
-        "Failed to initialize VertexAiCodeExecutor: %s. "
-        "Analytics agent will run without code execution capability. "
-        "To enable code execution, ensure Vertex AI API is enabled in your GCP project.",
-        str(e)
-    )
+    _logger.error(f"Failed to initialize code executor: {e}")
     return None
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
   """Setup callback executed before agent processes a request."""
-  _logger.debug("Analytics agent setup_before_agent_call")
+  tool_context = ToolContext(user_agent=USER_AGENT)
+  callback_context.tool_context = tool_context
 
 
 def get_analytics_agent() -> LlmAgent:
@@ -73,7 +77,7 @@ def get_analytics_agent() -> LlmAgent:
       name="analytics_agent",
       instruction=return_instructions_analytics(),
       code_executor=code_executor,
-      tools=[load_artifacts_tool],  # Enable artifact loading for chart references
+      tools=[load_artifacts_tool],  # ✅ Now passing the tool instance
       before_agent_callback=setup_before_agent_call,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )

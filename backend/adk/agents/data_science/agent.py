@@ -31,7 +31,7 @@ from datetime import date
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools import load_artifacts_tool
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
 from google.genai import types
 
 from .prompts import return_instructions_root
@@ -207,12 +207,18 @@ def get_root_agent() -> LlmAgent:
   # The LLM automatically gets transfer_to_agent() function
   # NO manual tools needed - ADK handles agent communication
   agent = LlmAgent(
-      model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="data_science_coordinator",
-      instruction=return_instructions_root()
-      + get_dataset_definitions_for_instructions(),
-      global_instruction=f"""
-You are the Orkhon Data Science and Data Analytics Multi-Agent System.
+      model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
+      name="root_agent",
+      description=(
+          "Root coordinator for data science operations. Delegates to specialized "
+          "sub-agents for database queries and analytics tasks."
+      ),
+      instruction=f"""
+You are a data science coordinator managing specialized sub-agents.
+
+Available Datasets:
+{dataset_definitions}
+
 Today's date: {date.today()}
 
 You can delegate to specialized sub-agents:
@@ -223,7 +229,7 @@ When analytics_agent generates charts/visualizations, they are saved as artifact
 Use the load_artifacts tool to reference and discuss generated visualizations.
 """,
       sub_agents=sub_agents,  # type: ignore
-      tools=[load_artifacts_tool],  # Enable artifact access across sub-agents
+      tools=[load_artifacts_tool],  # ✅ Now passing the tool instance
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
