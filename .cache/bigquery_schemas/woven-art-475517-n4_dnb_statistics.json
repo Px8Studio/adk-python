@@ -1,0 +1,545 @@
+{
+  "schema": {
+    "project_id": "woven-art-475517-n4",
+    "dataset_id": "dnb_statistics",
+    "tables": {
+      "dnb_balance_sheet_month": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "definition",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "sector",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 12650,
+        "description": null
+      },
+      "finance_companies_balance_sheet": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 182,
+        "description": null
+      },
+      "financial_auxiliaries_balance_sheet": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 182,
+        "description": null
+      },
+      "financial_auxiliaries_balance_sheet_geography_quarter": {
+        "fields": [
+          {
+            "name": "balance_sheet_item",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "geography",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 560,
+        "description": null
+      },
+      "financial_data_individual_banks_half_year": {
+        "fields": [
+          {
+            "name": "area",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "basis",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "main_item",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "name_of_bank",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "sub_item",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 12687,
+        "description": null
+      },
+      "head_offices_financial_auxiliaries_balance_sheet": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 182,
+        "description": null
+      },
+      "mfi_balance_sheet_month": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "definition",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "sector",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 20252,
+        "description": null
+      },
+      "mfi_household_interest_rates_month": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "flow_type",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "initial_rate_fixation",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "maturity_original",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 10509,
+        "description": null
+      },
+      "other_fi_balance_sheet": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 182,
+        "description": null
+      },
+      "other_fi_balance_sheet_geography_quarter": {
+        "fields": [
+          {
+            "name": "balance_sheet_item",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "geography",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 560,
+        "description": null
+      },
+      "other_financial_auxiliaries_balance_sheet": {
+        "fields": [
+          {
+            "name": "balance_sheet_side",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "instrument",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "period",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "value",
+            "type": "FLOAT",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_timestamp",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_source",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 182,
+        "description": null
+      }
+    }
+  },
+  "cached_at": "2025-10-27T01:23:35.501346",
+  "schema_version": "unversioned",
+  "environment": "unknown"
+}

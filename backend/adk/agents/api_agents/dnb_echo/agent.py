@@ -34,10 +34,10 @@ _TOOLSET_NAME = os.getenv("DNB_ECHO_TOOLSET_NAME", "dnb_echo_tools")
 MODEL = os.getenv("DNB_ECHO_MODEL", "gemini-2.0-flash")
 
 dnb_echo_agent = Agent(
-  name="dnb_echo_agent",
-  model=MODEL,
-  description="Specialist for DNB Echo API connectivity tests and health checks.",
-  instruction="""You are a specialist in DNB Echo API operations.
+    name="dnb_echo_agent",
+    model=MODEL,
+    description="Specialist for DNB Echo API connectivity tests and health checks.",
+    instruction="""You are a specialist in DNB Echo API operations.
 
 CAPABILITIES:
 - Test API connectivity (helloworld endpoint)
@@ -52,10 +52,10 @@ GUIDELINES:
 - Format results in a user-friendly way
 - If API is down, provide helpful troubleshooting steps
 - For statistics or public register operations, inform user to route through coordinator""",
-  tools=[
-    ToolboxToolset(
-      server_url=_TOOLBOX_URL,
-      toolset_name=_TOOLSET_NAME
-    )
-  ]
+    tools=[
+        ToolboxToolset(
+            server_url=_TOOLBOX_URL,
+            toolset_name=_TOOLSET_NAME
+        )
+    ]
 )

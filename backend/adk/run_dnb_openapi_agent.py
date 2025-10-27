@@ -44,7 +44,9 @@ async def main(app_name: str = "dnb_openapi_agent") -> None:
 
     # Build toolset and print tool names as a smoke test
     toolset = build_openapi_toolset(api)
-    tool_names = [t.name for t in toolset.get_tools()]
+    # get_tools is async; list a few names for a quick smoke test
+    tools = await toolset.get_tools()
+    tool_names = [t.name for t in tools]
     print(f"[info] Loaded {len(tool_names)} tools for '{api}':")
     for name in sorted(tool_names)[:25]:
         print(f"  - {name}")

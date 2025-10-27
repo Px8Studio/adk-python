@@ -28,95 +28,87 @@ Hierarchy:
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import os
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
 
-# Import specialized DNB agents
-# Use absolute imports so ADK's module loader (which adds the agents dir to sys.path)
-# can resolve sibling packages reliably.
+# Import specialized DNB agents (leaf agents that may already be part of api_agents_root)
 from api_agents.dnb_echo.agent import dnb_echo_agent  # type: ignore
 from api_agents.dnb_statistics.agent import dnb_statistics_agent  # type: ignore
 from api_agents.dnb_public_register.agent import (
-    dnb_public_register_agent,
+  dnb_public_register_agent,
 )  # type: ignore
 
 # Optional: OpenAPI-native variants (runtime tool generation)
 USE_OPENAPI_VARIANTS = os.getenv("DNB_COORDINATOR_USE_OPENAPI", "0") in ("1", "true", "True")
 if USE_OPENAPI_VARIANTS:
-    try:
-        from api_agents.dnb_openapi.agent import (
-            dnb_openapi_echo_agent,
-            dnb_openapi_statistics_agent,
-            dnb_openapi_public_register_agent,
-        )  # type: ignore
-        _OPENAPI_ECHO = dnb_openapi_echo_agent
-        _OPENAPI_STATS = dnb_openapi_statistics_agent
-        _OPENAPI_PR = dnb_openapi_public_register_agent
-    except ImportError:  # Silently fall back to standard agents if OpenAPI variants unavailable
-        _OPENAPI_ECHO = None
-        _OPENAPI_STATS = None
-        _OPENAPI_PR = None
-else:
-    _OPENAPI_ECHO = None
-    _OPENAPI_STATS = None
-    _OPENAPI_PR = None
+  try:
+    from api_agents.dnb_openapi.agent import (  # type: ignore
+      dnb_openapi_echo_agent,
+      dnb_openapi_statistics_agent,
+      dnb_openapi_public_register_agent,
+    )
+  except Exception:
+    USE_OPENAPI_VARIANTS = False
 
-# Model configuration
 MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
-
-# Load instructions
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
-    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
+  INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-    INSTRUCTION = (
-        "You coordinate DNB API operations across three specialized domains:\n\n"
-        "1. **Echo API** (dnb_echo_agent):\n"
-        "   - Connectivity tests, health checks, API availability\n"
-        "   - Use for: \"test DNB connection\", \"is DNB API up?\"\n\n"
-        "2. **Statistics API** (dnb_statistics_agent):\n"
-        "   - Economic datasets, exchange rates, financial statistics\n"
-        "   - Use for: \"get exchange rates\", \"pension fund data\", \"balance of payments\"\n\n"
-        "3. **Public Register API** (dnb_public_register_agent):\n"
-        "   - License searches, registration data, regulatory info\n"
-        "   - Use for: \"find licenses\", \"search institutions\", \"regulatory data\"\n"
-        "   - IMPORTANT: This agent will automatically discover valid register codes\n"
-        "   - Common registers: WFTAF (financial services), Wft (various financial categories)\n"
-        "   - Do NOT assume register codes like 'AFM' - let the specialist discover valid codes\n\n"
-        "Route to the appropriate specialist based on user request.\n"
-        "If multiple specialists needed, coordinate execution.\n"
-        "Provide clear, structured summaries."
+  INSTRUCTION = (
+    "You coordinate DNB API agents. Route requests to the right DNB agent and "
+    "summarize results. Prefer precise, concise answers."
+  )
+
+def _clone_for_sub_agent(agent: Agent, suffix: str = "_as_sub") -> Agent:
+  """Create a fresh Agent instance suitable for reuse as a sub_agent.
+
+  Avoids parent conflicts by not reusing the original Agent instance.
+  Copies essential fields and tools; does not copy parent linkage.
+  """
+  # Best-effort copy of core fields commonly used in app agents.
+  return Agent(
+    name=f"{getattr(agent, 'name', 'agent')}{suffix}",
+    model=getattr(agent, "model", MODEL),
+    instruction=getattr(agent, "instruction", ""),
+    description=getattr(agent, "description", ""),
+    tools=list(getattr(agent, "tools", [])),
+    sub_agents=[],  # Avoid recursively reusing children to prevent conflicts
+  )
+
+def get_dnb_coordinator_agent() -> Agent:
+  """Create the DNB coordinator agent with cloned sub_agents to prevent parent conflicts."""
+  child_agents = [
+    _clone_for_sub_agent(dnb_echo_agent),
+    _clone_for_sub_agent(dnb_statistics_agent),
+    _clone_for_sub_agent(dnb_public_register_agent),
+  ]
+
+  if USE_OPENAPI_VARIANTS:
+    child_agents.extend(
+      [
+        _clone_for_sub_agent(dnb_openapi_echo_agent),            # type: ignore[name-defined]
+        _clone_for_sub_agent(dnb_openapi_statistics_agent),      # type: ignore[name-defined]
+        _clone_for_sub_agent(dnb_openapi_public_register_agent), # type: ignore[name-defined]
+      ]
     )
 
-def _clone_for_coordinator(agent: Agent) -> Agent:
-    """Creates an isolated copy so agents can appear in multiple trees."""
-
-    return agent.clone()
-
-
-_delegated_echo_agent = _clone_for_coordinator(_OPENAPI_ECHO or dnb_echo_agent)
-_delegated_statistics_agent = _clone_for_coordinator(
-    _OPENAPI_STATS or dnb_statistics_agent
-)
-_delegated_public_register_agent = _clone_for_coordinator(
-    _OPENAPI_PR or dnb_public_register_agent
-)
-
-dnb_coordinator_agent = Agent(
-    name="dnb_coordinator",
+  # Rely on ADK's built-in transfer tool auto-exposed when sub_agents are set.
+  return Agent(
+    name="dnb_coordinator_agent",
     model=MODEL,
-    description=(
-        "Coordinator for DNB (De Nederlandsche Bank) API operations. "
-        "Routes to Echo (tests), Statistics (datasets), or Public Register "
-        "(licenses/registrations) based on request type."
-    ),
     instruction=INSTRUCTION,
-    sub_agents=[
-        _delegated_echo_agent,
-        _delegated_statistics_agent,
-        _delegated_public_register_agent,
-    ],
-    output_key="dnb_coordinator_response",
-)
+    description=(
+      "Coordinator for DNB API operations. Delegates to specialized DNB agents "
+      "and synthesizes concise responses."
+    ),
+    sub_agents=child_agents,
+    tools=[],
+  )
+
+# Module-level instance for ADK loader compatibility
+dnb_coordinator_agent = get_dnb_coordinator_agent()

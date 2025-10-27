@@ -25,45 +25,48 @@ import os
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
-
 from api_agents.dnb_openapi.agent import (  # type: ignore
-  dnb_openapi_echo_agent,
-  dnb_openapi_public_register_agent,
-  dnb_openapi_statistics_agent,
+    dnb_openapi_unified_agent,
 )
 
 MODEL = os.getenv("DNB_OPENAPI_COORDINATOR_MODEL", "gemini-2.0-flash")
-
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
-  INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
+    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
 else:
-  INSTRUCTION = (
-      "You coordinate DNB OpenAPI agents that build their tools at runtime. "
-      "Use this coordinator when users ask for the experimental native "
-      "OpenAPIToolset path instead of the MCP Toolbox tools."
-  )
+    INSTRUCTION = (
+        "You coordinate DNB OpenAPI access. Delegate to the unified OpenAPI agent "
+        "and summarize results."
+    )
 
+def _clone_for_sub_agent(agent: Agent) -> Agent:
+    """Return a clone suitable for reuse in coordinator sub_agents.
 
-def _clone_for_coordinator(agent: Agent) -> Agent:
-  """Create a defensive clone so agents remain reusable elsewhere."""
+    Creates a shallow copy of the provided agent with a distinct name so it can be
+    safely referenced in sub_agents without unintended shared state.
+    """
+    return Agent(
+        name=f"{agent.name}_as_sub",
+        model=getattr(agent, "model", MODEL),
+        instruction=getattr(agent, "instruction", ""),
+        description=getattr(agent, "description", ""),
+        tools=getattr(agent, "tools", []),
+        sub_agents=getattr(agent, "sub_agents", []),
+    )
 
-  return agent.clone()
+def get_dnb_openapi_coordinator_agent() -> Agent:
+    """Create the DNB OpenAPI coordinator agent with sub_agents configured."""
+    child_agents = [_clone_for_sub_agent(dnb_openapi_unified_agent)]
+    return Agent(
+        name="dnb_openapi_coordinator_agent",
+        model=MODEL,
+        instruction=INSTRUCTION,
+        description=(
+            "Coordinator for unified DNB OpenAPI access. Delegates to the unified "
+            "OpenAPI agent and synthesizes concise responses."
+        ),
+        sub_agents=child_agents,
+        tools=[],
+    )
 
-
-dnb_openapi_coordinator_agent = Agent(
-  name="dnb_openapi_coordinator",
-  model=MODEL,
-  description=(
-      "Coordinator for DNB APIs using runtime OpenAPIToolset agents. "
-      "Intended for experimental and side-by-side testing against MCP "
-      "Toolbox-powered flows."
-  ),
-  instruction=INSTRUCTION,
-  sub_agents=[
-      _clone_for_coordinator(dnb_openapi_echo_agent),
-      _clone_for_coordinator(dnb_openapi_statistics_agent),
-      _clone_for_coordinator(dnb_openapi_public_register_agent),
-  ],
-  output_key="dnb_openapi_coordinator_response",
-)
+dnb_openapi_coordinator_agent = get_dnb_openapi_coordinator_agent()

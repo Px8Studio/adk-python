@@ -1,0 +1,2693 @@
+{
+  "schema": {
+    "project_id": "woven-art-475517-n4",
+    "dataset_id": "dnb_public_register",
+    "tables": {
+      "act_article_names_pwacb_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_pwpnf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "act_article_names_wfmbesgtk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 2,
+        "description": null
+      },
+      "act_article_names_wfmbeski_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "act_article_names_wfmbespnf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_wfmbestk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_wfmbesve_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "act_article_names_wftaf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 4,
+        "description": null
+      },
+      "act_article_names_wftbi_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 9,
+        "description": null
+      },
+      "act_article_names_wftci_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_wftdg_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "act_article_names_wfteg_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 8,
+        "description": null
+      },
+      "act_article_names_wftgo_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_wfthv_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "act_article_names_wftkf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 16,
+        "description": null
+      },
+      "act_article_names_wftpp_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "act_article_names_wftri_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "act_article_names_wftve_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 14,
+        "description": null
+      },
+      "act_article_names_wftwi_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 2,
+        "description": null
+      },
+      "act_article_names_wtttk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "organization_details_pwacb_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 10,
+        "description": null
+      },
+      "organization_details_pwpnf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 153,
+        "description": null
+      },
+      "organization_details_wfmbeski_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 9,
+        "description": null
+      },
+      "organization_details_wfmbesve_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 26,
+        "description": null
+      },
+      "organization_details_wftaf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 10,
+        "description": null
+      },
+      "organization_details_wftdg_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 38,
+        "description": null
+      },
+      "organization_details_wftpp_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "organization_details_wftri_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "organization_details_wtttk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "relation_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "chamber_of_commerce",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "branch_number",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "legal_duration",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_place",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_country",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "rsin_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "lei_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_in_liquidation",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "date_of_liquidation",
+            "type": "INTEGER",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "is_main",
+            "type": "BOOLEAN",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "official_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "statutory_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "trade_names_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "contact_channels_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "registrations_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "classifications_json",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 113,
+        "description": null
+      },
+      "register_articles_pwpnf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 8,
+        "description": null
+      },
+      "register_articles_wfmbesgtk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 2,
+        "description": null
+      },
+      "register_articles_wfmbeski_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "register_articles_wfmbespnf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "register_articles_wfmbestk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 1,
+        "description": null
+      },
+      "register_articles_wfmbesve_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 10,
+        "description": null
+      },
+      "register_articles_wftaf_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 15,
+        "description": null
+      },
+      "register_articles_wftbi_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 9,
+        "description": null
+      },
+      "register_articles_wftdg_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 5,
+        "description": null
+      },
+      "register_articles_wfteg_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 8,
+        "description": null
+      },
+      "register_articles_wftgo_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 2,
+        "description": null
+      },
+      "register_articles_wfthv_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 13,
+        "description": null
+      },
+      "register_articles_wftpp_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 7,
+        "description": null
+      },
+      "register_articles_wftri_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 8,
+        "description": null
+      },
+      "register_articles_wftve_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 35,
+        "description": null
+      },
+      "register_articles_wftwi_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 3,
+        "description": null
+      },
+      "register_articles_wtttk_nl": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "act_article_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 11,
+        "description": null
+      },
+      "registers": {
+        "fields": [
+          {
+            "name": "register_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "register_name",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "register_type",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "last_publish_date",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 20,
+        "description": null
+      },
+      "supported_languages": {
+        "fields": [
+          {
+            "name": "language_code",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extracted_at",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          },
+          {
+            "name": "_etl_extractor",
+            "type": "STRING",
+            "mode": "NULLABLE",
+            "description": null
+          }
+        ],
+        "num_rows": 2,
+        "description": null
+      }
+    }
+  },
+  "cached_at": "2025-10-27T01:23:48.400478",
+  "schema_version": "unversioned",
+  "environment": "unknown"
+}

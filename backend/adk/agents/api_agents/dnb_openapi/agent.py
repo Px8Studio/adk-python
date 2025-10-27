@@ -21,15 +21,17 @@ Notes:
 
 from __future__ import annotations
 
+import hashlib
 import os
+from functools import lru_cache
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.openapi_tool.auth.auth_helpers import (
-  token_to_scheme_credential,
+    token_to_scheme_credential,
 )
 from google.adk.tools.openapi_tool.openapi_spec_parser.openapi_toolset import (
-  OpenAPIToolset,
+    OpenAPIToolset,
 )
 
 
@@ -40,9 +42,9 @@ _SPECS_DIR = _REPO_ROOT / "backend" / "apis" / "dnb" / "specs"
 
 
 _API_TO_SPEC = {
-  "echo": "openapi3-echo-api.yaml",
-  "statistics": "openapi3_statisticsdatav2024100101.yaml",
-  "public-register": "openapi3_publicdatav1.yaml",
+    "echo": "openapi3-echo-api.yaml",
+    "statistics": "openapi3_statisticsdatav2024100101.yaml",
+    "public-register": "openapi3_publicdatav1.yaml",
 }
 
 
@@ -64,42 +66,47 @@ def _get_api_key() -> str | None:
 
 
 def _safe_agent_name(api: str) -> str:
-  """Return a valid ADK agent identifier for the given api slug."""
-  return f"dnb_openapi_{api.replace('-', '_')}_agent"
+    """Return a valid ADK agent identifier for the given api slug."""
+    return f"dnb_openapi_{api.replace('-', '_')}_agent"
+
+
+# Toolset builder with LRU caching.
+# We expose a single, clear implementation using functools.lru_cache to avoid
+# duplicate code paths. When credentials change, the cache key changes and the
+# toolset is rebuilt.
+@lru_cache(maxsize=10)
+def _get_cached_toolset(api: str, _api_key_hash: str) -> OpenAPIToolset:
+    """LRU-cached toolset builder. api_key_hash forces cache invalidation on credential change."""
+    spec_content = _load_spec_content(api)
+    api_key = _get_api_key()
+
+    auth_scheme = None
+    auth_credential = None
+    if api_key:
+        auth_scheme, auth_credential = token_to_scheme_credential(
+            token_type="apikey",
+            location="header",
+            name="Ocp-Apim-Subscription-Key",
+            credential_value=api_key,
+        )
+
+    return OpenAPIToolset(
+        spec_str=spec_content,
+        spec_str_type="yaml",
+        auth_scheme=auth_scheme,
+        auth_credential=auth_credential,
+    )
 
 
 def build_openapi_toolset(api: str) -> OpenAPIToolset:
-  """Build ADK OpenAPIToolset from the local OpenAPI spec file."""
-  spec_file = _API_TO_SPEC.get(api)
-  if not spec_file:
-    raise ValueError(
-      f"Unknown API '{api}'. Expected one of: {', '.join(_API_TO_SPEC)}"
-    )
+    """Build ADK OpenAPIToolset from the local OpenAPI spec file with caching.
 
-  spec_content = _load_spec_content(api)
-  api_key = _get_api_key()
-
-  auth_scheme = None
-  auth_credential = None
-  if api_key:
-    # Use the helper function to create both AuthScheme and AuthCredential
-    # for API key authentication in the header
-    auth_scheme, auth_credential = token_to_scheme_credential(
-      token_type="apikey",
-      location="header",
-      name="Ocp-Apim-Subscription-Key",
-      credential_value=api_key,
-    )
-
-  # OpenAPIToolset constructor accepts spec_str (not spec_content)
-  # and auth_credential (singular, not plural credentials).
-  # All specs are YAML format.
-  return OpenAPIToolset(
-    spec_str=spec_content,
-    spec_str_type="yaml",
-    auth_scheme=auth_scheme,
-    auth_credential=auth_credential,
-  )
+    Parses each spec once per process. Subsequent calls return cached instances
+    unless credentials change.
+    """
+    api_key = _get_api_key() or ""
+    api_key_hash = hashlib.md5(api_key.encode()).hexdigest()
+    return _get_cached_toolset(api, api_key_hash)
 
 
 def _default_instruction(api: str) -> str:
@@ -113,62 +120,62 @@ def _default_instruction(api: str) -> str:
 
 
 def _unified_instruction() -> str:
-  """Instruction for the unified agent with all three APIs."""
-  return (
-    "You are a comprehensive DNB (De Nederlandsche Bank) API specialist with "
-    "access to all available DNB APIs.\n\n"
-    "Available APIs:\n"
-    "1. **Echo API** - Test connectivity and authentication\n"
-    "2. **Statistics API** - Financial data, market rates, economic indicators, "
-    "pension funds, insurance data\n"
-    "3. **Public Register API** - Organization searches, publications, "
-    "regulatory registers\n\n"
-    "Guidelines:\n"
-    "- Prefer calling tools when you need data\n"
-    "- Clearly summarize responses and include key parameters used\n"
-    "- Authentication is handled automatically\n"
-    "- Choose the appropriate API based on the user's question\n"
-    "- For testing: use Echo API\n"
-    "- For financial/economic data: use Statistics API\n"
-    "- For organizational/regulatory data: use Public Register API"
-  )
+    """Instruction for the unified agent with all three APIs."""
+    return (
+        "You are a comprehensive DNB (De Nederlandsche Bank) API specialist with "
+        "access to all available DNB APIs.\n\n"
+        "Available APIs:\n"
+        "1. **Echo API** - Test connectivity and authentication\n"
+        "2. **Statistics API** - Financial data, market rates, economic indicators, "
+        "pension funds, insurance data\n"
+        "3. **Public Register API** - Organization searches, publications, "
+        "regulatory registers\n\n"
+        "Guidelines:\n"
+        "- Prefer calling tools when you need data\n"
+        "- Clearly summarize responses and include key parameters used\n"
+        "- Authentication is handled automatically\n"
+        "- Choose the appropriate API based on the user's question\n"
+        "- For testing: use Echo API\n"
+        "- For financial/economic data: use Statistics API\n"
+        "- For organizational/regulatory data: use Public Register API"
+    )
 
 
 def build_agent(api: str | None = None, model: str | None = None) -> Agent:
-  """Create an Agent wired with the DNB OpenAPI toolset."""
-  api = api or os.getenv("DNB_OPENAPI_API", "echo")
-  model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
+    """Create an Agent wired with the DNB OpenAPI toolset."""
+    api = api or os.getenv("DNB_OPENAPI_API", "echo")
+    model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
 
-  toolset = build_openapi_toolset(api)
-  instruction = _default_instruction(api)
+    toolset = build_openapi_toolset(api)
+    instruction = _default_instruction(api)
 
-  agent = Agent(
-    name=_safe_agent_name(api),
-    model=model,
-    description=f"DNB OpenAPI tools for '{api}'",
-    instruction=instruction,
-    tools=[toolset],
-  )
-  return agent
+    agent = Agent(
+        name=_safe_agent_name(api),
+        model=model,
+        description=f"DNB OpenAPI tools for '{api}'",
+        instruction=instruction,
+        tools=[toolset],
+    )
+    return agent
 
 
 def build_unified_agent(model: str | None = None) -> Agent:
-  """Create an Agent with ALL DNB OpenAPI toolsets combined."""
-  model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
+    """Create an Agent with ALL DNB OpenAPI toolsets combined."""
+    model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
 
-  # Build all three toolsets
-  echo_toolset = build_openapi_toolset("echo")
-  statistics_toolset = build_openapi_toolset("statistics")
-  public_register_toolset = build_openapi_toolset("public-register")
+    # Build all three toolsets
+    echo_toolset = build_openapi_toolset("echo")
+    statistics_toolset = build_openapi_toolset("statistics")
+    public_register_toolset = build_openapi_toolset("public-register")
 
-  agent = Agent(
-    name="dnb_openapi_unified_agent",
-    model=model,
-    description="Unified DNB OpenAPI agent with Echo, Statistics, and Public Register APIs",
-    instruction=_unified_instruction(),
-    tools=[echo_toolset, statistics_toolset, public_register_toolset],
-  )
-  return agent
+    agent = Agent(
+        name="dnb_openapi_unified_agent",
+        model=model,
+        description="Unified DNB OpenAPI agent with Echo, Statistics, and Public Register APIs",
+        instruction=_unified_instruction(),
+        tools=[echo_toolset, statistics_toolset, public_register_toolset],
+    )
+    return agent
 
 
 # Default exported agent - now uses unified approach by default

@@ -1,0 +1,63 @@
+# Datasource Profile: DNB Statistics
+# De Nederlandsche Bank (DNB) Statistical Data API
+
+datasource:
+  id: dnb_statistics
+  name: "DNB Statistics API"
+  description: "Dutch Central Bank statistical data covering insurance & pensions, market data, macroeconomic indicators, and payment systems"
+  provider: "De Nederlandsche Bank (DNB)"
+  source_url: "https://api.dnb.nl/statistics"
+
+gcp:
+  # BigQuery Configuration
+  bigquery:
+    dataset_id: dnb_statistics
+    location: EU  # EU multi-region (dataset already created there)
+    description: "DNB Statistics data warehouse - Dutch Central Bank statistical data"
+    labels:
+      datasource: dnb-statistics
+      provider: dnb
+      project: orkhon
+      environment: development
+    
+    # Default table configuration
+    table_defaults:
+      # Time-based partitioning DISABLED temporarily
+      # TODO: Fix ETL to convert period field to datetime before enabling
+      # The 'period' field is currently stored as STRING in Parquet files,
+      # but BigQuery partitioning requires TIMESTAMP/DATE/DATETIME types.
+      partition_field: null  # was: period
+      partition_type: DAY
+      
+      # No clustering by default (can be overridden per table if needed)
+      clustering_fields: []
+      
+      # Replace existing data on upload
+      write_disposition: WRITE_TRUNCATE
+
+# Data Pipeline Configuration
+pipeline:
+  # Bronze layer path (relative to backend/data/1-bronze/)
+  bronze_path: dnb_statistics
+  
+  # Table naming convention: category__subcategory__endpoint
+  # Example: insurance_pensions__insurers__insurance_corps_balance_sheet_quarter
+  table_naming: double_underscore
+  
+  # Schema detection from parquet files
+  schema:
+    auto_detect: true
+    source_format: PARQUET
+  
+  # Data quality requirements
+  quality:
+    require_partition_field: false  # Disabled until ETL fixes period field type
+    validate_schema: true
+
+# Data Categories
+# Used for filtering uploads and organizing data
+categories:
+  - insurance_pensions
+  - market_data
+  - macroeconomic
+  - payment_systems

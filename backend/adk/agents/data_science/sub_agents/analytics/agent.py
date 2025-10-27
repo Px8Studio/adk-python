@@ -16,20 +16,97 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
-from google.adk.agents import Agent
-from google.adk.code_executors import VertexAiCodeExecutor
+from google.adk.agents.llm_agent import LlmAgent
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool
+from google.adk.tools.tool_context import ToolContext
+from google.adk.code_executors.vertex_ai_code_executor import VertexAiCodeExecutor
+from google.genai import types
 
 from .prompts import return_instructions_analytics
 
-# Create the Analytics agent with Code Interpreter
-analytics_agent = Agent(
-    model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.0-flash-exp"),
-    name="analytics_agent",
-    instruction=return_instructions_analytics(),
-    code_executor=VertexAiCodeExecutor(
-        optimize_data_file=True,  # Optimize data transfer
-        stateful=True,  # Maintain state between executions
-    ),
-)
+_logger = logging.getLogger(__name__)
+
+# User agent identifier for API calls
+USER_AGENT = "orkhon-data-science-agent"
+
+
+def _create_code_executor():
+  """Create and configure the Vertex AI Code Executor.
+
+  Returns:
+    Configured VertexAiCodeExecutor instance, or None if disabled
+  """
+  # Check if code execution is disabled via environment variable
+  if os.getenv("DISABLE_CODE_EXECUTION", "").lower() == "true":
+    _logger.info("Code execution is disabled via DISABLE_CODE_EXECUTION env var")
+    return None
+
+  try:
+    # Check if we have a cached extension ID to reuse
+    cached_extension = os.getenv("CODE_INTERPRETER_EXTENSION_NAME")
+    
+    # Create executor with optional resource_name for caching
+    executor = VertexAiCodeExecutor(
+        resource_name=cached_extension,
+    )
+    
+    # Log the extension ID for reuse in future sessions
+    if hasattr(executor, '_code_interpreter_extension') and executor._code_interpreter_extension:
+      extension_id = executor._code_interpreter_extension.resource_name
+      if cached_extension:
+        _logger.info(
+            "Vertex AI Code Executor initialized (using cached extension: %s)",
+            extension_id
+        )
+      else:
+        _logger.info(
+            "Vertex AI Code Executor initialized (new extension created). "
+            "To reuse this extension, add to your .env file:\n"
+            "CODE_INTERPRETER_EXTENSION_NAME=%s",
+            extension_id
+        )
+    else:
+      _logger.info("Vertex AI Code Executor initialized successfully")
+    
+    return executor
+  except Exception as e:
+    _logger.error(f"Failed to initialize code executor: {e}")
+    return None
+
+
+def setup_before_agent_call(callback_context: CallbackContext) -> None:
+  """Setup callback executed before agent processes a request."""
+  tool_context = ToolContext(user_agent=USER_AGENT)
+  callback_context.tool_context = tool_context
+
+
+def get_analytics_agent() -> LlmAgent:
+  """Create and configure the analytics agent.
+
+  Returns:
+    Configured LlmAgent instance for data analysis
+  """
+  code_executor = _create_code_executor()
+
+  agent = LlmAgent(
+      model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.0-flash-exp"),
+      name="analytics_agent",
+      instruction=return_instructions_analytics(),
+      code_executor=code_executor,
+      tools=[load_artifacts_tool],
+      before_agent_callback=setup_before_agent_call,
+      generate_content_config=types.GenerateContentConfig(temperature=0.01),
+  )
+
+  _logger.info("Analytics agent initialized with code executor: %s", 
+               "enabled" if code_executor else "disabled")
+
+  return agent
+
+
+# For backwards compatibility, create a default instance
+analytics_agent = get_analytics_agent()

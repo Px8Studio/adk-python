@@ -12,113 +12,192 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""BigQuery agent tools and utilities."""
+"""BigQuery database configuration and schema management tools.
+
+This module centralizes how we discover dataset schemas and format dataset
+definitions for agent prompts. It uses a small in-memory cache plus the
+schema_cache helpers to avoid redundant BigQuery calls.
+"""
 
 from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING
+from typing import Any
 
 from google.cloud import bigquery
 
-if TYPE_CHECKING:
-  from google.adk.tools.tool_context import ToolContext
+from .schema_cache import get_cached_schema, set_cached_schema
 
 _logger = logging.getLogger(__name__)
 
 
-def get_database_settings() -> dict:
-  """Get BigQuery database settings including schema information.
+def _get_dataset_schema(
+    client: bigquery.Client,
+    project_id: str,
+    dataset_id: str,
+) -> dict[str, Any]:
+    """Retrieve schema for a single dataset with caching.
 
-  Returns:
-    Dictionary containing project IDs, dataset ID, and schema information.
-  """
-  bq_data_project_id = os.getenv("BQ_DATA_PROJECT_ID", "")
-  bq_compute_project_id = os.getenv("BQ_COMPUTE_PROJECT_ID", bq_data_project_id)
-  bq_dataset_id = os.getenv("BQ_DATASET_ID", "")
+    Args:
+        client: BigQuery client instance
+        project_id: GCP project ID
+        dataset_id: BigQuery dataset ID
 
-  if not bq_data_project_id or not bq_dataset_id:
-    _logger.warning(
-        "BQ_DATA_PROJECT_ID or BQ_DATASET_ID not set. "
-        "Schema information will be limited."
-    )
-    return {
-        "data_project_id": bq_data_project_id,
-        "compute_project_id": bq_compute_project_id,
-        "dataset_id": bq_dataset_id,
-        "schema": "BigQuery schema not available. Please configure "
-        "BQ_DATA_PROJECT_ID and BQ_DATASET_ID environment variables.",
-    }
+    Returns:
+        Dictionary with dataset schema information
+    """
+    # Check cache first
+    cache_key = f"{project_id}:{dataset_id}"
+    cached = get_cached_schema(cache_key)
+    if cached:
+        return cached
 
-  # Get schema information from BigQuery
-  client = bigquery.Client(project=bq_compute_project_id)
-  schema_info = []
+    # Fetch from BigQuery
+    _logger.info("Fetching schema for %s (cache miss)", cache_key)
 
-  try:
-    dataset_ref = client.dataset(bq_dataset_id, project=bq_data_project_id)
+    dataset_ref = f"{project_id}.{dataset_id}"
     tables = client.list_tables(dataset_ref)
 
-    for table_item in tables:
-      table_ref = dataset_ref.table(table_item.table_id)
-      table = client.get_table(table_ref)
+    table_schemas: dict[str, Any] = {}
+    for table in tables:
+        full_table = client.get_table(table)
+        table_schemas[table.table_id] = {
+            "fields": [
+                {
+                    "name": field.name,
+                    "type": field.field_type,
+                    "mode": field.mode,
+                    "description": getattr(field, "description", None),
+                }
+                for field in full_table.schema
+            ],
+            "num_rows": getattr(full_table, "num_rows", 0),
+            "description": getattr(full_table, "description", None),
+        }
 
-      schema_info.append(f"\nTable: {table.table_id}")
-      schema_info.append("Columns:")
-      for field in table.schema:
-        schema_info.append(
-            f"  - {field.name} ({field.field_type}): {field.description or 'No description'}"
-        )
+    schema = {
+        "project_id": project_id,
+        "dataset_id": dataset_id,
+        "tables": table_schemas,
+    }
 
-  except Exception as e:  # pylint: disable=broad-except
-    _logger.warning("Failed to retrieve BigQuery schema: %s", e)
-    schema_info.append(f"Failed to retrieve schema: {e}")
-
-  return {
-      "data_project_id": bq_data_project_id,
-      "compute_project_id": bq_compute_project_id,
-      "dataset_id": bq_dataset_id,
-      "schema": "\n".join(schema_info),
-  }
-
-
-def bigquery_nl2sql(nl_query: str, tool_context: ToolContext) -> str:
-  """Translate natural language query to BigQuery SQL.
-
-  This is a simplified baseline NL2SQL tool that uses the schema information
-  from the database settings to generate SQL queries.
-
-  Args:
-    nl_query: Natural language question about the data
-    tool_context: ADK tool context containing database settings
-
-  Returns:
-    SQL query as a string
-  """
-  db_settings = tool_context.state.get("database_settings", {}).get("bigquery", {})
-
-  if not db_settings:
-    return (
-        "Error: Database settings not found. Cannot generate SQL query. "
-        "Please ensure BigQuery is properly configured."
+    # Cache the result
+    set_cached_schema(cache_key, schema)
+    _logger.info(
+        "Retrieved schema for %s: %d tables", dataset_id, len(table_schemas)
     )
 
-  schema = db_settings.get("schema", "")
-  dataset_id = db_settings.get("dataset_id", "")
-  data_project_id = db_settings.get("data_project_id", "")
+    return schema
 
-  prompt = f"""Based on the following BigQuery schema, generate a SQL query to answer the user's question.
 
-Schema:
-{schema}
+def get_database_settings(
+    dataset_configs: list[dict[str, str]] | None = None,
+) -> dict[str, Any]:
+    """Get BigQuery database settings and schemas with caching.
 
-Dataset: {data_project_id}.{dataset_id}
+    Args:
+        dataset_configs: List of dataset configurations, each with:
+        - project_id: GCP project ID
+        - dataset_id: BigQuery dataset ID (or name for multi-dataset configs)
+        - name: Display name for the dataset (optional)
+        - description: Dataset description (optional)
 
-User Question: {nl_query}
+        If not provided, uses BQ_DATASET_ID and GCP project from env.
 
-Generate ONLY the SQL query without any explanation. Use fully qualified table names in the format `{data_project_id}.{dataset_id}.table_name`.
-"""
+    Returns:
+        Dictionary containing database configuration and schemas
+    """
+    # Fallback to environment variables
+    if not dataset_configs:
+        dataset_id = os.getenv("BQ_DATASET_ID")
+        project_id = (
+            os.getenv("BQ_DATA_PROJECT_ID")
+            or os.getenv("BQ_PROJECT_ID")
+            or os.getenv("GOOGLE_CLOUD_PROJECT")
+        )
+        if not dataset_id or not project_id:
+            _logger.warning(
+                "No datasets configured. Provide dataset_configs or set "
+                "BQ_DATASET_ID and BQ_DATA_PROJECT_ID (or BQ_PROJECT_ID/GOOGLE_CLOUD_PROJECT)."
+            )
+            return {"datasets": []}
+        dataset_configs = [
+            {
+                "project_id": project_id,
+                "dataset_id": dataset_id,
+                "name": dataset_id,
+            }
+        ]
 
-  # This would normally call the LLM to generate SQL
-  # For now, return a template that the agent will fill in
-  return prompt
+    _logger.info(
+        "Retrieving BigQuery schemas for %d dataset(s): %s",
+        len(dataset_configs),
+        ", ".join(cfg.get("dataset_id", cfg.get("name", "unknown")) for cfg in dataset_configs),
+    )
+
+    datasets: list[dict[str, Any]] = []
+    # Create clients per project for efficiency
+    clients: dict[str, bigquery.Client] = {}
+
+    for config in dataset_configs:
+        try:
+            dataset_name = config.get("name", config.get("dataset_id", "unknown"))
+            dataset_id = config.get("dataset_id", dataset_name)
+
+            project_id = config.get("project_id") or (
+                os.getenv("BQ_DATA_PROJECT_ID")
+                or os.getenv("BQ_PROJECT_ID")
+                or os.getenv("GOOGLE_CLOUD_PROJECT")
+            )
+            if not project_id:
+                raise ValueError(
+                    f"No project_id found for dataset '{dataset_name}'. "
+                    "Set BQ_DATA_PROJECT_ID, BQ_PROJECT_ID, or GOOGLE_CLOUD_PROJECT in your .env file."
+                )
+
+            client = clients.get(project_id) or bigquery.Client(project=project_id)
+            clients[project_id] = client
+
+            schema = _get_dataset_schema(client=client, project_id=project_id, dataset_id=dataset_id)
+
+            datasets.append(
+                {
+                    "name": dataset_name,
+                    "description": config.get("description", ""),
+                    "schema": schema,
+                }
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            _logger.error(
+                "Failed to retrieve schema for %s.%s: %s",
+                config.get("project_id", "unknown"),
+                config.get("dataset_id", config.get("name", "unknown")),
+                exc,
+            )
+
+    return {"datasets": datasets}
+
+
+def get_dataset_definitions() -> str:
+    """Get formatted dataset definitions for agent instructions.
+
+    Returns:
+    Formatted string listing available datasets
+    """
+    settings = get_database_settings()
+    datasets = settings.get("datasets", [])
+
+    if not datasets:
+        return "No datasets configured."
+
+    definitions: list[str] = []
+    for dataset in datasets:
+        name = dataset.get("name", "unknown")
+        desc = dataset.get("description", "No description")
+        table_count = len(dataset.get("schema", {}).get("tables", {}))
+
+        definitions.append(f"- {name}: {desc} ({table_count} tables)")
+
+    return "\n".join(definitions)
+
