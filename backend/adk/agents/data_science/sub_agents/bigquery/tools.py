@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""BigQuery database configuration and schema management tools."""
+"""BigQuery database configuration and schema management tools.
+
+This module centralizes how we discover dataset schemas and format dataset
+definitions for agent prompts. It uses a small in-memory cache plus the
+schema_cache helpers to avoid redundant BigQuery calls.
+"""
 
 from __future__ import annotations
 
@@ -32,199 +37,167 @@ def _get_dataset_schema(
     project_id: str,
     dataset_id: str,
 ) -> dict[str, Any]:
-  """Retrieve schema for a single dataset with caching.
-  
-  Args:
-    client: BigQuery client instance
-    project_id: GCP project ID
-    dataset_id: BigQuery dataset ID
-    
-  Returns:
-    Dictionary with dataset schema information
-  """
-  # Check cache first
-  cache_key = f"{project_id}:{dataset_id}"
-  cached = get_cached_schema(cache_key)
-  if cached:
-    return cached
-  
-  # Fetch from BigQuery
-  _logger.info("Fetching schema for %s (cache miss)", cache_key)
-  
-  dataset_ref = f"{project_id}.{dataset_id}"
-  tables = client.list_tables(dataset_ref)
-  
-  table_schemas = {}
-  for table in tables:
-    full_table = client.get_table(table)
-    table_schemas[table.table_id] = {
-        "fields": [
-            {
-                "name": field.name,
-                "type": field.field_type,
-                "mode": field.mode,
-                "description": field.description,
-            }
-            for field in full_table.schema
-        ],
-        "num_rows": full_table.num_rows,
-        "description": full_table.description,
+    """Retrieve schema for a single dataset with caching.
+
+    Args:
+        client: BigQuery client instance
+        project_id: GCP project ID
+        dataset_id: BigQuery dataset ID
+
+    Returns:
+        Dictionary with dataset schema information
+    """
+    # Check cache first
+    cache_key = f"{project_id}:{dataset_id}"
+    cached = get_cached_schema(cache_key)
+    if cached:
+        return cached
+
+    # Fetch from BigQuery
+    _logger.info("Fetching schema for %s (cache miss)", cache_key)
+
+    dataset_ref = f"{project_id}.{dataset_id}"
+    tables = client.list_tables(dataset_ref)
+
+    table_schemas: dict[str, Any] = {}
+    for table in tables:
+        full_table = client.get_table(table)
+        table_schemas[table.table_id] = {
+            "fields": [
+                {
+                    "name": field.name,
+                    "type": field.field_type,
+                    "mode": field.mode,
+                    "description": getattr(field, "description", None),
+                }
+                for field in full_table.schema
+            ],
+            "num_rows": getattr(full_table, "num_rows", 0),
+            "description": getattr(full_table, "description", None),
+        }
+
+    schema = {
+        "project_id": project_id,
+        "dataset_id": dataset_id,
+        "tables": table_schemas,
     }
-  
-  schema = {
-      "project_id": project_id,
-      "dataset_id": dataset_id,
-      "tables": table_schemas,
-  }
-  
-  # Cache the result
-  set_cached_schema(cache_key, schema)
-  _logger.info(
-      "Retrieved schema for %s: %d tables", dataset_id, len(table_schemas)
-  )
-  
-  return schema
+
+    # Cache the result
+    set_cached_schema(cache_key, schema)
+    _logger.info(
+        "Retrieved schema for %s: %d tables", dataset_id, len(table_schemas)
+    )
+
+    return schema
 
 
 def get_database_settings(
     dataset_configs: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
-  """Get BigQuery database settings and schemas with caching.
-  
-  Args:
-    dataset_configs: List of dataset configurations, each with:
-      - project_id: GCP project ID
-      - dataset_id: BigQuery dataset ID (or name for multi-dataset configs)
-      - name: Display name for the dataset (optional)
-      - description: Dataset description (optional)
-    
-    If not provided, uses BQ_DATASET_ID and GCP_PROJECT_ID from env.
-    
-  Returns:
-    Dictionary containing database configuration and schemas
-  """
-  # Get dataset configurations
-  if not dataset_configs:
+    """Get BigQuery database settings and schemas with caching.
+
+    Args:
+        dataset_configs: List of dataset configurations, each with:
+        - project_id: GCP project ID
+        - dataset_id: BigQuery dataset ID (or name for multi-dataset configs)
+        - name: Display name for the dataset (optional)
+        - description: Dataset description (optional)
+
+        If not provided, uses BQ_DATASET_ID and GCP project from env.
+
+    Returns:
+        Dictionary containing database configuration and schemas
+    """
     # Fallback to environment variables
-    dataset_id = os.getenv("BQ_DATASET_ID")
-    project_id = (
-        os.getenv("BQ_DATA_PROJECT_ID")
-        or os.getenv("BQ_PROJECT_ID")
-        or os.getenv("GOOGLE_CLOUD_PROJECT")
-    )
-    
-    if not dataset_id or not project_id:
-      _logger.warning(
-          "No datasets configured. Provide dataset_configs or set "
-          "BQ_DATASET_ID and BQ_DATA_PROJECT_ID (or BQ_PROJECT_ID/GOOGLE_CLOUD_PROJECT)."
-      )
-      return {"datasets": []}
-    
-    dataset_configs = [{
-        "project_id": project_id,
-        "dataset_id": dataset_id,
-    }]
-  
-  _logger.info(
-      "Retrieving BigQuery schemas for %d dataset(s): %s",
-      len(dataset_configs),
-      # Fixed: Handle both 'dataset_id' and 'name' keys
-      ", ".join(cfg.get("dataset_id", cfg.get("name", "unknown")) for cfg in dataset_configs),
-  )
-  
-  datasets = []
-  for config in dataset_configs:
-    try:
-      # Support both legacy (dataset_id) and new (name) schema
-      dataset_name = config.get("name", config.get("dataset_id"))
-      dataset_id = config.get("dataset_id", dataset_name)
-      
-      # Get project_id from config or fall back to environment variable
-      project_id = config.get("project_id")
-      if not project_id:
+    if not dataset_configs:
+        dataset_id = os.getenv("BQ_DATASET_ID")
         project_id = (
-            os.getenv("BQ_DATA_PROJECT_ID") 
-            or os.getenv("BQ_PROJECT_ID") 
+            os.getenv("BQ_DATA_PROJECT_ID")
+            or os.getenv("BQ_PROJECT_ID")
             or os.getenv("GOOGLE_CLOUD_PROJECT")
         )
-      
-      if not project_id:
-        raise ValueError(
-            f"No project_id found for dataset '{dataset_name}'. "
-            "Set BQ_DATA_PROJECT_ID, BQ_PROJECT_ID, or GOOGLE_CLOUD_PROJECT "
-            "in your .env file."
-        )
-      
-      # Get or create schema for this dataset
-      schema_key = f"{project_id}.{dataset_id}"
-      if schema_key not in _schema_cache:
-        _logger.info(
-            "Fetching schema for %s.%s", project_id, dataset_id
-        )
-        _schema_cache[schema_key] = _get_bigquery_schema(
-            project_id=project_id,
-            dataset_id=dataset_id,
-        )
-      
-      datasets.append({
-          "name": dataset_name,
-          "description": config.get("description", ""),
-          "schema": _schema_cache[schema_key],
-      })
-      
-    except Exception as e:
-      _logger.error(
-          "Failed to retrieve schema for %s.%s: %s",
-          config.get("project_id", "unknown"),
-          config.get("dataset_id", config.get("name", "unknown")),
-          e,
-      )
-  
-  return {"datasets": datasets}
+        if not dataset_id or not project_id:
+            _logger.warning(
+                "No datasets configured. Provide dataset_configs or set "
+                "BQ_DATASET_ID and BQ_DATA_PROJECT_ID (or BQ_PROJECT_ID/GOOGLE_CLOUD_PROJECT)."
+            )
+            return {"datasets": []}
+        dataset_configs = [
+            {
+                "project_id": project_id,
+                "dataset_id": dataset_id,
+                "name": dataset_id,
+            }
+        ]
+
+    _logger.info(
+        "Retrieving BigQuery schemas for %d dataset(s): %s",
+        len(dataset_configs),
+        ", ".join(cfg.get("dataset_id", cfg.get("name", "unknown")) for cfg in dataset_configs),
+    )
+
+    datasets: list[dict[str, Any]] = []
+    # Create clients per project for efficiency
+    clients: dict[str, bigquery.Client] = {}
+
+    for config in dataset_configs:
+        try:
+            dataset_name = config.get("name", config.get("dataset_id", "unknown"))
+            dataset_id = config.get("dataset_id", dataset_name)
+
+            project_id = config.get("project_id") or (
+                os.getenv("BQ_DATA_PROJECT_ID")
+                or os.getenv("BQ_PROJECT_ID")
+                or os.getenv("GOOGLE_CLOUD_PROJECT")
+            )
+            if not project_id:
+                raise ValueError(
+                    f"No project_id found for dataset '{dataset_name}'. "
+                    "Set BQ_DATA_PROJECT_ID, BQ_PROJECT_ID, or GOOGLE_CLOUD_PROJECT in your .env file."
+                )
+
+            client = clients.get(project_id) or bigquery.Client(project=project_id)
+            clients[project_id] = client
+
+            schema = _get_dataset_schema(client=client, project_id=project_id, dataset_id=dataset_id)
+
+            datasets.append(
+                {
+                    "name": dataset_name,
+                    "description": config.get("description", ""),
+                    "schema": schema,
+                }
+            )
+        except Exception as exc:  # pylint: disable=broad-except
+            _logger.error(
+                "Failed to retrieve schema for %s.%s: %s",
+                config.get("project_id", "unknown"),
+                config.get("dataset_id", config.get("name", "unknown")),
+                exc,
+            )
+
+    return {"datasets": datasets}
 
 
 def get_dataset_definitions() -> str:
-  """Get formatted dataset definitions for agent instructions.
-  
-  Returns:
+    """Get formatted dataset definitions for agent instructions.
+
+    Returns:
     Formatted string listing available datasets
-  """
-  settings = get_database_settings()
-  datasets = settings.get("datasets", [])
-  
-  if not datasets:
-    return "No datasets configured."
-  
-  definitions = []
-  for dataset in datasets:
-    name = dataset["name"]
-    desc = dataset.get("description", "No description")
-    table_count = len(dataset.get("schema", {}).get("tables", {}))
-    
-    definitions.append(f"- {name}: {desc} ({table_count} tables)")
-  
-  return "\n".join(definitions)
+    """
+    settings = get_database_settings()
+    datasets = settings.get("datasets", [])
 
-# Module-level schema cache to avoid NameError and enable reuse across calls.
-_schema_cache: dict[str, dict] = {}
+    if not datasets:
+        return "No datasets configured."
 
-def _get_from_schema_cache(key: str):
-  # Simple helper; avoids KeyError patterns scattered across code.
-  return _schema_cache.get(key)
+    definitions: list[str] = []
+    for dataset in datasets:
+        name = dataset.get("name", "unknown")
+        desc = dataset.get("description", "No description")
+        table_count = len(dataset.get("schema", {}).get("tables", {}))
 
-def _set_in_schema_cache(key: str, value: dict) -> None:
-  _schema_cache[key] = value
+        definitions.append(f"- {name}: {desc} ({table_count} tables)")
 
-# Example usage inside your existing schema retrieval function:
-def get_dataset_schema(project_id: str, dataset_id: str) -> dict:
-  # ...existing code...
-  cache_key = f"{project_id}.{dataset_id}"
-  cached = _get_from_schema_cache(cache_key)
-  if cached is not None:
-    return cached
+    return "\n".join(definitions)
 
-  # ...existing code to fetch schema from BigQuery...
-  schema = fetched_schema_dict  # replace with your existing variable
-
-  _set_in_schema_cache(cache_key, schema)
-  return schema

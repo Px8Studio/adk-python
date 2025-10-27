@@ -250,62 +250,7 @@ visualizations.
   return agent
 
 
-# Ensure ADK Agent class is available as `Agent`
-try:
-  # Preferred: use ADK LlmAgent
-  from google.adk.agents.llm_agent import LlmAgent as Agent  # type: ignore
-except Exception:
-  # Fallback (kept for compatibility if package structure changes)
-  from google.adk.agents.llm_agent import LlmAgent as Agent  # type: ignore
-
-# Provide missing helper to avoid NameError and reduce noisy retries
-def _get_bigquery_schema(project_id: str, dataset_id: str):
-  """Best-effort dataset schema fetch. Returns None on any issue.
-  
-  - If project is 'unknown' or empty, return None.
-  - If google-cloud-bigquery is unavailable, return None.
-  - On any API error, log debug and return None.
-  """
-  try:
-    if not project_id or project_id.strip().lower() == "unknown":
-      logger.debug("BigQuery schema skip: invalid project_id=%r dataset_id=%r", project_id, dataset_id)
-      return None
-
-    try:
-      from google.cloud import bigquery  # type: ignore
-    except Exception:
-      logger.debug("google-cloud-bigquery not installed; skipping schema fetch")
-      return None
-
-    client = bigquery.Client(project=project_id)
-    # Attempt to fetch dataset and enumerate tables (best-effort)
-    ds_ref = f"{project_id}.{dataset_id}"
-    ds = client.get_dataset(ds_ref)  # may raise
-    tables = list(client.list_tables(ds))  # may raise
-
-    schema_summary = {}
-    for t in tables:
-      full_table_id = f"{t.project}.{t.dataset_id}.{t.table_id}"
-      try:
-        table = client.get_table(full_table_id)
-        fields = [
-          {
-            "name": f.name,
-            "type": f.field_type,
-            "mode": f.mode,
-            "description": getattr(f, "description", None),
-          }
-          for f in table.schema or []
-        ]
-        schema_summary[full_table_id] = {"table": full_table_id, "fields": fields}
-      except Exception as table_err:
-        logger.debug("Failed to fetch table schema for %s: %s", full_table_id, table_err)
-
-    return {"dataset": ds_ref, "tables": schema_summary}
-
-  except Exception as e:
-    logger.debug("BigQuery schema fetch failed for %s.%s: %s", project_id, dataset_id, e)
-    return None
+from google.adk.agents.llm_agent import LlmAgent as Agent  # single, explicit import
 
 # Initialize configuration on module load
 _logger.info("Loading Orkhon Data Science Multi-Agent System...")

@@ -12,93 +12,74 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Root Coordinator Agent
+"""Root orchestrator agent for the Orkhon multi-agent system.
 
-The top-level intelligent router for the multi-agent system.
-Routes requests to specialized category coordinators.
-
-Hierarchy:
-  root_agent (this)
-  ├─ dnb_coordinator       (DNB API operations via MCP Toolbox)
-  ├─ dnb_openapi_coordinator (DNB API operations via Runtime OpenAPI)
-  ├─ data_science_agent    (BigQuery & Analytics operations)
-  │  ├─ bigquery_agent     (NL2SQL for BigQuery)
-  │  └─ analytics_agent    (NL2Py with Code Interpreter)
-  └─ google_coordinator    (Google API operations - future)
+This agent coordinates between specialized coordinator agents that handle
+different API domains (DNB, etc.). It delegates queries to the appropriate
+coordinator based on the user's intent.
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+from typing import Any
 
-from google.adk.agents import LlmAgent as Agent
-from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
+from google.adk.agents.llm_agent import Agent
+from google.genai import types
 
-# Model configuration
-MODEL = os.getenv("ROOT_AGENT_MODEL", "gemini-2.0-flash")
-
-# Load instructions from file for better maintainability
-_INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
-if _INSTRUCTIONS_FILE.exists():
-    INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")
-else:
-    INSTRUCTION = """You are the main system coordinator.
-
-Your role:
-1. Understand user requests across multiple domains
-2. Route to appropriate category coordinators:
-   - DNB API operations → dnb_coordinator_agent
-   - Google searches → google_coordinator_agent (coming soon)
-   - Data analysis → data_coordinator_agent (coming soon)
-3. Synthesize responses from multiple coordinators when needed
-4. Maintain conversational context across interactions
-
-Guidelines:
-- Be clear about which coordinator you're delegating to and why
-- Provide concise summaries of results
-- Handle multi-part requests intelligently
-- Ask clarifying questions when user intent is ambiguous
-- Preserve context for follow-up questions
-"""
 
 def get_root_agent() -> Agent:
-    """Create a fresh root agent instance.
-    
-    Returns a new instance each time to avoid parent conflicts during hot-reload.
-    """
-    # Import coordinators here to get fresh instances
-    from api_coordinators import (  # type: ignore
-        get_dnb_coordinator_agent,
-        get_dnb_openapi_coordinator_agent,
-    )
-    from data_science.agent import get_root_agent as get_data_science_agent  # type: ignore
-    
-    # Example (names are illustrative; keep your existing construction):
-    # bigquery_agent = get_bigquery_agent()
-    # data_science_agent = get_analytics_agent()  # returns an Agent/LlmAgent
-    
-    # Build the root agent. Fix: use sub_agents= instead of agents=
-    root = Agent(
-        model=MODEL,
-        name="root_agent",
-        description=(
-            "Primary system coordinator that routes user requests to "
-            "specialized domain coordinators for API integrations, data processing, "
-            "and utility operations. Executes tasks autonomously with minimal confirmation."
-        ),
-        instruction=INSTRUCTION,
-        sub_agents=[
-            get_dnb_coordinator_agent(),
-            get_dnb_openapi_coordinator_agent(),
-            get_data_science_agent(),
-        ],
-        tools=[load_artifacts_tool],
-        output_key="root_response",
-    )
-    return root
+  """Creates the root agent with sub-agents for API coordination.
+
+  Returns:
+      The root agent configured with coordinator sub-agents.
+  """
+  # Import coordinator agents at runtime to avoid module loading issues
+  # Add the parent agents directory to sys.path for sibling package imports
+  agents_dir = Path(__file__).parent.parent
+  agents_dir_str = str(agents_dir)
+  
+  if agents_dir_str not in sys.path:
+    sys.path.insert(0, agents_dir_str)
+  
+  try:
+    # Import from sibling package
+    from api_coordinators import get_dnb_coordinator_agent  # type: ignore
+  except ImportError as e:
+    raise ImportError(
+        f"Failed to import api_coordinators. "
+        f"Agents directory: {agents_dir_str}, "
+        f"sys.path: {sys.path[:3]}..."
+    ) from e
+
+  # Get coordinator agents
+  dnb_coordinator = get_dnb_coordinator_agent()
+
+  # Model configuration from environment
+  model_name = os.environ.get("GOOGLE_GEMINI_MODEL", "gemini-2.0-flash-exp")
+  
+  # Build the root agent with sub-agents
+  root = Agent(
+      model=model_name,
+      name="root_agent",
+      instruction="""You are the Root Orchestrator for the Orkhon system.
+          
+Your role is to:
+1. Understand the user's query and intent
+2. Delegate to the appropriate coordinator agent:
+   - dnb_coordinator: For DNB API queries (statistics, company info, public register)
+3. Present results clearly to the user
+4. Handle errors gracefully and provide helpful feedback
+
+Always explain what you're doing and why you're delegating to a specific coordinator.
+""",
+      sub_agents=[dnb_coordinator]
+  )
+
+  return root
 
 
-# Export for ADK web loader
+# Create the root agent instance for ADK to discover
 root_agent = get_root_agent()

@@ -17,14 +17,8 @@
 from __future__ import annotations
 
 from .dnb_coordinator.agent import dnb_coordinator_agent, get_dnb_coordinator_agent
-from .dnb_openapi_coordinator.agent import (
-    dnb_openapi_coordinator_agent,
-    get_dnb_openapi_coordinator_agent,
-)
 
 __all__ = [
     "dnb_coordinator_agent",
-    "dnb_openapi_coordinator_agent",
     "get_dnb_coordinator_agent",
-    "get_dnb_openapi_coordinator_agent",
 ]
