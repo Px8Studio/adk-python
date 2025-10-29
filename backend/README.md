@@ -252,15 +252,27 @@ When contributing to the backend:
 
 **Agent Hierarchy:**
 ```
-root_agent (L1: System)
-├── dnb_coordinator (L2: Domain)
+root_agent (L1: System Root)
+├── dnb_coordinator (L2: Domain Coordinator)
 │   ├── dnb_echo_agent (L3: Specialist)
 │   ├── dnb_statistics_agent (L3: Specialist)
 │   └── dnb_public_register_agent (L3: Specialist)
-└── data_science_coordinator (L2: Domain)
+└── data_science_coordinator (L2: Domain Coordinator)
     ├── bigquery_agent (L3: Specialist)
     └── analytics_agent (L3: Specialist)
 ```
+
+**Agent Files:**
+- **System Root (L1):** `adk/agents/root_agent.py` or `adk/agents/root_agent.yaml`
+- **Domain Coordinators (L2):** `adk/agents/domain_coordinators/`
+  - `dnb_coordinator.py` or `dnb_coordinator.yaml`
+  - `data_science_coordinator.py` or `data_science_coordinator.yaml`
+- **Specialists (L3):** `adk/agents/specialists/`
+  - `dnb_echo_agent.py` or `dnb_echo_agent.yaml`
+  - `dnb_statistics_agent.py` or `dnb_statistics_agent.yaml`
+  - `dnb_public_register_agent.py` or `dnb_public_register_agent.yaml`
+  - `bigquery_agent.py` or `bigquery_agent.yaml`
+  - `analytics_agent.py` or `analytics_agent.yaml`
 
 ---
 

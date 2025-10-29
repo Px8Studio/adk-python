@@ -29,6 +29,8 @@ root_agent (Main System Coordinator)
 **Standalone**: Run `run_data_science_agent.py` for data science-only workflows
 **Integrated**: Access via main `root_agent` which routes data science requests automatically
 
+**Note**: The data science agent is named `data_science_coordinator` when integrated into the main system to clearly distinguish it from the system-level `root_agent`.
+
 ### Current Features (MVP)
 
 - ✅ **Root Coordinator Agent**: Routes queries to appropriate sub-agents

@@ -47,7 +47,7 @@ def get_root_agent() -> Agent:
   try:
     # Import from sibling packages
     from api_coordinators import get_dnb_coordinator_agent  # type: ignore
-    from data_science import root_agent as data_science_agent  # type: ignore
+    from data_science import root_agent as data_science_coordinator  # type: ignore
   except ImportError as e:
     raise ImportError(
         f"Failed to import coordinators. "
@@ -71,13 +71,18 @@ Your role is to:
 1. Understand the user's query and intent
 2. Delegate to the appropriate coordinator agent:
    - dnb_coordinator: For DNB API queries (statistics, company info, public register)
-   - root_agent (data science): For data queries, analytics, visualizations, and BigQuery operations
+   - data_science_coordinator: For data queries, analytics, visualizations, and BigQuery operations
 3. Present results clearly to the user
 4. Handle errors gracefully and provide helpful feedback
 
+When routing queries:
+- DNB API operations → dnb_coordinator
+- Data science operations → data_science_coordinator
+- Multi-domain workflows → chain operations between coordinators
+
 Always explain what you're doing and why you're delegating to a specific coordinator.
 """,
-      sub_agents=[dnb_coordinator, data_science_agent]
+      sub_agents=[dnb_coordinator, data_science_coordinator]
   )
 
   return root

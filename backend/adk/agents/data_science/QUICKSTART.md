@@ -87,8 +87,12 @@ You: Create a chart showing [some metric] over time
 
 ```
 backend/adk/agents/
-├── data_science/                    # Main agent package
-│   ├── agent.py                     # Root coordinator
+├── root_agent/                      # System orchestrator
+│   ├── __init__.py
+│   ├── agent.py                     # Integrates all coordinators
+│   └── instructions.txt             # System routing logic
+├── data_science/                    # Data science coordinator
+│   ├── agent.py                     # Coordinator (exports as data_science_coordinator)
 │   ├── prompts.py                   # Coordination prompts
 │   ├── tools.py                     # Coordination tools
 │   ├── dnb_statistics_dataset_config.json
@@ -103,7 +107,7 @@ backend/adk/agents/
 │       └── analytics/               # Analytics agent
 │           ├── agent.py
 │           └── prompts.py
-└── run_data_science_agent.py        # Runner script
+└── run_data_science_agent.py        # Standalone runner script
 ```
 
 ## 🔧 Configuration
