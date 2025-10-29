@@ -143,15 +143,33 @@ if (-not $SkipDiagnostics) {
 Show-Step "Step 2/6: Ensuring Docker network exists..."
 try {
   $networkName = "orkhon-network"
-  $networkExists = & docker network inspect $networkName 2>&1 | Out-Null
-  
+
+  # Try to inspect the network and capture output (stderr + stdout)
+  $inspectOutput = & docker network inspect $networkName 2>&1
   if ($LASTEXITCODE -ne 0) {
+    $errText = ($inspectOutput -join "`n").ToString()
+
+    # Detect common signs that the Docker daemon (Docker Desktop) is not reachable
+    if ($errText -match "dockerDesktopLinuxEngine" -or
+        $errText -match "open //./pipe" -or
+        $errText -match "cannot connect to the Docker daemon" -or
+        $errText -match "Is the docker daemon running") {
+
+      Show-Err "Docker engine not reachable. This usually means Docker Desktop (daemon) is not running."
+      Show-Info "Action: Start Docker Desktop and ensure the Docker daemon/WSL backend is running."
+      Show-Info "  - On Windows: Start 'Docker Desktop' from the Start Menu or system tray."
+      Show-Info "  - Wait a minute for Docker to finish initializing, then re-run this script."
+      Show-Info "If you prefer to continue without Docker, re-run with -SkipDiagnostics (not recommended)."
+      exit 2
+    }
+
+    # Otherwise attempt to create the network (normal create path)
     Show-Info "Creating Docker network: $networkName"
-    & docker network create $networkName
+    $createOutput = & docker network create $networkName 2>&1
     if ($LASTEXITCODE -eq 0) {
       Show-Ok "Docker network created: $networkName"
     } else {
-      Show-Err "Failed to create Docker network"
+      Show-Err "Failed to create Docker network: $($createOutput -join ' ')"
       exit 1
     }
   } else {
@@ -159,6 +177,7 @@ try {
   }
 } catch {
   Show-Err "Failed to check/create Docker network: $($_.Exception.Message)"
+  Show-Info "Hint: Ensure Docker Desktop is installed and running. Start Docker Desktop and try again."
   exit 1
 }
 
