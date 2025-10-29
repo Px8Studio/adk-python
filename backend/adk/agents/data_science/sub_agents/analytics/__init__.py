@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Analytics sub-agent for NL2Py data analysis using Code Interpreter."""
+"""Analytics sub-agent for NL2Py data analysis using Code Interpreter.
+
+This sub-agent handles Python-based data analysis, visualization, and
+statistical computations using Vertex AI Code Interpreter.
+"""
+
+from __future__ import annotations
 
 from .agent import analytics_agent
 

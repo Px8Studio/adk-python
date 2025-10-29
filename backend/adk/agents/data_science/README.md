@@ -1,168 +1,159 @@
-# Orkhon Data Science Multi-Agent System
+# Orkhon Data Science Coordinator Agent
 
-A multi-agent architecture for sophisticated data analysis, integrating BigQuery database access, Python analytics with Code Interpreter, and future support for AlloyDB and BigQuery ML.
+A domain-level coordinator for data science operations within the Orkhon multi-agent system.
 
 ## Overview
 
-This implementation follows the ADK samples pattern for data science agents, adapted for the Orkhon project's DNB Statistics dataset. The system coordinates between specialized sub-agents to handle different aspects of data analysis.
+This agent coordinates between specialized sub-agents for:
+- BigQuery database access (NL2SQL)
+- Python analytics and visualization (NL2Py with Code Interpreter)
 
-**Note**: This agent can be used standalone or as a sub-agent of the main `root_agent` for integrated multi-domain workflows.
+**Integration Pattern:** This agent is a sub-agent of the Orkhon `root_agent`. It exists as part of the integrated multi-domain system, not as a standalone service.
 
 ### Architecture
 
 ```
-root_agent (Main System Coordinator)
-├── dnb_coordinator (DNB API operations via MCP)
-├── dnb_openapi_coordinator (DNB API operations via Runtime)
-└── data_science_coordinator (This agent)
-    ├── bigquery_agent (NL2SQL)
-    │   ├── BigQuery Built-in Tools (execute_sql)
-    │   └── Schema-aware query generation
-    └── analytics_agent (NL2Py)
-        └── Vertex AI Code Interpreter
-            ├── pandas, numpy, matplotlib
-            └── Stateful execution
+root_agent (System Orchestrator)
+├── dnb_coordinator (DNB API Domain)
+└── data_science_coordinator (Data Science Domain) ← THIS AGENT
+    ├── bigquery_agent (Database Queries)
+    └── analytics_agent (Python Analysis)
 ```
 
-### Standalone vs Integrated Usage
+## Usage
 
-**Standalone**: Run `run_data_science_agent.py` for data science-only workflows
-**Integrated**: Access via main `root_agent` which routes data science requests automatically
+### Production Integration (Primary Pattern)
 
-**Note**: The data science agent is named `data_science_coordinator` when integrated into the main system to clearly distinguish it from the system-level `root_agent`.
+```python
+from adk.agents.root_agent import root_agent
+from google.adk.runners import Runner
 
-### Current Features (MVP)
+# The data_science_coordinator is already integrated in root_agent
+runner = Runner(root_agent)
+runner.run("Show me trends in the pension fund data")
+```
 
-- ✅ **Root Coordinator Agent**: Routes queries to appropriate sub-agents
-- ✅ **BigQuery Agent**: Natural language to SQL translation and execution
-- ✅ **Analytics Agent**: Python data analysis and visualization via Code Interpreter
-- ✅ **Dataset Configuration**: JSON-based dataset definition system
-- ✅ **Schema Awareness**: Automatic schema loading for query generation
+### Development Testing (Testing Only)
 
-### Planned Features
+For isolated development/testing of data science features:
 
-- ⏳ **AlloyDB Agent**: PostgreSQL database access via MCP Toolbox
-- ⏳ **BQML Agent**: BigQuery ML model training with RAG-based reference
-- ⏳ **Cross-Dataset Joins**: Query coordination across BigQuery and AlloyDB
-- ⏳ **CHASE-SQL**: Advanced NL2SQL method for complex queries
+```powershell
+# Run test script (bypasses root_agent for faster iteration)
+python backend/adk/run_data_science_agent.py --query "What data do you have?"
+```
+
+**⚠️ Note:** The `run_data_science_agent.py` script is a development tool only. Production usage should always go through the integrated `root_agent`.
 
 ## Quick Start
 
 ### Prerequisites
 
 - Python 3.12+
-- Google Cloud Project with:
-  - Vertex AI API enabled
-  - BigQuery API enabled
-  - DNB Statistics dataset loaded in BigQuery
-- Poetry or uv for dependency management
+- Google Cloud Project with Vertex AI and BigQuery enabled
+- DNB Statistics dataset loaded in BigQuery
 
 ### Installation
 
 1. **Install dependencies**:
    ```powershell
-   # Using Poetry (recommended for Orkhon)
    cd backend
    poetry install
-   
-   # Or using uv
-   uv sync
    ```
 
 2. **Configure environment**:
    ```powershell
-   # Copy the example env file
    cp backend/adk/agents/data_science/.env.example backend/adk/agents/data_science/.env
-   
-   # Edit .env and fill in your values
-   # Required variables:
-   # - GOOGLE_CLOUD_PROJECT
-   # - BQ_DATA_PROJECT_ID
-   # - BQ_DATASET_ID
+   # Edit .env with your GCP project settings
    ```
 
-3. **Verify BigQuery dataset**:
-   ```powershell
-   # Ensure your BigQuery dataset exists
-   bq ls --project_id=your-project-id dnb_statistics
-   ```
+3. **Load data to BigQuery** (see [Data Setup](#data-setup) below)
 
 ### Running the Agent
 
-#### Interactive CLI Mode
-
+**Production:** Use the integrated system via root_agent
 ```powershell
-# From project root
+python backend/adk/run_root_agent.py
+# or
+adk web --agents-dir backend/adk/agents
+```
+
+**Development:** Use the test script for faster iteration
+```powershell
 python backend/adk/run_data_science_agent.py
 ```
 
-This starts an interactive session where you can ask questions about your data.
+## Integration Patterns
 
-#### Single Query Mode
+### Pattern 1: System Integration (Production)
 
-```powershell
-# Run a single query and exit
-python backend/adk/run_data_science_agent.py --query "What data do you have?"
+```python
+# backend/adk/agents/root_agent/agent.py
+from google.adk.agents.llm_agent import Agent
+from adk.agents.api_coordinators import get_dnb_coordinator_agent
+from adk.agents.data_science import data_science_coordinator
+
+root_agent = Agent(
+    name="root_agent",
+    sub_agents=[
+        get_dnb_coordinator_agent(),
+        data_science_coordinator,  # Integrated here
+    ],
+)
 ```
 
-#### ADK Web UI (Coming Soon)
+**Routing Logic:** The root_agent automatically routes:
+- "Get exchange rates" → `dnb_coordinator`
+- "Show trends in pension data" → `data_science_coordinator`
+- "Get stats and analyze trends" → Sequential coordination
 
-```powershell
-# Start ADK web server
-adk web --agents-dir backend/adk
+### Pattern 2: Development Testing (Non-Production)
+
+```python
+# backend/adk/run_data_science_agent.py
+from google.adk.runners import Runner
+from adk.agents.data_science import data_science_coordinator
+
+# Direct access for faster development iteration
+runner = Runner(data_science_coordinator)
+runner.run("Test query")
 ```
 
-### Example Interactions
+**Purpose:** Bypass root_agent routing for faster development cycles when working on data science features in isolation.
+
+### Module Structure
 
 ```
-You: What data do you have access to?
-
-Agent: I have access to the DNB Statistics dataset in BigQuery, which contains
-Dutch financial and economic data including insurance & pensions, financial
-markets, balance of payments, and monetary statistics.
-
----
-
-You: Show me the top 5 records from the insurance_corps_balance_sheet_quarter table
-
-Agent: [Executes BigQuery query and displays results]
-
----
-
-You: Create a visualization showing trends over time for that data
-
-Agent: [Generates Python code via Code Interpreter and displays chart]
+backend/adk/agents/data_science/
+├── __init__.py              # Exports: data_science_coordinator
+├── agent.py                 # Defines coordinator agent
+└── sub_agents/
+    ├── bigquery/
+    │   └── agent.py         # BigQuery sub-agent
+    └── analytics/
+        └── agent.py         # Analytics sub-agent
 ```
 
 ## Project Structure
 
 ```
 backend/adk/agents/data_science/
-├── __init__.py                           # Module initialization
-├── agent.py                              # Root coordinator agent
-├── prompts.py                            # Root agent instructions
-├── tools.py                              # Root agent tools (call_bigquery_agent, call_analytics_agent)
+├── __init__.py                           # Module exports
+├── agent.py                              # Coordinator agent
+├── prompts.py                            # Agent instructions
+├── tools.py                              # Agent tools
 ├── dnb_statistics_dataset_config.json    # Dataset configuration
 ├── .env.example                          # Environment template
 ├── README.md                             # This file
 └── sub_agents/
-    ├── __init__.py
-    ├── bigquery/
-    │   ├── __init__.py
-    │   ├── agent.py                      # BigQuery sub-agent
-    │   ├── prompts.py                    # BigQuery instructions
-    │   └── tools.py                      # BigQuery utilities
-    └── analytics/
-        ├── __init__.py
-        ├── agent.py                      # Analytics sub-agent
-        └── prompts.py                    # Analytics instructions
+    ├── bigquery/                         # Database queries
+    └── analytics/                        # Python analysis
 ```
 
 ## Configuration
 
 ### Dataset Configuration
 
-The agent uses `dnb_statistics_dataset_config.json` to define available datasets:
+The agent uses `dnb_statistics_dataset_config.json`:
 
 ```json
 {
@@ -172,16 +163,13 @@ The agent uses `dnb_statistics_dataset_config.json` to define available datasets
       "name": "dnb_statistics",
       "description": "DNB Statistics dataset..."
     }
-  ],
-  "cross_dataset_relations": {
-    "foreign_keys": []
-  }
+  ]
 }
 ```
 
 ### Environment Variables
 
-See `.env.example` for all available configuration options. Key variables:
+Key variables in `.env`:
 
 ```bash
 # Google Cloud
@@ -193,62 +181,48 @@ GOOGLE_CLOUD_LOCATION=us-central1
 BQ_DATA_PROJECT_ID=your-project-id
 BQ_DATASET_ID=dnb_statistics
 
-# Models (optional, defaults to gemini-2.0-flash-exp)
-ROOT_AGENT_MODEL=gemini-2.0-flash-exp
-BIGQUERY_AGENT_MODEL=gemini-2.0-flash-exp
-ANALYTICS_AGENT_MODEL=gemini-2.0-flash-exp
+# Models (optional)
+DATA_SCIENCE_AGENT_MODEL=gemini-2.0-flash-exp
 ```
 
 ## Development
 
-### Adding a New Sub-Agent
+### Testing the Agent
 
-1. Create a new directory under `sub_agents/`
-2. Implement `agent.py`, `prompts.py`, and any needed `tools.py`
-3. Add the agent to the root agent's configuration in `agent.py`
-4. Update the dataset configuration if needed
-
-### Testing
-
+**Integrated Testing:**
 ```powershell
-# Run tests (when implemented)
-pytest tests/
+python backend/adk/run_root_agent.py
+You: Analyze pension fund trends
+```
 
-# Test specific functionality
-python backend/adk/run_data_science_agent.py --query "test query"
+**Isolated Testing:**
+```powershell
+python backend/adk/run_data_science_agent.py --query "What tables exist?"
 ```
 
 ### Debugging
 
-Set log level to DEBUG in your `.env`:
+Set `LOG_LEVEL=DEBUG` in `.env` for detailed logs.
 
-```bash
-LOG_LEVEL=DEBUG
+## Data Setup
+
+### Load DNB Statistics to BigQuery
+
+```powershell
+# Create dataset
+bq mk --location=us-central1 --dataset your-project-id:dnb_statistics
+
+# Load parquet files
+bq load --source_format=PARQUET `
+  dnb_statistics.insurance_corps_balance_sheet_quarter `
+  backend/data/1-bronze/insurance_corps_balance_sheet_quarter.parquet
 ```
-
-## Integration with Orkhon
-
-This data science agent is part of the larger Orkhon project:
-
-- **ETL Pipeline**: Bronze/Silver/Gold layers feed into BigQuery
-- **API Integration**: Works alongside DNB public API agents
-- **Tracing**: Will integrate with Jaeger for observability
-- **Deployment**: Future Cloud Run deployment planned
-
-## Next Steps
-
-1. **Load Data**: Upload your Bronze layer parquet files to BigQuery
-2. **Test Queries**: Verify the agent can access and query your data
-3. **Add BQML Agent**: Implement machine learning capabilities
-4. **Add AlloyDB Agent**: Enable PostgreSQL database access
-5. **Cross-Dataset Queries**: Implement joins across BigQuery and AlloyDB
 
 ## References
 
 - [ADK Documentation](https://google.github.io/adk-docs/)
 - [ADK Data Science Sample](https://github.com/google/adk-samples/tree/main/python/agents/data-science)
-- [BigQuery Built-in Tools](https://google.github.io/adk-docs/tools/built-in-tools/#bigquery)
-- [Vertex AI Code Interpreter](https://cloud.google.com/vertex-ai/docs/generative-ai/code/code-execution)
+- [Orkhon Architecture](../../../ARCHITECTURE_ENHANCEMENTS.md)
 
 ## License
 
@@ -256,4 +230,4 @@ Copyright 2025 Google LLC - Apache License 2.0
 
 ---
 
-**Status**: 🚧 MVP Implementation Complete - Ready for Data Integration
+**Status:** ✅ Integrated Domain Coordinator - Part of Orkhon Multi-Agent System

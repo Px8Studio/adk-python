@@ -93,15 +93,19 @@ python simple_dnb_agent.py
 
 ### 🤖 `/adk` - Agent Development Kit
 
-Contains Google ADK-based multi-agent system that uses the GenAI Toolbox.
+Contains Google ADK-based multi-agent system.
 
-**Key Files:**
-- `agents/root_agent/` - Root coordinator agent
-- `agents/api_coordinators/` - Domain-specific coordinators (DNB, etc.)
-- `agents/api_agents/` - Specialized API agents (echo, statistics, public register)
-- `simple_dnb_agent.py` - Standalone LangGraph example using DNB tools
-- `run_dnb_openapi_agent.py` - Script to run the multi-agent system
-- `simple_agent.ipynb` - Jupyter notebook for interactive development
+**Architecture:**
+```
+adk/
+├── agents/            # Agent definitions
+│   ├── root_agent/    # Root coordinator agent
+│   ├── api_coordinators/ # Domain-specific coordinators (DNB, etc.)
+│   └── api_agents/    # Specialized API agents (echo, statistics, public register)
+├── simple_dnb_agent.py  # Standalone LangGraph example using DNB tools
+├── run_dnb_openapi_agent.py  # Script to run the multi-agent system
+└── simple_agent.ipynb  # Jupyter notebook for interactive development
+```
 
 **Learn More:** See Agent Implementation docs in `adk/AGENT_*.md` files
 

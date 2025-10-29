@@ -30,10 +30,11 @@ import os
 from datetime import date
 
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
+from google.adk.agents.llm_agent import LlmAgent as Agent
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool
 from google.genai import types
 
-from .prompts import return_instructions_root
+# Import sub-agents - use relative imports for local modules
 from .sub_agents.analytics.agent import get_analytics_agent
 from .sub_agents.bigquery.agent import get_bigquery_agent
 from .sub_agents.bigquery.tools import (
@@ -195,7 +196,6 @@ def get_root_agent() -> Agent:
   Returns:
     Configured LlmAgent for coordinating data science operations
   """
-  # Get dataset definitions using cached schemas
   dataset_definitions = get_dataset_definitions()
 
   # Configure sub-agents based on environment
@@ -219,7 +219,7 @@ def get_root_agent() -> Agent:
 
   agent = Agent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="data_science_coordinator",  # Changed from "root_agent"
+      name="data_science_coordinator",
       description=(
           "Data science coordinator for BigQuery and analytics operations. "
           "Delegates to specialized sub-agents for database queries and analytics tasks."
@@ -240,7 +240,7 @@ When analytics_agent generates charts/visualizations, they are saved as
 artifacts. Use the load_artifacts tool to reference and discuss generated 
 visualizations.
 """,
-      sub_agents=sub_agents,  # type: ignore
+      sub_agents=sub_agents,
       tools=[load_artifacts_tool],
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
@@ -250,14 +250,12 @@ visualizations.
   return agent
 
 
-from google.adk.agents.llm_agent import LlmAgent as Agent
-
 # Initialize configuration on module load
 _logger.info("Loading Orkhon Data Science Coordinator...")
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Create the coordinator agent (exported as root_agent for backward compat)
+# Create the coordinator agent
 root_agent = get_root_agent()
 
 _logger.info("Orkhon Data Science Coordinator ready")

@@ -12,13 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Orkhon Data Science Multi-Agent System.
+"""Orkhon Data Science Coordinator Agent.
 
-A multi-agent architecture for data analysis integrating BigQuery,
-AlloyDB (planned), Analytics (Code Interpreter), and BQML capabilities.
+A domain-level coordinator for data science operations within the Orkhon
+multi-agent system. This agent integrates BigQuery database access and
+Python analytics capabilities via specialized sub-agents.
+
+Integration Pattern:
+  This agent is designed as a sub-agent of the Orkhon root_agent. The
+  run_data_science_agent.py script is provided for development/testing only.
 """
 
-from .agent import root_agent
+from __future__ import annotations
 
-# Export with alias for clarity when imported by main root_agent
-__all__ = ["root_agent"]
+from .agent import root_agent as data_science_coordinator
+
+__all__ = ["data_science_coordinator"]

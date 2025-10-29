@@ -13,12 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Runner script for the Orkhon Data Science Multi-Agent System.
+"""Development test runner for the data science coordinator agent.
 
-This script demonstrates how to run the data science agent locally for testing.
-It can be run in two modes:
-1. CLI mode: Interactive command-line interface
-2. Single query mode: Process one query and exit
+⚠️  DEVELOPMENT ONLY - NOT FOR PRODUCTION USE
+
+This script provides direct access to the data science coordinator for faster
+development iteration. In production, access should go through the integrated
+root_agent which handles multi-domain routing.
+
+Purpose:
+  - Rapid testing of data science features in isolation
+  - Faster development cycles (bypasses root_agent routing)
+  - Debugging data science-specific functionality
+
+Production Usage:
+  Use run_root_agent.py or adk web for the full integrated system.
 
 Usage:
     # Interactive CLI mode
@@ -26,11 +35,6 @@ Usage:
 
     # Single query mode
     python backend/adk/run_data_science_agent.py --query "What data do you have?"
-
-Prerequisites:
-    - Copy backend/adk/data_science/.env.example to .env and configure it
-    - Ensure BigQuery dataset is set up and accessible
-    - Vertex AI API enabled in your GCP project
 """
 
 from __future__ import annotations
@@ -67,18 +71,20 @@ logger = logging.getLogger(__name__)
 
 
 def run_interactive() -> None:
-  """Run the agent in interactive CLI mode."""
+  """Run the agent in interactive CLI mode (development testing only)."""
   from google.adk.runners import Runner
-  from adk.agents.data_science.agent import root_agent
+  from adk.agents.data_science import data_science_coordinator
 
-  logger.info("Starting Orkhon Data Science Agent in interactive mode...")
+  logger.info("Starting Data Science Coordinator (DEVELOPMENT MODE)")
   logger.info("Type 'quit' or 'exit' to stop")
 
-  runner = Runner(root_agent)
+  runner = Runner(data_science_coordinator)
 
   print("\n" + "=" * 70)
-  print("Orkhon Data Science Multi-Agent System")
+  print("⚠️  DEVELOPMENT MODE - Data Science Coordinator")
   print("=" * 70)
+  print("\nThis is a test runner for development only.")
+  print("Production usage should go through the integrated root_agent.")
   print("\nAvailable capabilities:")
   print("  • BigQuery data access via natural language")
   print("  • Python data analysis and visualization")
@@ -117,17 +123,17 @@ def run_interactive() -> None:
 
 
 def run_single_query(query: str) -> None:
-  """Run a single query and exit.
+  """Run a single query and exit (development testing only).
 
   Args:
     query: The question to ask the agent
   """
   from google.adk.runners import Runner
-  from adk.agents.data_science.agent import root_agent
+  from adk.agents.data_science import data_science_coordinator
 
-  logger.info("Running single query: %s", query)
+  logger.info("Running single query (DEVELOPMENT MODE): %s", query)
 
-  runner = Runner(root_agent)
+  runner = Runner(data_science_coordinator)
 
   print(f"\n{'=' * 70}")
   print(f"Query: {query}")
@@ -151,11 +157,17 @@ def run_single_query(query: str) -> None:
 
 
 def main() -> None:
-  """Main entry point for the runner script."""
+  """Main entry point for the development test runner."""
   parser = argparse.ArgumentParser(
-      description="Run the Orkhon Data Science Multi-Agent System",
+      description="Development test runner for Data Science Coordinator",
       formatter_class=argparse.RawDescriptionHelpFormatter,
       epilog="""
+⚠️  DEVELOPMENT ONLY - NOT FOR PRODUCTION USE
+
+This script is for development/testing of data science features in isolation.
+Production usage should access the data science coordinator through the
+integrated root_agent.
+
 Examples:
   # Interactive mode
   python backend/adk/run_data_science_agent.py
@@ -163,10 +175,10 @@ Examples:
   # Single query mode
   python backend/adk/run_data_science_agent.py --query "What data do you have?"
 
-  # Single query with custom env file
-  python backend/adk/run_data_science_agent.py \\
-    --env-file /path/to/.env \\
-    --query "Show me the top 5 records"
+For production, use:
+  python backend/adk/run_root_agent.py
+  # or
+  adk web --agents-dir backend/adk/agents
       """,
   )
 
