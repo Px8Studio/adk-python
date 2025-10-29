@@ -315,6 +315,7 @@ if ($OpenUIs) {
     }
     
     Show-Ok "Web UIs opened in browser"
+    Show-Info "ADK Web UI will open automatically once the server starts..."
   } catch {
     Show-Info "Could not open web UIs automatically: $($_.Exception.Message)"
     Show-Info "Open manually:"
@@ -415,6 +416,15 @@ try {
   Write-Host "  (Toolbox services will continue running in Docker)   " -ForegroundColor Green
   Write-Host "========================================================" -ForegroundColor Green
   Write-Host ""
+  
+  # Schedule ADK Web UI to open after server starts (if OpenUIs is true)
+  if ($OpenUIs) {
+    Show-Info "ADK Web UI will open in 5 seconds..."
+    Start-Job -ScriptBlock {
+      Start-Sleep -Seconds 5
+      Start-Process "http://localhost:8000"
+    } | Out-Null
+  }
   
   # Activate venv and start server
   & $VenvActivate
