@@ -216,6 +216,7 @@ toolbox/config/
 **Management Tasks:**
 
 Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
+- `🚀 Quick Start: Full Orkhon Stack` - Start everything (includes MCP restart)
 - `MCP: Start Dev Server` - Start all services
 - `MCP: Stop Dev Server` - Stop all services
 - `MCP: View Dev Logs (Live)` - Monitor logs in real-time
@@ -225,6 +226,8 @@ Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
 **Learn More:**
 - 📖 [Toolbox Configuration Guide](toolbox/config/QUICK_ANSWER.md)
 - 📊 [Jaeger Tracing Documentation](toolbox/docs/Jaeger%20UI.md)
+- 🏗️ [Current Architecture (What We Built)](etl/docs/ARCHITECTURE_CURRENT.md)
+- 🔮 [Future DNB IT Architecture (Planned)](etl/docs/ARCHITECTURE_DNB_FUTURE.md)
 
 ---
 

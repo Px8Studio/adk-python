@@ -189,24 +189,21 @@ try {
   # Check if containers are already running
   $runningContainers = & docker ps --filter "name=orkhon-" --format "{{.Names}}" 2>&1
   
-  if ($ForceRecreate) {
+  # Always restart to ensure latest configuration is loaded
+  if ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
+    Show-Info "MCP Toolbox containers found. Restarting to load latest configuration..."
+    & docker-compose -f docker-compose.dev.yml restart
+    if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
+    Show-Ok "Containers restarted with latest configuration"
+  }
+  elseif ($ForceRecreate) {
     Show-Info "Force recreating containers..."
     & docker-compose -f docker-compose.dev.yml down
     & docker-compose -f docker-compose.dev.yml up -d --force-recreate
     if ($LASTEXITCODE -ne 0) { throw "Failed to recreate containers" }
     Show-Ok "Containers recreated successfully"
   }
-  elseif ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
-    if ($RestartToolbox) {
-      Show-Info "Restarting existing containers..."
-      & docker-compose -f docker-compose.dev.yml restart
-      if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
-      Show-Ok "Containers restarted"
-    } else {
-      Show-Ok "GenAI Toolbox Stack already running"
-      Show-Info "Use -RestartToolbox to restart, or -ForceRecreate to recreate"
-    }
-  } else {
+  else {
     Show-Info "Starting fresh containers..."
     & docker-compose -f docker-compose.dev.yml up -d
     if ($LASTEXITCODE -ne 0) { throw "Failed to start containers" }

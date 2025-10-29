@@ -27,7 +27,8 @@ cd C:\Users\rjjaf\_Projects\orkhon
 # Increase wait time for services (default 60s)
 .\backend\scripts\quick-start.ps1 -WaitSeconds 120
 
-# Restart existing containers
+# Restart existing containers (default if already running)
+# This ensures latest tool configurations are loaded
 .\backend\scripts\quick-start.ps1 -RestartToolbox
 ```
 
@@ -88,6 +89,10 @@ docker logs orkhon-jaeger --tail=50
 
 # Check Toolbox health
 Invoke-WebRequest http://localhost:5000/health
+
+# Restart Toolbox to reload configurations
+cd backend\toolbox
+docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
 
 # Check ADK Web (when running)
 Invoke-WebRequest http://localhost:8000
