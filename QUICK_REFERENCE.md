@@ -92,7 +92,7 @@ Invoke-WebRequest http://localhost:5000/health
 
 # Restart Toolbox to reload configurations
 cd backend\toolbox
-docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
+docker-compose -f docker-compose.dev.yml restart genai-toolbox
 
 # Check ADK Web (when running)
 Invoke-WebRequest http://localhost:8000
@@ -102,29 +102,53 @@ Invoke-WebRequest http://localhost:8000
 ```
 
 ## 📝 Test Queries for Multi-Agent System
+
+**Testing Agent Hierarchy:**
+
 ```
-"What tools do you have available?"
-"Get the hello world message from DNB"
-"Show me available exchange rates"
-"List pension fund statistics"
-"Search for financial institutions in the public register"
+# Test System Root (L1)
+"What can you help me with?"
+
+# Test DNB Coordinator (L2) → Specialists (L3)
+"Get the hello world message from DNB"              → dnb_echo_agent
+"Show me available exchange rates"                  → dnb_statistics_agent
+"Search for financial institutions in public register" → dnb_public_register_agent
+
+# Test Data Science Coordinator (L2) → Specialists (L3)
+"What data do you have access to?"                  → bigquery_agent
+"Create a chart showing pension trends over time"   → analytics_agent
+
+# Test Multi-Domain Coordination
+"Get latest interest rates from DNB and create a trend visualization"
+  → dnb_coordinator → dnb_statistics_agent (fetch)
+  → data_science_coordinator → analytics_agent (visualize)
+```
+
+**Agent Hierarchy (3 Levels):**
+```
+L1 (System):     root_agent
+L2 (Coordinators): dnb_coordinator, data_science_coordinator
+L3 (Specialists):  dnb_echo_agent, dnb_statistics_agent, dnb_public_register_agent,
+                   bigquery_agent, analytics_agent
 ```
 
 Run with:
 ```powershell
-python backend\adk\run_dnb_openapi_agent.py
-```
+# Via ADK Web (recommended)
+.\backend\scripts\quick-start.ps1
 
-Or test the simple LangGraph agent:
-```powershell
-python backend\adk\simple_dnb_agent.py
+# Via CLI runner
+python backend\adk\run_dnb_openapi_agent.py
+
+# Data science standalone
+python backend\adk\run_data_science_agent.py
 ```
 
 ## 📚 Documentation
-- **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - What we built (8 agents, 87 tools)
+- **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - 3-level hierarchy (8 agents)
 - **[Future Architecture](backend/etl/docs/ARCHITECTURE_DNB_FUTURE.md)** - DNB IT deployment (Azure)
-- **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence
-- **[Backend README](backend/README.md)** - Component overview
+- **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence + agent routing
+- **[Backend README](backend/README.md)** - Component overview + agent structure
 - **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
 
 ## 🆘 Common Issues

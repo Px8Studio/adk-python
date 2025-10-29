@@ -47,18 +47,29 @@ graph TB
 
     subgraph DNB_Agents["🤖 DNB Agent System 📋"]
         direction TB
-        Root_DNB["Root Agent<br/>GitHub Copilot<br/>Azure Deployment"]
+        Root_DNB["Root Agent<br/>GitHub Copilot<br/>Azure Deployment<br/>System Coordinator"]
         
-        subgraph Coordinators["Coordinators"]
+        subgraph Coordinators["Domain Coordinators"]
             Internal_Coord["Internal Services Coordinator<br/>DataLoop + ATM + MEGA"]
             External_Coord["External API Coordinator<br/>DNB Public APIs"]
-            Data_Coord["Data Coordinator<br/>Analytics + Reporting"]
+            Data_Coord["Data Science Coordinator<br/>Analytics + Reporting"]
         end
         
-        subgraph Internal_Agents["Internal Service Agents"]
-            DataLoop_Agent["DataLoop Agent<br/>Azure SQL Tools<br/>IAM Auth"]
-            ATM_Agent["ATM Agent<br/>PostgreSQL Tools<br/>IAM Auth"]
-            MEGA_Agent["MEGA Agent<br/>Azure SQL Tools<br/>IAM Auth"]
+        subgraph Internal_Agents["Internal Service Specialists"]
+            DataLoop_Agent["DataLoop Specialist<br/>Azure SQL Tools<br/>IAM Auth"]
+            ATM_Agent["ATM Specialist<br/>PostgreSQL Tools<br/>IAM Auth"]
+            MEGA_Agent["MEGA Specialist<br/>Azure SQL Tools<br/>IAM Auth"]
+        end
+        
+        subgraph External_Agents["External API Specialists"]
+            DNB_Echo["Echo Specialist<br/>Connectivity Tests"]
+            DNB_Stats["Statistics Specialist<br/>Economic Data"]
+            DNB_PR["Public Register Specialist<br/>Regulatory Data"]
+        end
+        
+        subgraph Data_Agents["Data Science Specialists"]
+            Fabric_Agent["Fabric Specialist<br/>Lakehouse Queries"]
+            Analytics_Agent["Analytics Specialist<br/>Power BI Integration"]
         end
     end
 

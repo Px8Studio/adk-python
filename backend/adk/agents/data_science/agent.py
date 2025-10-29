@@ -219,9 +219,9 @@ def get_root_agent() -> Agent:
 
   agent = Agent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="data_science_coordinator",  # Changed from "root_agent"
+      name="data_science_coordinator",  # ✅ Clear coordinator naming
       description=(
-          "Root coordinator for data science operations. Delegates to "
+          "Domain coordinator for data science operations. Delegates to "
           "specialized sub-agents for database queries and analytics tasks."
       ),
       instruction=f"""
@@ -246,18 +246,18 @@ visualizations.
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
 
-  _logger.info("Initialized root agent with %d sub-agents", len(sub_agents))
+  _logger.info("Initialized data science coordinator with %d sub-agents", len(sub_agents))
   return agent
 
 
-from google.adk.agents.llm_agent import LlmAgent as Agent  # single, explicit import
+from google.adk.agents.llm_agent import LlmAgent as Agent
 
 # Initialize configuration on module load
-_logger.info("Loading Orkhon Data Science Multi-Agent System...")
+_logger.info("Loading Orkhon Data Science Coordinator...")
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Create the root agent
+# Create the coordinator agent (exported as root_agent for backward compat)
 root_agent = get_root_agent()
 
-_logger.info("Orkhon Data Science Multi-Agent System ready")
+_logger.info("Orkhon Data Science Coordinator ready")

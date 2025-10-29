@@ -237,18 +237,30 @@ When contributing to the backend:
 
 1. **API Changes:** Update OpenAPI specs in `apis/dnb/specs/`
 2. **Tool Definitions:** Regenerate with `open-api-box/openapi_toolbox.py`
-3. **Agent Code:** Follow ADK multi-agent patterns in `adk/agents/`
-   - **DNB Coordinators:** `adk/agents/api_coordinators/`
-   - **DNB Specialists:** `adk/agents/api_agents/`
-   - **Data Science:** `adk/agents/data_science/`
+3. **Agent Code:** Follow ADK three-level hierarchy pattern in `adk/agents/`
+   - **System Root:** `root_agent` (entry point)
+   - **Domain Coordinators:** `adk/agents/api_coordinators/` and `adk/agents/data_science/`
+   - **Specialists (Leaf):** `adk/agents/api_agents/` and `data_science/sub_agents/`
 4. **ETL Changes:** Update extractors in `etl/`
 5. **Documentation:** Update relevant README and markdown files
 
 **Current Agent Count:**
-- Root: 1 (root_agent)
-- Coordinators: 2 (dnb_coordinator, data_science_agent)
-- Specialists: 5 (3 DNB API + 2 Data Science)
-- **Total: 8 agents implemented** ✅
+- **System Root:** 1 (`root_agent`)
+- **Domain Coordinators:** 2 (`dnb_coordinator`, `data_science_coordinator`)
+- **Specialists (Leaf):** 5 (3 DNB API + 2 Data Science)
+- **Total: 8 agents in 3-level hierarchy** ✅
+
+**Agent Hierarchy:**
+```
+root_agent (L1: System)
+├── dnb_coordinator (L2: Domain)
+│   ├── dnb_echo_agent (L3: Specialist)
+│   ├── dnb_statistics_agent (L3: Specialist)
+│   └── dnb_public_register_agent (L3: Specialist)
+└── data_science_coordinator (L2: Domain)
+    ├── bigquery_agent (L3: Specialist)
+    └── analytics_agent (L3: Specialist)
+```
 
 ---
 

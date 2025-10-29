@@ -113,226 +113,43 @@ graph TB
 
 ```mermaid
 graph TB
-    subgraph Root_Layer["Root Agent ✅"]
-        Root["root_agent<br/>Gemini 2.5-flash<br/>Main Coordinator"]
+    subgraph System_Root["🌐 System Root"]
+        Root["root_agent<br/>system coordinator<br/>entry point"]
     end
 
-    subgraph Coordinator_Layer["Coordinators ✅"]
-        DNB_Coord["dnb_coordinator<br/>Routes to DNB Specialists"]
-        Data_Coord["data_science_agent<br/>Routes to Data Specialists"]
+    subgraph Domain_Coordinators["🎯 Domain Coordinators"]
+        DNB_Coord["dnb_coordinator<br/>DNB API domain"]
+        Data_Coord["data_science_coordinator<br/>Analytics domain"]
     end
 
-    subgraph DNB_Specialists["DNB API Specialists ✅"]
+    subgraph DNB_Specialists["🔧 DNB Specialists<br/>(Leaf Agents with Tools)"]
         Echo["dnb_echo_agent<br/>ToolboxToolset<br/>3 tools"]
         Stats["dnb_statistics_agent<br/>ToolboxToolset<br/>79 tools"]
         PR["dnb_public_register_agent<br/>ToolboxToolset<br/>5 tools"]
     end
 
-    subgraph Data_Specialists["Data Science Specialists ✅"]
-        BQ_Agent["bigquery_agent<br/>Built-in BQ Tools<br/>NL2SQL Translation"]
-        Analytics_Agent["analytics_agent<br/>Code Interpreter<br/>NL2Py + Visualization"]
+    subgraph Data_Specialists["📊 Data Specialists<br/>(Leaf Agents with Tools)"]
+        BQ["bigquery_agent<br/>BigQuery Tools<br/>NL2SQL"]
+        Analytics["analytics_agent<br/>Code Interpreter<br/>NL2Py + Viz"]
     end
 
-    Root --> DNB_Coord
-    Root --> Data_Coord
-    DNB_Coord --> DNB_Specialists
-    Data_Coord --> Data_Specialists
-
-    classDef implemented fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    class Root,DNB_Coord,Data_Coord,Echo,Stats,PR,BQ_Agent,Analytics_Agent implemented
-```
-
-**Implementation Details:**
-- **Location**: `backend/adk/agents/`
-- **Language**: Python 3.12+
-- **Framework**: Google ADK (google.adk)
-- **Model**: Gemini 2.5-flash (configurable)
-- **Pattern**: Hierarchical delegation with `transfer_to_agent()`
-
-**Agent Types:**
-1. **Root Agent**: Entry point and main coordinator
-2. **DNB Coordinator**: Routes DNB API requests (Echo, Statistics, Public Register)
-3. **Data Science Agent**: Routes data analysis requests (BigQuery, Analytics)
-4. **DNB Specialists**: Execute DNB API calls via MCP Toolbox
-5. **Data Specialists**: Execute database queries and analytics
-
----
-
-## Tool Integration
-
-### Current Tool Architecture ✅
-
-```mermaid
-graph TB
-    subgraph Converter["Build-Time ✅"]
-        OpenAPI["OpenAPI Specs<br/>YAML/JSON"]
-        Codegen["openapi-mcp-codegen<br/>Python Script"]
-        ToolYAML["Generated Tool YAML<br/>config/dev/*.yaml"]
-    end
-
-    subgraph Runtime["Runtime ✅"]
-        Toolbox["GenAI Toolbox<br/>MCP Server<br/>Go Binary"]
-        Registry["Tool Registry<br/>87 Tools Loaded"]
-        Executor["HTTP Executor<br/>API Key Injection"]
-    end
-
-    subgraph Agent["Agent Side ✅"]
-        ADKAgent["ADK Agent<br/>ToolboxToolset"]
-        ToolDiscovery["GET /api/toolset"]
-        ToolInvoke["POST /api/tool/{name}/invoke"]
-    end
-
-    OpenAPI --> Codegen
-    Codegen --> ToolYAML
-    ToolYAML --> Toolbox
-    Toolbox --> Registry
-    Registry --> Executor
+    Root -->|"transfer_to_agent()"| DNB_Coord
+    Root -->|"transfer_to_agent()"| Data_Coord
     
-    ADKAgent --> ToolDiscovery
-    ToolDiscovery --> Registry
-    ADKAgent --> ToolInvoke
-    ToolInvoke --> Executor
-
-    classDef implemented fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    class OpenAPI,Codegen,ToolYAML,Toolbox,Registry,Executor,ADKAgent,ToolDiscovery,ToolInvoke implemented
-```
-
-**Current Tool Count:**
-- **Echo API**: 3 tools ✅
-- **Statistics API**: 79 tools ✅
-- **Public Register API**: 5 tools ✅
-- **Total**: 87 tools ✅
-
----
-
-## ETL Pipeline
-
-### Current Data Flow ✅
-
-```mermaid
-graph LR
-    subgraph APIs["External APIs ✅"]
-        DNB_Stats["DNB Statistics API"]
-        DNB_PR["DNB Public Register API"]
-    end
-
-    subgraph Clients["Kiota Clients ✅"]
-        Stats_Client["DnbStatisticsClient<br/>Type-safe Python"]
-        PR_Client["DnbPublicRegisterClient<br/>Type-safe Python"]
-    end
-
-    subgraph ETL["ETL Extractors ✅"]
-        Stats_ETL["17 Statistics Extractors"]
-        PR_ETL["6 Public Register Extractors"]
-    end
-
-    subgraph Storage["Local Storage ✅"]
-        Bronze["Bronze Layer<br/>data/1-bronze/<br/>Parquet Files"]
-    end
-
-    DNB_Stats --> Stats_Client
-    DNB_PR --> PR_Client
-    Stats_Client --> Stats_ETL
-    PR_Client --> PR_ETL
-    Stats_ETL --> Bronze
-    PR_ETL --> Bronze
-
-    classDef implemented fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    class DNB_Stats,DNB_PR,Stats_Client,PR_Client,Stats_ETL,PR_ETL,Bronze implemented
-```
-
-**Current ETL Features:**
-- ✅ Type-safe API clients (Kiota-generated)
-- ✅ Smart pagination handling
-- ✅ Metadata tracking
-- ✅ Parquet output format
-- ✅ Error recovery with checkpoints
-
----
-
-## Deployment Architecture
-
-### Current Local Setup ✅
-
-```mermaid
-graph TB
-    subgraph Host["💻 Windows Host Machine"]
-        Python["Python 3.12+<br/>.venv + Poetry"]
-        ADK_Web["ADK Web Server<br/>Port 8000"]
-        Agents["Agent Python Files<br/>backend/adk/"]
-    end
-
-    subgraph Docker["🐳 Docker Desktop"]
-        Toolbox["genai-toolbox-mcp<br/>Port 5000"]
-        Jaeger["Jaeger<br/>Ports 4318, 16686"]
-        Postgres["PostgreSQL<br/>Port 5432"]
-    end
-
-    subgraph Network["orkhon-network"]
-        Bridge["Docker Bridge Network"]
-    end
-
-    Python --> ADK_Web
-    ADK_Web --> Agents
-    Agents --> Toolbox
-    Toolbox --> Jaeger
-    Toolbox --> Postgres
+    DNB_Coord -->|"transfer_to_agent()"| Echo
+    DNB_Coord -->|"transfer_to_agent()"| Stats
+    DNB_Coord -->|"transfer_to_agent()"| PR
     
-    Toolbox --> Bridge
-    Jaeger --> Bridge
-    Postgres --> Bridge
+    Data_Coord -->|"transfer_to_agent()"| BQ
+    Data_Coord -->|"transfer_to_agent()"| Analytics
 
-    classDef host fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef docker fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef system fill:#e1f5fe,stroke:#01579b,stroke-width:4px
+    classDef coordinator fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef specialist fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
     
-    class Python,ADK_Web,Agents host
-    class Toolbox,Jaeger,Postgres,Bridge docker
+    class Root system
+    class DNB_Coord,Data_Coord coordinator
+    class Echo,Stats,PR,BQ,Analytics specialist
 ```
 
-**Startup Command:**
-```powershell
-.\backend\scripts\quick-start.ps1
-```
-
-**What It Does:**
-1. ✅ Checks Docker Desktop is running
-2. ✅ Creates/verifies orkhon-network
-3. ✅ Starts/restarts Docker services (Toolbox, Jaeger, Postgres)
-4. ✅ Opens Toolbox UI and Jaeger UI
-5. ✅ Activates Python venv
-6. ✅ Starts ADK Web server on port 8000
-
----
-
-## Technology Stack
-
-### Current Technologies ✅
-
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| **Language** | Python | 3.12+ |
-| **Agent Framework** | Google ADK | Latest |
-| **LLM** | Gemini | 2.5-flash / 2.0-flash |
-| **Tool Server** | GenAI Toolbox | Latest (Go) |
-| **Protocol** | MCP | 1.0+ |
-| **API Specs** | OpenAPI | 3.0 |
-| **Client Generator** | Kiota | Latest |
-| **Tracing** | Jaeger | Latest |
-| **Observability** | OpenTelemetry | Latest |
-| **Data Format** | Parquet | Latest |
-| **Package Manager** | Poetry/uv | Latest |
-| **Container** | Docker Compose | Latest |
-
----
-
-## File Structure
-
-### Current Project Layout ✅
-
-```
-orkhon/
-├── backend/
-│   ├── adk/                    # ✅ Agent code
-│   │   ├── agents/            # ✅ Root + coordinators + specialists
-│   │   ├── simple_dnb_agent.py # ✅ LangGraph example
-│   │   └── run_dnb_openapi_agent.py # ✅ Runner
+**Agent Hierarchy Explained:**
