@@ -219,7 +219,7 @@ def get_root_agent() -> Agent:
 
   agent = Agent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="root_agent",
+      name="data_science_coordinator",  # Changed from "root_agent"
       description=(
           "Root coordinator for data science operations. Delegates to "
           "specialized sub-agents for database queries and analytics tasks."

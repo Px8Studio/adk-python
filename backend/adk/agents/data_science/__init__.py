@@ -20,4 +20,5 @@ AlloyDB (planned), Analytics (Code Interpreter), and BQML capabilities.
 
 from .agent import root_agent
 
+# Export with alias for clarity when imported by main root_agent
 __all__ = ["root_agent"]
