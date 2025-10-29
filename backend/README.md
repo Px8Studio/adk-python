@@ -231,111 +231,6 @@ Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
 
 ---
 
-## 🔄 Development Workflow
-
-### Typical Development Flow:
-
-```
-1. Update OpenAPI Specs
-   └─> apis/dnb/specs/*.yaml
-
-2. Generate Tool Definitions
-   └─> Run: python open-api-box/openapi_toolbox.py convert --all
-   └─> Output: toolbox/config/dev/*.generated.yaml
-
-3. Restart Toolbox
-   └─> Run: docker-compose -f toolbox/docker-compose.dev.yml restart
-
-4. Test Tools in Toolbox UI
-   └─> Open: http://localhost:5000/ui/
-
-5. Build/Update Agent
-   └─> Edit agent files in: adk/agents/
-   └─> Run multi-agent: python adk/run_dnb_openapi_agent.py
-   └─> Or run simple agent: python adk/simple_dnb_agent.py
-
-6. Monitor with Jaeger
-   └─> Open: http://localhost:16686
-   └─> View traces and performance metrics
-```
-
-### Quick Restart Flow (VS Code Task):
-
-Run task: **"🔄 Convert & Restart: Convert APIs → Restart Server → Open UI"**
-
-This executes:
-1. OpenAPI → Toolbox conversion
-2. Restarts GenAI Toolbox server
-3. Opens Web UI for testing
-
----
-
-## 🌐 Service Endpoints
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **GenAI Toolbox UI** | http://localhost:5000/ui/ | Browse and test tools |
-| **Toolbox API** | http://localhost:5000/api/ | Programmatic tool access |
-| **Jaeger UI** | http://localhost:16686 | Distributed tracing & monitoring |
-| **PostgreSQL** | localhost:5432 | Tool metadata storage |
-
----
-
-## 📚 Documentation
-
-### Component Documentation:
-- **[ADK - Agent Architecture](adk/AGENT_ARCHITECTURE_ANALYSIS.md)** - Multi-agent system design
-- **[Clients - Kiota Generated](clients/README.md)** - HTTP client usage
-- **[DNB APIs - Integration Guide](apis/dnb/DNB%20API%20Services.MD)** - DNB API documentation
-- **[ETL - Statistics Pipeline](etl/dnb_statistics/README.md)** - ETL pipeline details
-- **[Toolbox - Configuration](toolbox/config/QUICK_ANSWER.md)** - Tool configuration guide
-
-### Monitoring & Observability:
-- **[Jaeger Tracing Guide](toolbox/docs/Jaeger%20UI.md)** - Understand distributed tracing
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues:
-
-**1. Docker services won't start:**
-```powershell
-# Check Docker Desktop is running
-docker --version
-
-# View service logs
-cd backend/toolbox
-docker-compose -f docker-compose.dev.yml logs
-```
-
-**2. Tools not appearing in Toolbox:**
-```powershell
-# Validate tool configuration
-cd backend/toolbox
-python validate_config.py
-
-# Restart with fresh build
-docker-compose -f docker-compose.dev.yml up -d --build
-```
-
-**3. DNB API authentication errors:**
-```powershell
-# Verify API key is set
-echo $env:DNB_SUBSCRIPTION_KEY_DEV
-
-# Test direct API access
-curl -H "Ocp-Apim-Subscription-Key: $env:DNB_SUBSCRIPTION_KEY_DEV" `
-     https://api.dnb.nl/echo-api/helloworld
-```
-
-**4. Agent can't connect to Toolbox:**
-- Ensure Toolbox is running: http://localhost:5000/api/toolset/
-- Check `ToolboxClient` configuration in your agent
-- Review Jaeger traces for connection errors
-
----
-
 ## 🤝 Contributing
 
 When contributing to the backend:
@@ -343,8 +238,17 @@ When contributing to the backend:
 1. **API Changes:** Update OpenAPI specs in `apis/dnb/specs/`
 2. **Tool Definitions:** Regenerate with `open-api-box/openapi_toolbox.py`
 3. **Agent Code:** Follow ADK multi-agent patterns in `adk/agents/`
+   - **DNB Coordinators:** `adk/agents/api_coordinators/`
+   - **DNB Specialists:** `adk/agents/api_agents/`
+   - **Data Science:** `adk/agents/data_science/`
 4. **ETL Changes:** Update extractors in `etl/`
 5. **Documentation:** Update relevant README and markdown files
+
+**Current Agent Count:**
+- Root: 1 (root_agent)
+- Coordinators: 2 (dnb_coordinator, data_science_agent)
+- Specialists: 5 (3 DNB API + 2 Data Science)
+- **Total: 8 agents implemented** ✅
 
 ---
 

@@ -119,21 +119,27 @@ graph TB
 
     subgraph Coordinator_Layer["Coordinators ✅"]
         DNB_Coord["dnb_coordinator<br/>Routes to DNB Specialists"]
+        Data_Coord["data_science_agent<br/>Routes to Data Specialists"]
     end
 
-    subgraph Specialist_Layer["Specialists ✅"]
+    subgraph DNB_Specialists["DNB API Specialists ✅"]
         Echo["dnb_echo_agent<br/>ToolboxToolset<br/>3 tools"]
         Stats["dnb_statistics_agent<br/>ToolboxToolset<br/>79 tools"]
         PR["dnb_public_register_agent<br/>ToolboxToolset<br/>5 tools"]
     end
 
+    subgraph Data_Specialists["Data Science Specialists ✅"]
+        BQ_Agent["bigquery_agent<br/>Built-in BQ Tools<br/>NL2SQL Translation"]
+        Analytics_Agent["analytics_agent<br/>Code Interpreter<br/>NL2Py + Visualization"]
+    end
+
     Root --> DNB_Coord
-    DNB_Coord --> Echo
-    DNB_Coord --> Stats
-    DNB_Coord --> PR
+    Root --> Data_Coord
+    DNB_Coord --> DNB_Specialists
+    Data_Coord --> Data_Specialists
 
     classDef implemented fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
-    class Root,DNB_Coord,Echo,Stats,PR implemented
+    class Root,DNB_Coord,Data_Coord,Echo,Stats,PR,BQ_Agent,Analytics_Agent implemented
 ```
 
 **Implementation Details:**
@@ -142,6 +148,13 @@ graph TB
 - **Framework**: Google ADK (google.adk)
 - **Model**: Gemini 2.5-flash (configurable)
 - **Pattern**: Hierarchical delegation with `transfer_to_agent()`
+
+**Agent Types:**
+1. **Root Agent**: Entry point and main coordinator
+2. **DNB Coordinator**: Routes DNB API requests (Echo, Statistics, Public Register)
+3. **Data Science Agent**: Routes data analysis requests (BigQuery, Analytics)
+4. **DNB Specialists**: Execute DNB API calls via MCP Toolbox
+5. **Data Specialists**: Execute database queries and analytics
 
 ---
 
@@ -322,70 +335,4 @@ orkhon/
 │   ├── adk/                    # ✅ Agent code
 │   │   ├── agents/            # ✅ Root + coordinators + specialists
 │   │   ├── simple_dnb_agent.py # ✅ LangGraph example
-│   │   └── run_dnb_openapi_agent.py # ✅ Runner script
-│   ├── apis/                   # ✅ OpenAPI specs
-│   │   └── dnb/
-│   │       └── specs/         # ✅ 3 API specs
-│   ├── open-api-box/          # ✅ Converter tool
-│   │   └── openapi_toolbox.py
-│   ├── toolbox/               # ✅ Docker setup
-│   │   ├── docker-compose.dev.yml
-│   │   └── config/
-│   │       └── dev/           # ✅ Generated YAML tools
-│   ├── clients/               # ✅ Kiota clients
-│   │   ├── dnb-echo/
-│   │   ├── dnb-statistics/
-│   │   └── dnb-public-register/
-│   ├── etl/                   # ✅ ETL pipelines
-│   │   ├── dnb_statistics/
-│   │   └── dnb_public_register/
-│   ├── scripts/               # ✅ Automation
-│   │   └── quick-start.ps1
-│   └── data/                  # ✅ Data lake
-│       └── 1-bronze/          # ✅ Parquet files
-├── .venv/                     # ✅ Python environment
-├── pyproject.toml            # ✅ Poetry config
-└── SYSTEM_FLOW.md            # ✅ Documentation
-```
-
----
-
-## Summary
-
-**What We Have Built ✅:**
-
-1. **Multi-Agent System**
-   - Root agent with delegation pattern
-   - 1 coordinator (DNB)
-   - 3 specialists (Echo, Statistics, Public Register)
-   - Gemini 2.5-flash as reasoning engine
-
-2. **Tool Infrastructure**
-   - 87 DNB API tools via GenAI Toolbox
-   - OpenAPI → YAML converter
-   - MCP protocol implementation
-   - Full observability with Jaeger
-
-3. **ETL Pipeline**
-   - 23 extractors (17 stats + 6 public register)
-   - Type-safe Kiota clients
-   - Bronze layer (Parquet files)
-   - Metadata tracking
-
-4. **Development Workflow**
-   - One-command startup script
-   - Docker Compose for services
-   - VS Code tasks for common operations
-   - Hot-reload support
-
-**Limitations:**
-- ❌ No Silver/Gold data layers yet
-- ❌ No cloud deployment
-- ❌ No data science agents (NL2SQL, NL2Py)
-- ❌ No BigQuery/AlloyDB integration
-- ❌ No DNB internal service integration
-
----
-
-*Last Updated: October 24, 2025*  
-*Version: Current Implementation*
+│   │   └── run_dnb_openapi_agent.py # ✅ Runner

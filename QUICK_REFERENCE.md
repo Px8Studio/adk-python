@@ -121,9 +121,11 @@ python backend\adk\simple_dnb_agent.py
 ```
 
 ## 📚 Documentation
-- **SUCCESS.md** - Complete success guide
-- **START_GUIDE.md** - Detailed startup instructions
-- **SYSTEM_STATUS.md** - Current system status
+- **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - What we built (8 agents, 87 tools)
+- **[Future Architecture](backend/etl/docs/ARCHITECTURE_DNB_FUTURE.md)** - DNB IT deployment (Azure)
+- **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence
+- **[Backend README](backend/README.md)** - Component overview
+- **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
 
 ## 🆘 Common Issues
 
