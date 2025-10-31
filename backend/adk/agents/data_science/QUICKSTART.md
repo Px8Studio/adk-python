@@ -86,28 +86,30 @@ You: Create a chart showing [some metric] over time
 ## 📁 File Structure
 
 ```
-backend/adk/agents/
-├── root_agent/                      # System orchestrator
-│   ├── __init__.py
-│   ├── agent.py                     # Integrates all coordinators
-│   └── instructions.txt             # System routing logic
-├── data_science/                    # Data science coordinator
-│   ├── agent.py                     # Coordinator (exports as data_science_coordinator)
-│   ├── prompts.py                   # Coordination prompts
-│   ├── tools.py                     # Coordination tools
-│   ├── dnb_statistics_dataset_config.json
-│   ├── .env.example                 # Configuration template
-│   ├── .env                         # Your config (create this!)
-│   ├── README.md                    # Full documentation
-│   └── sub_agents/
-│       ├── bigquery/                # BigQuery agent
-│       │   ├── agent.py
-│       │   ├── prompts.py
-│       │   └── tools.py
-│       └── analytics/               # Analytics agent
-│           ├── agent.py
-│           └── prompts.py
-└── run_data_science_agent.py        # Standalone runner script
+backend/adk/agents/data_science/
+├── __init__.py                       # Exports: agent module
+├── agent.py                          # Coordinator (exports root_agent)
+├── prompts.py                        # Coordination prompts
+├── tools.py                          # Coordination tools
+├── dnb_datasets_config.json          # Dataset configuration
+├── .env.example                      # Configuration template
+├── .env                              # Your config (create this!)
+├── README.md                         # Full documentation
+└── sub_agents/
+    ├── bigquery/                     # BigQuery agent
+    │   ├── __init__.py
+    │   ├── agent.py
+    │   ├── prompts.py
+    │   └── tools.py
+    ├── bqml/                         # BigQuery ML agent
+    │   ├── __init__.py
+    │   ├── agent.py
+    │   ├── prompts.py
+    │   └── tools.py
+    └── analytics/                    # Analytics agent
+        ├── __init__.py
+        ├── agent.py
+        └── prompts.py
 ```
 
 ## 🔧 Configuration

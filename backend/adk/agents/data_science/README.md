@@ -74,7 +74,9 @@ python backend/adk/run_data_science_agent.py --query "What data do you have?"
 ```powershell
 python backend/adk/run_root_agent.py
 # or
-adk web --agents-dir backend/adk/agents
+adk web backend/adk/agents
+# or (ADK CLI will auto-discover root_agent)
+adk run backend/adk/agents/data_science
 ```
 
 **Development:** Use the test script for faster iteration
