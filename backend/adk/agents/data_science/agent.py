@@ -114,7 +114,9 @@ def get_database_settings(db_type: str) -> dict:
     bq_datasets = [
         ds for ds in _dataset_config["datasets"] if ds.get("type") == "bigquery"
     ]
-    return get_bq_database_settings(dataset_configs=bq_datasets)
+    # Import the correct function from bigquery tools
+    from .sub_agents.bigquery.tools import get_database_settings as get_bq_settings
+    return get_bq_settings(dataset_configs=bq_datasets)
 
   return {}
 
@@ -193,7 +195,7 @@ def get_root_agent() -> Agent:
   Returns:
     Configured LlmAgent for coordinating data science operations
   """
-  dataset_definitions = get_dataset_definitions()
+  dataset_definitions = get_dataset_definitions_for_instructions()
 
   # Configure sub-agents based on environment
   sub_agents = []

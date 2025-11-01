@@ -46,8 +46,8 @@ def get_root_agent() -> Agent:
   
   try:
     # Import from sibling packages
-    from api_coordinators import get_dnb_coordinator_agent  # type: ignore
-    from data_science import root_agent as data_science_coordinator  # type: ignore
+    from api_coordinators.dnb_coordinator.agent import get_dnb_coordinator_agent  # type: ignore
+    from data_science.agent import root_agent as data_science_coordinator  # type: ignore
   except ImportError as e:
     raise ImportError(
         f"Failed to import coordinators. "
@@ -61,7 +61,7 @@ def get_root_agent() -> Agent:
   # Model configuration from environment
   model_name = os.environ.get("GOOGLE_GEMINI_MODEL", "gemini-2.0-flash-exp")
   
-  # Build the root agent with sub-agents
+  # Build the root agent with ONLY the two domain coordinators
   root = Agent(
       model=model_name,
       name="root_agent",
@@ -70,19 +70,20 @@ def get_root_agent() -> Agent:
 Your role is to:
 1. Understand the user's query and intent
 2. Delegate to the appropriate coordinator agent:
-   - dnb_coordinator: For DNB API queries (statistics, company info, public register)
-   - data_science_coordinator: For data queries, analytics, visualizations, and BigQuery operations
+   - dnb_coordinator: For DNB API queries (Echo, Statistics, Public Register)
+   - data_science_coordinator: For data analysis, BigQuery, and analytics
 3. Present results clearly to the user
-4. Handle errors gracefully and provide helpful feedback
+4. Handle errors gracefully
 
 When routing queries:
 - DNB API operations → dnb_coordinator
 - Data science operations → data_science_coordinator
-- Multi-domain workflows → chain operations between coordinators
+- Multi-domain workflows → chain coordinators sequentially
 
-Always explain what you're doing and why you're delegating to a specific coordinator.
+Always explain what you're doing and why.
 """,
-      sub_agents=[dnb_coordinator, data_science_coordinator]
+      description="System root orchestrator for Orkhon multi-agent system",
+      sub_agents=[dnb_coordinator, data_science_coordinator]  # ONLY 2 coordinators
   )
 
   return root
