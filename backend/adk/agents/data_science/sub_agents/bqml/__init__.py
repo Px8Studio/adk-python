@@ -12,20 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Orkhon Data Science Coordinator Agent.
-
-A domain-level coordinator for data science operations within the Orkhon
-multi-agent system. This agent integrates BigQuery database access and
-Python analytics capabilities via specialized sub-agents.
-
-Integration Pattern:
-  This agent is designed as a sub-agent of the Orkhon root_agent. The
-  run_data_science_agent.py script is provided for development/testing only.
-"""
+"""BigQuery ML sub-agent for model training and prediction."""
 
 from __future__ import annotations
 
-# Change this to match ADK convention
-from . import agent  # Import the module itself
+from .agent import root_agent as bqml_agent
 
-__all__ = ["agent"]  # Export the module, not a specific agent instance
+__all__ = ["bqml_agent"]

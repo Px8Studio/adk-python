@@ -46,7 +46,7 @@ The `quick-start.ps1` script executes the following sequence to bring the full s
 ┌─────────────────────────────────────────────────────────────┐
 │                     USER COMMAND                            │
 │              .\backend\scripts\quick-start.ps1             │
-└────────────────────────┬────────────────────────────────────┘
+└────────────────
                                            │
                                            ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -71,6 +71,7 @@ The `quick-start.ps1` script executes the following sequence to bring the full s
 │  STEP 3: Start Docker Stack                                │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  docker-compose -f docker-compose.dev.yml up -d     │  │
+│  │  (or restart if already running)                    │  │
 │  └──────────────────────────────────────────────────────┘  │
 │                         │                                   │
 │         ┌───────────────┴───────────────┐                  │
@@ -83,6 +84,10 @@ The `quick-start.ps1` script executes the following sequence to bring the full s
 │         │                               │                  │
 │         │ Health Check                  │ Health Check     │
 │         │ (10s retries)                 │ (multi-probe)    │
+│         │                               │                  │
+│         │ Note: Toolbox is always       │                  │
+│         │ restarted if already running  │                  │
+│         │ to load latest YAML configs   │                  │
 │         ▼                               ▼                  │
 │    [HEALTHY]                        [READY]                │
 └────────────────────────┬────────────────────────────────────┘

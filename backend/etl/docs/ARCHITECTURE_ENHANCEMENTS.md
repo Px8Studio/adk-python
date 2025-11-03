@@ -480,30 +480,21 @@ All diagrams follow these conventions:
 - ✅ **Data Science MVP**: BigQuery + Analytics agents fully implemented
 
 ### Implementation Progress (Oct 24, 2025)
-- ✅ **Data Science Root Agent**: Coordinator with query planning and routing
+- ✅ **Data Science Root Coordinator**: Renamed to `data_science_coordinator` for clarity
+- ✅ **System Root Agent**: Updated to include data_science_coordinator as sub-agent
 - ✅ **BigQuery Agent**: NL2SQL with schema-aware query generation
 - ✅ **Analytics Agent**: NL2Py with Vertex AI Code Interpreter
 - ✅ **Configuration System**: JSON-based dataset definitions
 - ✅ **Development Tooling**: Runner script, environment templates, README
-
-### Future-Ready
-- Architecture supports seamless migration to Cloud Run
-- Data pipeline designed for cloud-native workflows
-- Multi-agent system ready for Vertex AI Agent Engine
-- Clear separation between dev, staging, and production environments
-- **Plug-and-play design ready for BigQuery data integration**
-
----
-
-## 📂 Implementation Details (Oct 24, 2025)
+- ✅ **Three-Level Hierarchy**: System Root → Domain Coordinators → Specialists
 
 ### Data Science Agent File Structure
 
 ```
 backend/adk/agents/data_science/
-├── __init__.py                           # Module exports
-├── agent.py                              # Root coordinator (140 lines)
-├── prompts.py                            # Root instructions (80 lines)
+├── __init__.py                           # Module exports (data_science_coordinator)
+├── agent.py                              # Data science coordinator (140 lines)
+├── prompts.py                            # Coordinator instructions (80 lines)
 ├── tools.py                              # Coordination tools (30 lines)
 ├── dnb_statistics_dataset_config.json    # Dataset config
 ├── .env.example                          # Environment template
@@ -514,16 +505,21 @@ backend/adk/agents/data_science/
     │   ├── __init__.py
     │   ├── agent.py                      # BigQuery NL2SQL (95 lines)
     │   ├── prompts.py                    # Query instructions (50 lines)
-    │   └── tools.py                      # Schema & utilities (110 lines)
+    │   └── tools.py                      # Query utilities
     └── analytics/
         ├── __init__.py
-        ├── agent.py                      # Code Interpreter (25 lines)
-        └── prompts.py                    # Analysis instructions (60 lines)
+        ├── agent.py                      # Analytics NL2Py (95 lines)
+        └── prompts.py                    # Analytics instructions (50 lines)
 
-backend/adk/run_data_science_agent.py     # CLI runner (180 lines)
+backend/adk/agents/root_agent/
+├── __init__.py                           # System root exports
+├── agent.py                              # System orchestrator (integrates coordinators)
+└── instructions.txt                      # System routing logic
+
+backend/adk/run_data_science_agent.py     # Standalone CLI runner (180 lines)
 ```
 
-**Total**: ~770 lines of production-ready code across 13 files
+**Total**: ~850 lines of production-ready code across 15 files
 
 ### Key Features Implemented
 

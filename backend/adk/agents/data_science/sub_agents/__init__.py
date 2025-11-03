@@ -12,4 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Sub-agents for the Orkhon Data Science Multi-Agent System."""
+"""Sub-agents for the Orkhon Data Science Multi-Agent System.
+
+This package contains specialized sub-agents for different data operations:
+- bigquery: NL2SQL database queries
+- analytics: NL2Py data analysis and visualization
+"""
+
+from __future__ import annotations
+
+__all__: list[str] = []

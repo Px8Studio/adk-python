@@ -30,16 +30,14 @@ import os
 from datetime import date
 
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools.load_artifacts_tool import load_artifacts_tool  # Import the actual tool instance
+from google.adk.agents.llm_agent import LlmAgent as Agent
+from google.adk.tools.load_artifacts_tool import load_artifacts_tool
 from google.genai import types
 
-from .prompts import return_instructions_root
+# Import sub-agents - use relative imports for local modules
 from .sub_agents.analytics.agent import get_analytics_agent
 from .sub_agents.bigquery.agent import get_bigquery_agent
-from .sub_agents.bigquery.tools import (
-    get_database_settings as get_bq_database_settings,
-    get_dataset_definitions,
-)
+from .sub_agents.bqml.agent import root_agent as bqml_agent  # Add this
 
 _logger = logging.getLogger(__name__)
 
@@ -116,7 +114,9 @@ def get_database_settings(db_type: str) -> dict:
     bq_datasets = [
         ds for ds in _dataset_config["datasets"] if ds.get("type") == "bigquery"
     ]
-    return get_bq_database_settings(dataset_configs=bq_datasets)
+    # Import the correct function from bigquery tools
+    from .sub_agents.bigquery.tools import get_database_settings as get_bq_settings
+    return get_bq_settings(dataset_configs=bq_datasets)
 
   return {}
 
@@ -195,8 +195,7 @@ def get_root_agent() -> Agent:
   Returns:
     Configured LlmAgent for coordinating data science operations
   """
-  # Get dataset definitions using cached schemas
-  dataset_definitions = get_dataset_definitions()
+  dataset_definitions = get_dataset_definitions_for_instructions()
 
   # Configure sub-agents based on environment
   sub_agents = []
@@ -206,8 +205,11 @@ def get_root_agent() -> Agent:
     bigquery_agent = get_bigquery_agent()
     sub_agents.append(bigquery_agent)
     _logger.info("BigQuery agent enabled")
-  else:
-    _logger.info("BigQuery agent disabled via DISABLE_BIGQUERY_AGENT")
+  
+  # BQML agent for machine learning
+  if os.getenv("DISABLE_BQML_AGENT", "").lower() != "true":
+    sub_agents.append(bqml_agent)
+    _logger.info("BQML agent enabled")
 
   # Analytics agent for data analysis and visualization
   if os.getenv("DISABLE_ANALYTICS_AGENT", "").lower() != "true":
@@ -219,10 +221,10 @@ def get_root_agent() -> Agent:
 
   agent = Agent(
       model=os.getenv("DATA_SCIENCE_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="root_agent",
+      name="data_science_coordinator",
       description=(
-          "Root coordinator for data science operations. Delegates to "
-          "specialized sub-agents for database queries and analytics tasks."
+          "Data science coordinator for BigQuery, BQML, and analytics operations. "
+          "Delegates to specialized sub-agents for database queries, ML training, and analytics."
       ),
       instruction=f"""
 You are a data science coordinator managing specialized sub-agents.
@@ -234,30 +236,34 @@ Today's date: {date.today()}
 
 You can delegate to specialized sub-agents:
 - bigquery_agent: For database queries and data retrieval
+- bqml_agent: For BigQuery ML model training and prediction
 - analytics_agent: For data analysis, visualization, and Python code execution
 
 When analytics_agent generates charts/visualizations, they are saved as 
 artifacts. Use the load_artifacts tool to reference and discuss generated 
 visualizations.
 """,
-      sub_agents=sub_agents,  # type: ignore
+      sub_agents=sub_agents,
       tools=[load_artifacts_tool],
       before_agent_callback=load_database_settings_in_context,
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
 
-  _logger.info("Initialized root agent with %d sub-agents", len(sub_agents))
+  _logger.info("Initialized data science coordinator with %d sub-agents", len(sub_agents))
   return agent
 
 
-from google.adk.agents.llm_agent import LlmAgent as Agent  # single, explicit import
-
 # Initialize configuration on module load
-_logger.info("Loading Orkhon Data Science Multi-Agent System...")
+_logger.info("Loading Orkhon Data Science Coordinator...")
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Create the root agent
+# Export BOTH the instance (for your current usage) AND the factory
 root_agent = get_root_agent()
+data_science_coordinator = root_agent  # Alias for compatibility
 
-_logger.info("Orkhon Data Science Multi-Agent System ready")
+# This allows both patterns:
+# from adk.agents.data_science import data_science_coordinator  # Your current way
+# from adk.agents.data_science.agent import root_agent  # ADK standard way
+
+_logger.info("Orkhon Data Science Coordinator ready")

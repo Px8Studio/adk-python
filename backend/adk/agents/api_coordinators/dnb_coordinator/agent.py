@@ -82,20 +82,17 @@ def _clone_for_sub_agent(agent: Agent, suffix: str = "_as_sub") -> Agent:
 
 def get_dnb_coordinator_agent() -> Agent:
   """Create the DNB coordinator agent with cloned sub_agents to prevent parent conflicts."""
+  # Only include the 3 core DNB API agents
   child_agents = [
     _clone_for_sub_agent(dnb_echo_agent),
     _clone_for_sub_agent(dnb_statistics_agent),
     _clone_for_sub_agent(dnb_public_register_agent),
   ]
 
-  if USE_OPENAPI_VARIANTS:
-    child_agents.extend(
-      [
-        _clone_for_sub_agent(dnb_openapi_echo_agent),            # type: ignore[name-defined]
-        _clone_for_sub_agent(dnb_openapi_statistics_agent),      # type: ignore[name-defined]
-        _clone_for_sub_agent(dnb_openapi_public_register_agent), # type: ignore[name-defined]
-      ]
-    )
+  # Remove OpenAPI variants for now - they're redundant with Toolbox-based agents
+  # Can add them back later when you have a specific use case
+  # if USE_OPENAPI_VARIANTS:
+  #   child_agents.extend([...])
 
   # Rely on ADK's built-in transfer tool auto-exposed when sub_agents are set.
   return Agent(
@@ -107,7 +104,7 @@ def get_dnb_coordinator_agent() -> Agent:
       "and synthesizes concise responses."
     ),
     sub_agents=child_agents,
-    tools=[],
+    tools=[],  # No tools needed - delegation handled by transfer_to_agent
   )
 
 # Module-level instance for ADK loader compatibility

@@ -27,7 +27,8 @@ cd C:\Users\rjjaf\_Projects\orkhon
 # Increase wait time for services (default 60s)
 .\backend\scripts\quick-start.ps1 -WaitSeconds 120
 
-# Restart existing containers
+# Restart existing containers (default if already running)
+# This ensures latest tool configurations are loaded
 .\backend\scripts\quick-start.ps1 -RestartToolbox
 ```
 
@@ -89,6 +90,10 @@ docker logs orkhon-jaeger --tail=50
 # Check Toolbox health
 Invoke-WebRequest http://localhost:5000/health
 
+# Restart Toolbox to reload configurations
+cd backend\toolbox
+docker-compose -f docker-compose.dev.yml restart genai-toolbox
+
 # Check ADK Web (when running)
 Invoke-WebRequest http://localhost:8000
 
@@ -99,26 +104,34 @@ Invoke-WebRequest http://localhost:8000
 ## 📝 Test Queries for Multi-Agent System
 ```
 "What tools do you have available?"
+"What data do you have access to?"
 "Get the hello world message from DNB"
 "Show me available exchange rates"
 "List pension fund statistics"
 "Search for financial institutions in the public register"
+"Analyze pension fund data trends over time"
 ```
 
 Run with:
 ```powershell
-python backend\adk\run_dnb_openapi_agent.py
-```
+# For data science queries
+python backend\adk\run_data_science_agent.py --query "What data do you have?"
 
-Or test the simple LangGraph agent:
-```powershell
-python backend\adk\simple_dnb_agent.py
+# For DNB API queries
+python backend\adk\run_dnb_openapi_agent.py
+
+# For full multi-agent system (integrated)
+# Start ADK Web and use the UI
+.\backend\scripts\quick-start.ps1
 ```
 
 ## 📚 Documentation
-- **SUCCESS.md** - Complete success guide
-- **START_GUIDE.md** - Detailed startup instructions
-- **SYSTEM_STATUS.md** - Current system status
+- **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - What we built (8 agents, 87 tools)
+- **[Future Architecture](backend/etl/docs/ARCHITECTURE_DNB_FUTURE.md)** - DNB IT deployment (Azure)
+- **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence
+- **[Backend README](backend/README.md)** - Component overview
+- **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
+- **[Data Science Agent](backend/adk/agents/data_science/README.md)** - BigQuery + Analytics setup
 
 ## 🆘 Common Issues
 

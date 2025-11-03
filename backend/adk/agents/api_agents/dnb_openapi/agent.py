@@ -178,14 +178,16 @@ def build_unified_agent(model: str | None = None) -> Agent:
     return agent
 
 
-# Default exported agent - now uses unified approach by default
+# Default exported agent - unified approach ONLY
 dnb_openapi_agent = build_unified_agent()
 
-# Explicit variants (handy for routing/testing without env switches)
-dnb_openapi_echo_agent = build_agent(api="echo")
-dnb_openapi_statistics_agent = build_agent(api="statistics")
-dnb_openapi_public_register_agent = build_agent(api="public-register")
-dnb_openapi_unified_agent = build_unified_agent()
+# Remove the individual variants - they're not needed in the hierarchy
+# dnb_openapi_echo_agent = build_agent(api="echo")
+# dnb_openapi_statistics_agent = build_agent(api="statistics")
+# dnb_openapi_public_register_agent = build_agent(api="public-register")
+
+# Keep this for direct testing
+dnb_openapi_unified_agent = dnb_openapi_agent  # Alias
 
 
 if __name__ == "__main__":  # Simple smoke test: list tool names

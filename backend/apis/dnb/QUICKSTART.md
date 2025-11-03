@@ -6,9 +6,12 @@ This guide will walk you through generating an MCP server from the DNB Echo API 
 
 ## Prerequisites
 
-First, ensure `uv` is installed (which provides the code generation tool):
+First, ensure Docker Desktop is running and `uv` is installed:
 
 ```powershell
+# Check Docker is running
+docker --version
+
 # Check if uv is installed
 uv --version
 
@@ -16,15 +19,31 @@ uv --version
 pip install uv
 ```
 
-**Note:** Do NOT try to install `uvx` separately - it's provided by the `uv` package!
+**Note:** The `quick-start.ps1` script will automatically start/restart MCP Toolbox as needed.
 
-## Step 1: Navigate to Scripts Directory
+## Step 1: Start Full Stack (Recommended)
+
+```powershell
+# Navigate to project root
+cd c:\Users\rjjaf\_Projects\orkhon
+
+# Run the full stack quick-start (includes MCP Toolbox)
+.\backend\scripts\quick-start.ps1
+```
+
+This will:
+1. ✅ Check system prerequisites
+2. ✅ Start/restart Docker services (MCP Toolbox, Jaeger, Postgres)
+3. ✅ Open Web UIs automatically
+4. ✅ Start ADK Web server
+
+## Step 2: Navigate to Scripts Directory
 
 ```powershell
 cd c:\Users\rjjaf\_Projects\orkhon\backend\apis\dnb\scripts
 ```
 
-## Step 2: Generate MCP Server for Echo API
+## Step 3: Generate MCP Server for Echo API
 
 ```powershell
 python generate_mcp_from_openapi.py echo
@@ -49,7 +68,7 @@ python generate_mcp_from_openapi.py echo
 📦 Generated files in: c:\Users\rjjaf\_Projects\orkhon\backend\apis\dnb\generated\dnb_echo_mcp
 ```
 
-## Step 3: Explore Generated Files
+## Step 4: Explore Generated Files
 
 ```powershell
 cd ..\generated\dnb_echo_mcp
@@ -65,14 +84,14 @@ README.md          # Generated documentation
 .env.example       # Environment variables template
 ```
 
-## Step 4: Install Dependencies
+## Step 5: Install Dependencies
 
 ```powershell
 # Install using Poetry
 poetry install
 ```
 
-## Step 5: Configure Environment
+## Step 6: Configure Environment
 
 ```powershell
 # Copy .env template
@@ -88,14 +107,14 @@ DNB_API_URL=https://api.dnb.nl
 DNB_TOKEN=your_subscription_key_here
 ```
 
-## Step 6: Run the MCP Server
+## Step 7: Run the MCP Server
 
 ```powershell
 # Run in stdio mode (default)
 poetry run mcp_echo
 ```
 
-## Step 7: Test with the Generated Agent
+## Step 8: Test with the Generated Agent
 
 ```powershell
 cd agent
@@ -113,7 +132,7 @@ notepad .env
 poetry run python agent.py
 ```
 
-## Step 8: Compare with Manual Configuration
+## Step 9: Compare with Manual Configuration
 
 ```powershell
 cd ..\..\scripts

@@ -143,15 +143,33 @@ if (-not $SkipDiagnostics) {
 Show-Step "Step 2/6: Ensuring Docker network exists..."
 try {
   $networkName = "orkhon-network"
-  $networkExists = & docker network inspect $networkName 2>&1 | Out-Null
-  
+
+  # Try to inspect the network and capture output (stderr + stdout)
+  $inspectOutput = & docker network inspect $networkName 2>&1
   if ($LASTEXITCODE -ne 0) {
+    $errText = ($inspectOutput -join "`n").ToString()
+
+    # Detect common signs that the Docker daemon (Docker Desktop) is not reachable
+    if ($errText -match "dockerDesktopLinuxEngine" -or
+        $errText -match "open //./pipe" -or
+        $errText -match "cannot connect to the Docker daemon" -or
+        $errText -match "Is the docker daemon running") {
+
+      Show-Err "Docker engine not reachable. This usually means Docker Desktop (daemon) is not running."
+      Show-Info "Action: Start Docker Desktop and ensure the Docker daemon/WSL backend is running."
+      Show-Info "  - On Windows: Start 'Docker Desktop' from the Start Menu or system tray."
+      Show-Info "  - Wait a minute for Docker to finish initializing, then re-run this script."
+      Show-Info "If you prefer to continue without Docker, re-run with -SkipDiagnostics (not recommended)."
+      exit 2
+    }
+
+    # Otherwise attempt to create the network (normal create path)
     Show-Info "Creating Docker network: $networkName"
-    & docker network create $networkName
+    $createOutput = & docker network create $networkName 2>&1
     if ($LASTEXITCODE -eq 0) {
       Show-Ok "Docker network created: $networkName"
     } else {
-      Show-Err "Failed to create Docker network"
+      Show-Err "Failed to create Docker network: $($createOutput -join ' ')"
       exit 1
     }
   } else {
@@ -159,6 +177,7 @@ try {
   }
 } catch {
   Show-Err "Failed to check/create Docker network: $($_.Exception.Message)"
+  Show-Info "Hint: Ensure Docker Desktop is installed and running. Start Docker Desktop and try again."
   exit 1
 }
 
@@ -170,24 +189,21 @@ try {
   # Check if containers are already running
   $runningContainers = & docker ps --filter "name=orkhon-" --format "{{.Names}}" 2>&1
   
-  if ($ForceRecreate) {
+  # Always restart to ensure latest configuration is loaded
+  if ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
+    Show-Info "MCP Toolbox containers found. Restarting to load latest configuration..."
+    & docker-compose -f docker-compose.dev.yml restart
+    if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
+    Show-Ok "Containers restarted with latest configuration"
+  }
+  elseif ($ForceRecreate) {
     Show-Info "Force recreating containers..."
     & docker-compose -f docker-compose.dev.yml down
     & docker-compose -f docker-compose.dev.yml up -d --force-recreate
     if ($LASTEXITCODE -ne 0) { throw "Failed to recreate containers" }
     Show-Ok "Containers recreated successfully"
   }
-  elseif ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
-    if ($RestartToolbox) {
-      Show-Info "Restarting existing containers..."
-      & docker-compose -f docker-compose.dev.yml restart
-      if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
-      Show-Ok "Containers restarted"
-    } else {
-      Show-Ok "GenAI Toolbox Stack already running"
-      Show-Info "Use -RestartToolbox to restart, or -ForceRecreate to recreate"
-    }
-  } else {
+  else {
     Show-Info "Starting fresh containers..."
     & docker-compose -f docker-compose.dev.yml up -d
     if ($LASTEXITCODE -ne 0) { throw "Failed to start containers" }
@@ -299,6 +315,7 @@ if ($OpenUIs) {
     }
     
     Show-Ok "Web UIs opened in browser"
+    Show-Info "ADK Web UI will open automatically once the server starts..."
   } catch {
     Show-Info "Could not open web UIs automatically: $($_.Exception.Message)"
     Show-Info "Open manually:"
@@ -399,6 +416,15 @@ try {
   Write-Host "  (Toolbox services will continue running in Docker)   " -ForegroundColor Green
   Write-Host "========================================================" -ForegroundColor Green
   Write-Host ""
+  
+  # Schedule ADK Web UI to open after server starts (if OpenUIs is true)
+  if ($OpenUIs) {
+    Show-Info "ADK Web UI will open in 5 seconds..."
+    Start-Job -ScriptBlock {
+      Start-Sleep -Seconds 5
+      Start-Process "http://localhost:8000"
+    } | Out-Null
+  }
   
   # Activate venv and start server
   & $VenvActivate

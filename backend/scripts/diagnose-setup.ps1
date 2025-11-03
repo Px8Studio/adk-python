@@ -88,14 +88,33 @@ try {
   # 5) Check Docker network
   $networkName = "orkhon-network"
   try {
-    $null = & docker network inspect $networkName 2>&1
+    $inspectOutput = & docker network inspect $networkName 2>&1
     if ($LASTEXITCODE -eq 0) {
       Write-Host "[OK]  Docker network exists: $networkName" -ForegroundColor Green
     } else {
-      Write-Host "[INFO] Docker network not found: $networkName (will be created)" -ForegroundColor Yellow
+      $errText = ($inspectOutput -join "`n").ToString()
+      if ($errText -match "dockerDesktopLinuxEngine" -or
+          $errText -match "open //./pipe" -or
+          $errText -match "cannot connect to the Docker daemon" -or
+          $errText -match "Is the docker daemon running") {
+        Write-Host "[WARN] Docker CLI found but daemon is not reachable." -ForegroundColor Yellow
+        # Give a quick check for Docker Desktop process/service
+        $dockerProc = Get-Process -Name "Docker Desktop" -ErrorAction SilentlyContinue
+        $dockerService = Get-Service -Name "com.docker.service" -ErrorAction SilentlyContinue
+        if ($dockerProc) {
+          Write-Host "[INFO] 'Docker Desktop' process appears to be running. Docker may still be initializing." -ForegroundColor Yellow
+        } elseif ($dockerService -and $dockerService.Status -ne 'Stopped') {
+          Write-Host "[INFO] Docker service detected: com.docker.service ($($dockerService.Status))." -ForegroundColor Yellow
+        } else {
+          Write-Host "[INFO] Docker Desktop process/service not found. Start Docker Desktop from the Start Menu." -ForegroundColor Yellow
+        }
+        Write-Host "[INFO] After starting Docker, wait a minute and re-run this diagnostic or the quick-start script." -ForegroundColor Yellow
+      } else {
+        Write-Host "[INFO] Docker network not found: $networkName (will be created)" -ForegroundColor Yellow
+      }
     }
   } catch {
-    Write-Host "[INFO] Could not check Docker network (Docker may not be running)" -ForegroundColor Yellow
+    Write-Host "[INFO] Could not check Docker network (Docker CLI may not be available or daemon unreachable)" -ForegroundColor Yellow
   }
 
   Write-Host "[OK]  Diagnostics completed successfully" -ForegroundColor Green
