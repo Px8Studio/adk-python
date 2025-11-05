@@ -131,16 +131,32 @@ def emit_progress_event(callback_context: CallbackContext, message: str) -> None
   # Future: callback_context.emit_event(types.Event(message=message))
 
 
-def load_database_settings_in_context(callback_context: CallbackContext) -> None:
-  """Load database settings into callback context for sub-agents."""
-  if hasattr(callback_context, "database_settings"):
-    return  # Already loaded
+def load_database_settings_in_context(callback_context: CallbackContext) -> str:
+  """Load database settings from config file into context."""
+  # Load database settings from config file
+  database_settings = None
+  config_path = Path(__file__).parent / "dnb_statistics_dataset_config.json"
+  if config_path.exists():
+    with open(config_path, "r", encoding="utf-8") as f:
+      config = json.loads(f.read())
+      database_settings = config.get("datasets", [])
+  else:
+    # Default if no config file
+    database_settings = [{
+      "type": "bigquery",
+      "name": "dnb_statistics",
+      "description": "DNB Statistics dataset containing financial and pension fund data"
+    }]
+
+  # Use context dictionary directly instead of set_in_context
+  callback_context.context["database_settings"] = database_settings
   
-  dataset_config = load_dataset_config()
-  database_settings = init_database_settings(dataset_config)
-  callback_context.set_in_context("database_settings", database_settings)
+  # Log what was loaded
+  logger.info(
+    f"Loaded {len(database_settings)} database settings into context"
+  )
   
-  _logger.debug(f"Loaded database settings: {database_settings}")
+  return f"Loaded {len(database_settings)} database settings"
 
 
 def get_root_agent() -> Agent:
