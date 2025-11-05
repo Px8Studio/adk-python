@@ -23,7 +23,11 @@ Google ADK is built around a few core concepts that make it powerful and flexibl
 
 -   **Agent**: Agents are core building blocks designed to accomplish specific tasks. They can be powered by LLMs to reason, plan, and utilize tools to achieve goals, and can even collaborate on complex projects.
 -   **Tools**: Leveraging tools effectively is what truly distinguishes intelligent agents from basic models. A tool is a block of code, like a function or a method, that executes specific actions such as interacting with databases, making API requests, or invoking other external services. Tools empower agents to interact with other systems and perform actions beyond their core reasoning and generation capabilities. It's crucial to note that these tools operate independently of the agent's LLM, meaning that tools do not automatically possess their own reasoning abilities. Agent Development Kit provides developers with a diverse range of tool options:
-    -   **Pre-built Tools**: Ready-to-use functionalities such as Google Search, Code Execution, and Retrieval-Augmented Generation (RAG) tools.
+    -   **Pre-built Tools**: Ready-to-use functionalities such as Google Search, Code Execution, and Retrieval-Augmented Generation (RAG) tools. Available pre-built tools from Google include:
+        -   **Google Search** (`google_search`): Allows the agent to perform web searches using Google Search. You simply add `google_search` to the agent's tools.
+        -   **Code Execution** (`built_in_code_execution`): Allows the agent to execute code for calculations, data manipulation, or programmatic system interactions. You can use the pre-built `VertexCodeInterpreter` or any code executor that implements the `BaseCodeExecutor` interface.
+        -   **Retrieval** (`retrieval`): A package of tools designed to fetch information from various sources.
+        -   **Vertex AI Search Tool** (`VertexAiSearchTool`): Integrates with Google Cloud's Vertex AI Search service to allow the agent to search through your AI Applications data stores.
     -   **Third-Party Tools**: Seamless integration of tools from external libraries like LangChain and CrewAI.
     -   **Custom Tools**: The ability to create custom tools tailored to specific requirements, by using language specific constructs and Agents-as-Tools. The SDK also provides asynchronous capabilities through Long Running Function Tools.
 -   **Session Services**: Session services handle the context of a single conversation (Session), including its history (Events) and the agent's working memory for that conversation (State).
@@ -32,13 +36,3 @@ Google ADK is built around a few core concepts that make it powerful and flexibl
 -   **Runner**: The engine that manages the execution flow, orchestrates agent interactions based on Events, and coordinates with backend services.
 
 
-Available Pre-Built Tools from Google
-Google provides several useful tools for your agents. They include:
-
-Google Search (google_search): Allows the agent to perform web searches using Google Search. You simply add google_search to the agent's tools.
-
-Code Execution (built_in_code_execution): This tool allows the agent to execute code, to perform calculations, data manipulation, or interact with other systems programmatically. You can use the pre-built VertexCodeInterpreter or any code executor that implements the BaseCodeExecutor interface.
-
-Retrieval (retrieval): A package of tools designed to fetch information from various sources.
-
-Vertex AI Search Tool (VertexAiSearchTool): This tool integrates with Google Cloud's Vertex AI Search service to allow the agent to search through your AI Applications data stores.
