@@ -106,10 +106,21 @@ def get_dataset_definitions_for_instructions() -> str:
     return "No datasets configured."
   
   definitions = []
-  for dataset_name, dataset_info in _dataset_config.get("datasets", {}).items():
-    desc = dataset_info.get("description", "No description")
-    table_count = len(dataset_info.get("tables", []))
-    definitions.append(f"- {dataset_name}: {desc} ({table_count} tables)")
+  datasets = _dataset_config.get("datasets", [])
+  
+  # Handle both list and dict formats for backwards compatibility
+  if isinstance(datasets, dict):
+    for dataset_name, dataset_info in datasets.items():
+      desc = dataset_info.get("description", "No description")
+      table_count = len(dataset_info.get("tables", []))
+      definitions.append(f"- {dataset_name}: {desc} ({table_count} tables)")
+  elif isinstance(datasets, list):
+    for dataset_info in datasets:
+      dataset_name = dataset_info.get("name", "unknown")
+      desc = dataset_info.get("description", "No description")
+      schema = dataset_info.get("schema", {})
+      table_count = len(schema.get("tables", {}))
+      definitions.append(f"- {dataset_name}: {desc} ({table_count} tables)")
   
   return "\n".join(definitions) if definitions else "No datasets available."
 
@@ -206,8 +217,8 @@ Always provide clear, actionable insights from the data.
     instruction=instruction,
     description="Coordinates data science operations across BigQuery, analytics, and ML sub-agents",
     tools=[load_artifacts_tool],
-    agents=sub_agents,
-    before_call_hook=load_database_settings_in_context,
+    sub_agents=sub_agents,
+    before_agent_callback=load_database_settings_in_context,
   )
   
   return coordinator
