@@ -16,3 +16,14 @@ Agent Development Kit offers a higher-level framework than these tools, allowing
 ![alt text](image.png)
 
 Additionally, it allows you to deploy these complex systems of agents to a fully-managed endpoint in Agent Engine, so you can focus on the agents' logic while infrastructure is allocated and scaled for you.
+
+## Core Concepts of Agent Development Kit
+
+Google ADK is built around a few core concepts that make it powerful and flexible:
+
+-   **Agent**: Agents are core building blocks designed to accomplish specific tasks. They can be powered by LLMs to reason, plan, and utilize tools to achieve goals, and can even collaborate on complex projects.
+-   **Tools**: Tools give agents abilities beyond conversation, letting them interact with external APIs, search information, run code, or call other services.
+-   **Session Services**: Session services handle the context of a single conversation (Session), including its history (Events) and the agent's working memory for that conversation (State).
+-   **Callbacks**: Custom code snippets you provide to run at specific points in the agent's process, allowing for checks, logging, or behavior modifications.
+-   **Artifact Management**: Artifacts allow agents to save, load, and manage files or binary data (like images or PDFs) associated with a session or user.
+-   **Runner**: The engine that manages the execution flow, orchestrates agent interactions based on Events, and coordinates with backend services.
