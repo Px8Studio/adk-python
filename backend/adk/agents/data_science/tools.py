@@ -16,37 +16,67 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
+
+from google.adk.tools.agent_tool import AgentTool
 
 if TYPE_CHECKING:
   from google.adk.tools.tool_context import ToolContext
 
+logger = logging.getLogger(__name__)
 
-def call_bigquery_agent(query: str, tool_context: ToolContext) -> str:
-  """Call the BigQuery agent with a natural language query.
 
+async def call_bigquery_agent(
+    question: str,
+    tool_context: ToolContext,
+) -> str:
+  """Tool to call BigQuery database (NL2SQL) agent with Chase SQL support.
+  
   Args:
-    query: Natural language question about the data in BigQuery
+    question: Natural language question about the data in BigQuery
     tool_context: ADK tool context for state management
-
+    
   Returns:
     Query results from BigQuery agent
   """
-  # This tool will be automatically connected to the bigquery_agent sub-agent
-  # by ADK when it's included in the root agent's tools list
-  return f"Calling BigQuery agent with query: {query}"
+  logger.info(f"Routing to BigQuery agent: {question}")
+  
+  # The AgentTool will handle the actual agent invocation
+  # This is just a placeholder that won't be called directly
+  # when using AgentTool pattern
+  return f"Query routed to BigQuery agent: {question}"
 
 
-def call_analytics_agent(analysis_request: str, tool_context: ToolContext) -> str:
-  """Call the Analytics agent with a data analysis request.
-
+async def call_analytics_agent(
+    analysis_request: str,
+    tool_context: ToolContext,
+) -> str:
+  """Tool to call analytics agent for Python-based analysis and visualization.
+  
   Args:
-    analysis_request: Natural language description of analysis to perform
-    tool_context: ADK tool context containing any data from previous steps
-
+    analysis_request: Description of the analysis to perform
+    tool_context: ADK tool context for state management
+    
   Returns:
-    Analysis results from Analytics agent
+    Analysis results from analytics agent
   """
-  # This tool will be automatically connected to the analytics_agent sub-agent
-  # by ADK when it's included in the root agent's tools list
-  return f"Calling Analytics agent with request: {analysis_request}"
+  logger.info(f"Routing to Analytics agent: {analysis_request}")
+  return f"Analysis routed to Analytics agent: {analysis_request}"
+
+
+async def call_bqml_agent(
+    ml_request: str,
+    tool_context: ToolContext,
+) -> str:
+  """Tool to call BQML agent for machine learning operations.
+  
+  Args:
+    ml_request: Description of the ML model to build or use
+    tool_context: ADK tool context for state management
+    
+  Returns:
+    ML results from BQML agent
+  """
+  logger.info(f"Routing to BQML agent: {ml_request}")
+  return f"ML request routed to BQML agent: {ml_request}"

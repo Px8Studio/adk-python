@@ -28,7 +28,9 @@ from google.genai import types
 
 from .prompts import return_instructions_analytics
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
+# Preserve compatibility with existing references.
+_logger = logger
 
 # User agent identifier for API calls
 USER_AGENT = "orkhon-data-science-agent"
@@ -80,7 +82,10 @@ def _create_code_executor():
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
   """Setup callback executed before agent processes a request."""
-  tool_context = ToolContext(user_agent=USER_AGENT)
+  # Fix: Remove user_agent parameter from ToolContext initialization
+  tool_context = ToolContext()
+  # Store user_agent in state instead
+  tool_context.state["user_agent"] = USER_AGENT
   callback_context.tool_context = tool_context
 
 
@@ -93,7 +98,7 @@ def get_analytics_agent() -> LlmAgent:
   code_executor = _create_code_executor()
 
   agent = LlmAgent(
-      model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.0-flash-exp"),
+      model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.5-flash"),
       name="analytics_agent",
       instruction=return_instructions_analytics(),
       code_executor=code_executor,
@@ -102,8 +107,9 @@ def get_analytics_agent() -> LlmAgent:
       generate_content_config=types.GenerateContentConfig(temperature=0.01),
   )
 
-  _logger.info("Analytics agent initialized with code executor: %s", 
-               "enabled" if code_executor else "disabled")
+  _logger.info("Analytics agent initialized with code executor: %s, model: %s", 
+               "enabled" if code_executor else "disabled",
+               os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.5-flash"))
 
   return agent
 
