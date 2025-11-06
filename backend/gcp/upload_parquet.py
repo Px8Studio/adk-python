@@ -39,6 +39,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from backend.etl.field_description_loader import load_all_field_descriptions
 from backend.gcp.auth import GCPAuth
 from backend.gcp.bigquery_manager import BigQueryManager
 from backend.gcp.datasource_config import (
@@ -255,6 +256,14 @@ def upload_files(
     logger.info(f"Files to upload: {len(parquet_files)}")
     logger.info("=" * 70 + "\n")
     
+    # Load field descriptions for this datasource
+    logger.info("Loading field descriptions...")
+    field_descriptions = load_all_field_descriptions(datasource_id=datasource_id)
+    if field_descriptions:
+        logger.info(f"✓ Loaded {len(field_descriptions)} field descriptions\n")
+    else:
+        logger.info("  No field descriptions found (tables will have no descriptions)\n")
+    
     # Initialize GCP managers
     logger.info("Initializing GCP connection...")
     auth = GCPAuth(project_id=project_id)
@@ -291,6 +300,7 @@ def upload_files(
                 write_disposition=config.bigquery.table_defaults.write_disposition,
                 auto_detect_table_name=True,
                 bronze_path=config.pipeline_config.bronze_path,
+                field_descriptions=field_descriptions,
             )
             results.append(stats)
         

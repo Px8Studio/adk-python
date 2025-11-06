@@ -32,6 +32,9 @@ from google.adk.agents.llm_agent import LlmAgent as Agent
 from google.adk.tools.load_artifacts_tool import load_artifacts_tool
 from google.genai import types
 
+# Import local utilities (agent should be self-contained per ADK pattern)
+from .utils.schema_formatter import format_schema_as_create_table_statements
+
 # Import sub-agents - use relative imports for local modules
 from .sub_agents.analytics.agent import get_analytics_agent
 from .sub_agents.bigquery.agent import get_bigquery_agent
@@ -154,36 +157,42 @@ def get_dataset_definitions_for_instructions() -> str:
   if not datasets:
     return "No BigQuery datasets available."
   
-  lines = []
+  # Get project ID for fully qualified table names
+  project_id = bq_settings.get("project_id", "unknown")
+  
+  lines = ["", "【Database Schema】", ""]
+  
   for dataset in datasets:
     name = dataset.get("name", "unknown")
     desc = dataset.get("description", "No description")
     
-    lines.append(f"\n## Dataset: {name}")
+    lines.append(f"## Dataset: {name}")
     lines.append(f"Description: {desc}")
+    lines.append("")
     
-    # Include actual table listings (NEW - like ADK sample)
+    # Get table schema
     schema = dataset.get("schema", {})
     tables = schema.get("tables", {})
     
     if tables:
-      lines.append(f"\nAvailable Tables ({len(tables)}):")
-      # Show first 10 tables with their columns
-      for i, (table_name, table_info) in enumerate(sorted(tables.items())):
-        if i >= 10:
-          lines.append(f"  ... and {len(tables) - 10} more tables")
-          break
-        
-        columns = table_info.get("columns", [])
-        if columns:
-          col_sample = ", ".join(columns[:5])
-          if len(columns) > 5:
-            col_sample += f" ... ({len(columns)} total)"
-          lines.append(f"  - {table_name}: {col_sample}")
-        else:
-          lines.append(f"  - {table_name}")
+      # Generate CREATE TABLE statements (ADK pattern)
+      # This format is optimal for LLM understanding:
+      # - Full table names with project prefix
+      # - OPTIONS(description) for columns with descriptions
+      # - Self-documenting schema
+      create_statements = format_schema_as_create_table_statements(
+        project_id=project_id,
+        dataset_id=name,
+        tables=tables,
+        include_table_description=True,
+        max_tables=20,  # Limit for token management (can adjust based on needs)
+      )
+      
+      lines.append(create_statements)
+      lines.append("")
     else:
       lines.append("(No tables found - schema may not have loaded)")
+      lines.append("")
   
   return "\n".join(lines)
 
@@ -260,7 +269,7 @@ Dutch financial and economic data from De Nederlandsche Bank (DNB).
 2. **analytics_agent**: Perform statistical analysis and visualization
 3. **bqml_agent**: Build and evaluate machine learning models
 
-**Available Datasets:**
+**Database Schema (CREATE TABLE format with column descriptions):**
 {get_dataset_definitions_for_instructions()}
 
 **Database Configuration:**
@@ -276,31 +285,34 @@ Example: `insurance_pensions__insurers__insurance_corps_balance_sheet_quarter`
 1. For data queries → Use bigquery_agent
 2. For analysis/visualization → Use analytics_agent  
 3. For ML models → Use bqml_agent
-4. Always reference exact table names from the schema above
-5. Provide clear, data-driven insights to the user
+4. The schema above shows CREATE TABLE statements with OPTIONS(description) for columns
+5. Use column descriptions to understand data meaning and relationships
+6. Always use fully qualified table names: `project.dataset.table`
+7. Provide clear, data-driven insights to the user
 
-Remember: The sub-agents have access to the full table schemas, so you can
-reference tables by their exact names without guessing.
+Remember: The CREATE TABLE statements show the exact schema with types and
+descriptions. Sub-agents have access to this information for accurate SQL generation.
 """
 
-  # Create root agent with sub-agents
+  # Create root agent with sub-agents using correct parameter name
   root_agent = Agent(
       name="data_science_coordinator",
       model=model,
-      instruction=instruction.strip(),
+      instruction=instruction,
       description="Coordinates data science workflows across DNB datasets",
-      agents=[
+      sub_agents=[
           get_bigquery_agent(),
           get_analytics_agent(),
           bqml_agent,
       ],
       tools=[load_artifacts_tool],
       before_agent_callback=load_database_settings_in_context,
-      generation_config=types.GenerateContentConfig(
-          temperature=0.2,
-          top_p=0.95,
-          top_k=40,
-      ),
+      # Remove generation_config - let model use defaults
+      # generation_config=types.GenerateContentConfig(
+      #     temperature=1.0,
+      #     top_k=40.0,
+      #     top_p=0.95,
+      # ),
   )
   
   _logger.info("Orkhon Data Science Coordinator initialized")
@@ -311,5 +323,5 @@ reference tables by their exact names without guessing.
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Fetch the root agent
+# Create the root agent
 root_agent = get_root_agent()

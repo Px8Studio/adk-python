@@ -896,13 +896,14 @@ class BigQueryManager:
         write_disposition: str = "WRITE_TRUNCATE",
         auto_detect_table_name: bool = True,
         bronze_path: str | None = None,
+        field_descriptions: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """
         Full pipeline: Load parquet from local file directly to BigQuery (no GCS staging).
         
         Workflow:
         1. Auto-detect table name from path (if enabled)
-        2. Infer BigQuery schema from parquet
+        2. Infer BigQuery schema from parquet (with optional descriptions)
         3. Create BigQuery table with schema/partitioning
         4. Load data directly from local file into BigQuery
         
@@ -915,6 +916,7 @@ class BigQueryManager:
             write_disposition: How to handle existing data (WRITE_TRUNCATE, WRITE_APPEND)
             auto_detect_table_name: Auto-detect table name from datasource path structure
             bronze_path: Bronze layer folder name for path parsing (e.g., 'dnb_statistics')
+            field_descriptions: Optional dict mapping field_name -> description
         
         Returns:
             Dict with upload statistics
@@ -959,10 +961,24 @@ class BigQueryManager:
         if table_id is None:
             raise ValueError("table_id must be provided or auto_detect_table_name must be True")
         
-        # Step 1: Infer schema from parquet
+        # Step 1: Infer schema from parquet with descriptions
         logger.info("Step 1: Inferring schema from parquet...")
-        schema = self.parquet_to_bigquery_schema(str(local_path))
-        logger.info(f"  ✓ Found {len(schema)} columns\n")
+        schema = self.parquet_to_bigquery_schema(
+          str(local_path),
+          descriptions=field_descriptions
+        )
+        
+        # Count how many fields have descriptions
+        if field_descriptions:
+            described_count = sum(
+              1 for f in schema if f.description is not None
+            )
+            logger.info(
+              f"  ✓ Found {len(schema)} columns "
+              f"({described_count} with descriptions)\n"
+            )
+        else:
+            logger.info(f"  ✓ Found {len(schema)} columns\n")
         
         # Step 2: Create BigQuery table (only if partitioning/clustering needed)
         # For simple loads, we'll let BigQuery create the table automatically

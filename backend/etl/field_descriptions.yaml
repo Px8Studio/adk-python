@@ -1,0 +1,188 @@
+# Common Field Descriptions for BigQuery Schemas
+# 
+# Usage: These descriptions are applied during schema creation in BigQuery
+# to help LLMs understand the data structure and generate better queries.
+
+# ==========================================
+# Standard ETL Metadata Fields
+# ==========================================
+standard_fields:
+  _etl_timestamp:
+    description: "ETL extraction timestamp in ISO 8601 format (UTC)"
+    example: "2025-11-06T10:30:45.123456"
+  
+  _etl_source:
+    description: "Source file or endpoint name from extraction process"
+    example: "exchange_rates_day"
+  
+  _etl_extracted_at:
+    description: "Timestamp when record was extracted from DNB API (ISO 8601)"
+    example: "2025-11-06T10:30:45.123456"
+  
+  _etl_extractor:
+    description: "Name of the extractor class that generated this record"
+    example: "ExchangeRatesExtractor"
+
+# ==========================================
+# Common Time-Series Fields
+# ==========================================
+time_fields:
+  period:
+    description: "Observation date for time-series data (DATE format)"
+    example: "2024-01-15"
+  
+  date:
+    description: "Transaction or observation date (DATE format)"
+    example: "2024-01-15"
+  
+  year:
+    description: "Year of observation (4-digit integer)"
+    example: "2024"
+  
+  quarter:
+    description: "Quarter of observation (Q1, Q2, Q3, Q4)"
+    example: "Q1"
+  
+  month:
+    description: "Month of observation (1-12)"
+    example: "3"
+
+# ==========================================
+# Financial Data Fields
+# ==========================================
+financial_fields:
+  value:
+    description: "Numeric value for the observation (units vary by dataset)"
+    example: "1234.56"
+  
+  rate:
+    description: "Rate as decimal (e.g., 0.025 = 2.5%)"
+    example: "0.025"
+  
+  amount:
+    description: "Monetary amount in millions of euros (unless specified)"
+    example: "1234.5"
+  
+  currency:
+    description: "ISO 4217 currency code (3 characters)"
+    example: "EUR"
+  
+  currency_code:
+    description: "ISO 4217 currency code (3 characters)"
+    example: "USD"
+
+# ==========================================
+# Identifier Fields
+# ==========================================
+identifier_fields:
+  register_code:
+    description: "DNB register type code (e.g., WFTAF, WFTKF)"
+    example: "WFTAF"
+  
+  language_code:
+    description: "ISO 639-1 language code (2 characters, e.g., NL, EN)"
+    example: "NL"
+  
+  relation_number:
+    description: "Unique identifier for organization in DNB register"
+    example: "12345678"
+  
+  chamber_of_commerce:
+    description: "Dutch Chamber of Commerce (KvK) number"
+    example: "12345678"
+
+# ==========================================
+# Classification Fields
+# ==========================================
+classification_fields:
+  sector:
+    description: "Economic sector classification"
+    example: "Financial institutions"
+  
+  category:
+    description: "Data category or classification"
+    example: "Insurance & Pensions"
+  
+  instrument:
+    description: "Financial instrument type"
+    example: "EURIBOR"
+  
+  tenor:
+    description: "Maturity period (e.g., 1M, 3M, 6M, 12M)"
+    example: "3M"
+
+# ==========================================
+# Organization/Entity Fields
+# ==========================================
+entity_fields:
+  name:
+    description: "Name of entity or organization"
+    example: "Example Insurance Company B.V."
+  
+  official_name:
+    description: "Official registered name of organization"
+    example: "Example Insurance Company Besloten Vennootschap"
+  
+  trade_name:
+    description: "Trading name or brand name used by organization"
+    example: "Example Insurance"
+  
+  address:
+    description: "Street address or location"
+    example: "Main Street 123"
+  
+  city:
+    description: "City name"
+    example: "Amsterdam"
+  
+  postal_code:
+    description: "Postal code (Dutch format: 1234 AB)"
+    example: "1012 AB"
+  
+  country:
+    description: "Country name or ISO 3166-1 alpha-2 code"
+    example: "NL"
+
+# ==========================================
+# Publication Fields
+# ==========================================
+publication_fields:
+  publication_number:
+    description: "Unique identifier for DNB publication"
+    example: "PUB-2024-001"
+  
+  publication_date:
+    description: "Date when publication was released (DATE format)"
+    example: "2024-01-15"
+  
+  publication_type:
+    description: "Type of publication (e.g., decision, measure, notification)"
+    example: "Decision"
+  
+  title:
+    description: "Title or subject of publication"
+    example: "Approval of insurance license"
+  
+  description:
+    description: "Detailed description or summary of content"
+    example: "Decision on approval of insurance license for..."
+
+# ==========================================
+# Status Fields
+# ==========================================
+status_fields:
+  status:
+    description: "Current status of record"
+    example: "Active"
+  
+  is_active:
+    description: "Boolean flag indicating if record is currently active"
+    example: "true"
+  
+  effective_date:
+    description: "Date when record becomes effective (DATE format)"
+    example: "2024-01-15"
+  
+  expiry_date:
+    description: "Date when record expires or is no longer valid (DATE format)"
+    example: "2025-12-31"
