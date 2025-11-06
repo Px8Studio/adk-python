@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tools for the Data Science root coordinator agent.
+"""Tools for the Orkhon Data Science root coordinator agent.
 
-These tools wrap sub-agents using AgentTool pattern, following the official
-ADK data-science sample. This allows the coordinator to call sub-agents as
-tools and synthesize their responses naturally.
+Following official ADK data-science sample pattern for multi-agent coordination.
 """
 
 from __future__ import annotations
@@ -26,9 +24,8 @@ import logging
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
-# Import sub-agents
-from .sub_agents.analytics.agent import get_analytics_agent
-from .sub_agents.bigquery.agent import get_bigquery_agent
+from .sub_agents.analytics.agent import analytics_agent
+from .sub_agents.bigquery.agent import bigquery_agent
 
 logger = logging.getLogger(__name__)
 
@@ -39,31 +36,25 @@ async def call_bigquery_agent(
 ) -> str:
   """Tool to call BigQuery database (NL2SQL) agent.
   
-  Use this tool to:
-  - Query BigQuery datasets with natural language
-  - Retrieve data samples
-  - Check table schemas
-  - List available tables
+  Use this for querying DNB datasets with natural language.
   
   Args:
     question: Natural language question about the data
     tool_context: Tool context with database settings
     
   Returns:
-    Structured response from BigQuery agent with SQL and results
+    Response from BigQuery agent with SQL and results
   """
   logger.debug("call_bigquery_agent: %s", question)
   
-  # Create agent tool wrapper (following official ADK sample pattern)
-  agent_tool = AgentTool(agent=get_bigquery_agent())
+  agent_tool = AgentTool(agent=bigquery_agent)
   
-  # Call the agent asynchronously
   bigquery_agent_output = await agent_tool.run_async(
       args={"request": question}, 
       tool_context=tool_context
   )
   
-  # Store output in context for potential reuse by analytics agent
+  # Store for coordinator's use (not for analytics - that uses query_result)
   tool_context.state["bigquery_agent_output"] = bigquery_agent_output
   
   return bigquery_agent_output
@@ -93,19 +84,20 @@ async def call_analytics_agent(
   
   Args:
     question: Natural language analytics request
-    tool_context: Tool context containing query results from previous agents
+    tool_context: Tool context containing query results from BigQuery agent
     
   Returns:
     Analysis results with insights, code, and visualizations
   """
   logger.debug("call_analytics_agent: %s", question)
   
-  # Extract data from previous BigQuery agent calls
+  # Extract actual query results (stored by BigQuery agent's after_tool_callback)
+  # Following official sample pattern: analytics reads "bigquery_query_result"
   bigquery_data = ""
   if "bigquery_query_result" in tool_context.state:
     bigquery_data = tool_context.state["bigquery_query_result"]
   
-  # Prepare question with embedded data context
+  # Embed data context in the question
   question_with_data = f"""
 Question to answer: {question}
 
@@ -119,16 +111,13 @@ Use this data to answer the question. The data is already loaded - you do not
 need to query the database again.
 """
   
-  # Create agent tool wrapper (following official ADK sample pattern)
-  agent_tool = AgentTool(agent=get_analytics_agent())
+  agent_tool = AgentTool(agent=analytics_agent)
   
-  # Call the agent asynchronously
   analytics_agent_output = await agent_tool.run_async(
       args={"request": question_with_data},
       tool_context=tool_context
   )
   
-  # Store output in context
   tool_context.state["analytics_agent_output"] = analytics_agent_output
   
   return analytics_agent_output
