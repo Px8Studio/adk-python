@@ -12,17 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tools for the Data Science root coordinator agent."""
+"""Tools for the Data Science root coordinator agent.
+
+These tools wrap sub-agents using AgentTool pattern, following the official
+ADK data-science sample. This allows the coordinator to call sub-agents as
+tools and synthesize their responses naturally.
+"""
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 
+from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
-if TYPE_CHECKING:
-  from google.adk.tools.tool_context import ToolContext
+# Import sub-agents
+from .sub_agents.analytics.agent import get_analytics_agent
+from .sub_agents.bigquery.agent import get_bigquery_agent
 
 logger = logging.getLogger(__name__)
 
@@ -31,52 +37,98 @@ async def call_bigquery_agent(
     question: str,
     tool_context: ToolContext,
 ) -> str:
-  """Tool to call BigQuery database (NL2SQL) agent with Chase SQL support.
+  """Tool to call BigQuery database (NL2SQL) agent.
+  
+  Use this tool to:
+  - Query BigQuery datasets with natural language
+  - Retrieve data samples
+  - Check table schemas
+  - List available tables
   
   Args:
-    question: Natural language question about the data in BigQuery
-    tool_context: ADK tool context for state management
+    question: Natural language question about the data
+    tool_context: Tool context with database settings
     
   Returns:
-    Query results from BigQuery agent
+    Structured response from BigQuery agent with SQL and results
   """
-  logger.info(f"Routing to BigQuery agent: {question}")
+  logger.debug("call_bigquery_agent: %s", question)
   
-  # The AgentTool will handle the actual agent invocation
-  # This is just a placeholder that won't be called directly
-  # when using AgentTool pattern
-  return f"Query routed to BigQuery agent: {question}"
+  # Create agent tool wrapper (following official ADK sample pattern)
+  agent_tool = AgentTool(agent=get_bigquery_agent())
+  
+  # Call the agent asynchronously
+  bigquery_agent_output = await agent_tool.run_async(
+      args={"request": question}, 
+      tool_context=tool_context
+  )
+  
+  # Store output in context for potential reuse by analytics agent
+  tool_context.state["bigquery_agent_output"] = bigquery_agent_output
+  
+  return bigquery_agent_output
 
 
 async def call_analytics_agent(
-    analysis_request: str,
+    question: str,
     tool_context: ToolContext,
 ) -> str:
-  """Tool to call analytics agent for Python-based analysis and visualization.
+  """Tool to call Analytics agent for data analysis and visualization.
+  
+  This tool can generate Python code to process and analyze datasets.
+  
+  Capabilities:
+  - Creating graphics for data visualization
+  - Processing or filtering existing datasets
+  - Statistical analysis (mean, median, correlations, etc.)
+  - Combining datasets for joined analysis
+  
+  Available Python modules:
+  - pandas, numpy
+  - matplotlib.pyplot, seaborn
+  - scipy, scikit-learn (basic)
+  
+  The tool DOES NOT retrieve data from databases - it only analyzes
+  data that was already retrieved by call_bigquery_agent.
   
   Args:
-    analysis_request: Description of the analysis to perform
-    tool_context: ADK tool context for state management
+    question: Natural language analytics request
+    tool_context: Tool context containing query results from previous agents
     
   Returns:
-    Analysis results from analytics agent
+    Analysis results with insights, code, and visualizations
   """
-  logger.info(f"Routing to Analytics agent: {analysis_request}")
-  return f"Analysis routed to Analytics agent: {analysis_request}"
-
-
-async def call_bqml_agent(
-    ml_request: str,
-    tool_context: ToolContext,
-) -> str:
-  """Tool to call BQML agent for machine learning operations.
+  logger.debug("call_analytics_agent: %s", question)
   
-  Args:
-    ml_request: Description of the ML model to build or use
-    tool_context: ADK tool context for state management
-    
-  Returns:
-    ML results from BQML agent
-  """
-  logger.info(f"Routing to BQML agent: {ml_request}")
-  return f"ML request routed to BQML agent: {ml_request}"
+  # Extract data from previous BigQuery agent calls
+  bigquery_data = ""
+  if "bigquery_query_result" in tool_context.state:
+    bigquery_data = tool_context.state["bigquery_query_result"]
+  
+  # Prepare question with embedded data context
+  question_with_data = f"""
+Question to answer: {question}
+
+Actual data to analyze is available in the following data table:
+
+<BIGQUERY_DATA>
+{bigquery_data}
+</BIGQUERY_DATA>
+
+Use this data to answer the question. The data is already loaded - you do not
+need to query the database again.
+"""
+  
+  # Create agent tool wrapper (following official ADK sample pattern)
+  agent_tool = AgentTool(agent=get_analytics_agent())
+  
+  # Call the agent asynchronously
+  analytics_agent_output = await agent_tool.run_async(
+      args={"request": question_with_data},
+      tool_context=tool_context
+  )
+  
+  # Store output in context
+  tool_context.state["analytics_agent_output"] = analytics_agent_output
+  
+  return analytics_agent_output
