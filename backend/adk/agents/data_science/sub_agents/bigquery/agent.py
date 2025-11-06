@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any
+from typing import Any, Dict, Optional
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
@@ -28,6 +28,7 @@ from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
 from google.genai import types
 
 from .prompts import return_instructions_bigquery
+from .tools import get_database_settings_from_context
 
 _logger = logging.getLogger(__name__)
 
@@ -40,100 +41,99 @@ USER_AGENT = "orkhon-data-science-agent"
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
-  """Setup callback executed before agent processes a request.
-  
-  Loads database configuration and schema information into the context.
-  """
-  _logger.info("Setting up BigQuery agent context")
-  
-  # Load project and dataset info from environment
-  # Support multiple env var names for flexibility
-  project_id = (
-      os.getenv("BQ_DATA_PROJECT_ID")
-      or os.getenv("BQ_PROJECT_ID")
-      or os.getenv("GOOGLE_CLOUD_PROJECT")
-  )
-  dataset_id = os.getenv("BQ_DATASET_ID")
-  
-  if project_id and dataset_id:
-    callback_context.set_in_context(
-        "database_config",
-        {
-            "project_id": project_id,
-            "dataset_id": dataset_id,
-        },
-    )
+    """Setup the agent context before execution."""
+    _logger.info("Setting up BigQuery agent context")
+
+    # Get database settings from the parent context
+    database_settings = get_database_settings_from_context(callback_context)
+
+    # Retrieve the InvocationContext required by ToolContext
+    inv_ctx = None
+    try:
+        if hasattr(callback_context, "execution_context") and hasattr(
+            callback_context.execution_context, "invocation_context"
+        ):
+            inv_ctx = callback_context.execution_context.invocation_context
+        elif hasattr(callback_context, "invocation_context"):
+            inv_ctx = callback_context.invocation_context
+    except Exception:  # pragma: no cover - defensive
+        inv_ctx = None
+
+    if inv_ctx is None:
+        _logger.warning(
+            "InvocationContext not available; skipping ToolContext setup."
+        )
+        return
+
+    # Initialize ToolContext with the invocation context
+    tool_context = ToolContext(inv_ctx)
+
+    # Store database settings in the state
+    tool_context.state["database_settings"] = database_settings
+    tool_context.state["user_agent"] = USER_AGENT
+
+    # Attach tool context to callback context
+    callback_context.tool_context = tool_context
+
     _logger.info(
-        f"Loaded BigQuery config: {project_id}.{dataset_id}"
+        f"BigQuery agent context set with project: "
+        f"{database_settings.get('project_id')}"
     )
 
 
 def store_results_in_context(
-    callback_context: CallbackContext,
     tool: BaseTool,
+    args: Dict[str, Any],
     tool_context: ToolContext,
-    tool_response: Any,
-) -> None:
-  """Store query results in context for potential reuse."""
-  if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
-    callback_context.set_in_context("last_query_result", tool_response)
+    tool_response: Dict,
+) -> Optional[Dict]:
+    """Store query results in context for potential reuse.
+    
+    This follows the ADK sample pattern for after_tool_callback.
+    """
+    if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
+        # Store in tool context for access by other tools
+        tool_context.state["last_query_result"] = tool_response
+        _logger.debug("Stored query result in context")
+    
+    # Return None to use the original tool response
+    return None
 
-
-# Configure BigQuery toolset
-tool_filter = [ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL]
-
-bigquery_tool_config = BigQueryToolConfig(
-    write_mode=WriteMode.ALLOWED,
-    max_query_result_rows=100,
-    application_name="orkhon-data-science-agent",
-)
-
-bigquery_toolset = BigQueryToolset(
-    tool_filter=tool_filter,
-    bigquery_tool_config=bigquery_tool_config,
-)
-
-# For backwards compatibility, create a default instance
-bigquery_agent = LlmAgent(
-    model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.0-flash-exp"),
-    name="bigquery_agent",
-    instruction=return_instructions_bigquery(),
-    tools=[
-        bigquery_toolset,
-    ],
-    before_agent_callback=setup_before_agent_call,
-    after_tool_callback=store_results_in_context,
-    generate_content_config=types.GenerateContentConfig(temperature=0.01),
-)
 
 def get_bigquery_agent() -> LlmAgent:
-  """Create a new BigQuery agent instance.
-  
-  Returns a fresh instance each time to avoid parent conflicts.
-  """
-  # Configure BigQuery toolset
-  tool_filter = [ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL]
-  
-  bigquery_tool_config = BigQueryToolConfig(
-      write_mode=WriteMode.ALLOWED,
-      max_query_result_rows=100,
-      application_name="orkhon-data-science-agent",
-  )
-  
-  bigquery_toolset = BigQueryToolset(
-      tool_filter=tool_filter,
-      bigquery_tool_config=bigquery_tool_config,
-  )
+    """Create a new BigQuery agent instance.
+    
+    Returns a fresh instance each time to avoid conflicts when used as sub-agent.
+    This pattern follows the official ADK data-science sample.
+    """
+    # Configure BigQuery toolset with each instantiation
+    bigquery_tool_config = BigQueryToolConfig(
+        write_mode=WriteMode.BLOCKED,  # Changed to BLOCKED for safety by default
+        max_query_result_rows=100,
+        application_name=USER_AGENT,
+    )
+    
+    bigquery_toolset = BigQueryToolset(
+        tool_filter=[ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL],
+        bigquery_tool_config=bigquery_tool_config,
+    )
 
-  # Create the BigQuery agent
-  return LlmAgent(
-      model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.0-flash-exp"),
-      name="bigquery_agent",
-      instruction=return_instructions_bigquery(),
-      tools=[
-          bigquery_toolset,
-      ],
-      before_agent_callback=setup_before_agent_call,
-      after_tool_callback=store_results_in_context,
-      generate_content_config=types.GenerateContentConfig(temperature=0.01),
-  )
+    # Create and return fresh agent instance
+    agent = LlmAgent(
+        model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.5-flash"),
+        name="bigquery_agent",
+        instruction=return_instructions_bigquery(),
+        tools=[bigquery_toolset],
+        before_agent_callback=setup_before_agent_call,
+        after_tool_callback=store_results_in_context,
+        generate_content_config=types.GenerateContentConfig(temperature=0.01),
+    )
+    
+    _logger.debug("Created new BigQuery agent instance with model: %s", 
+                  os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.5-flash"))
+    return agent
+
+
+# Module-level instance for backward compatibility and direct usage
+# This follows the ADK convention: module exports an agent instance
+bigquery_agent = get_bigquery_agent()

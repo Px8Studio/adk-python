@@ -25,6 +25,7 @@ import logging
 import os
 from typing import Any
 
+from google.adk.agents.callback_context import CallbackContext
 from google.cloud import bigquery
 
 from .schema_cache import get_cached_schema, set_cached_schema
@@ -200,4 +201,33 @@ def get_dataset_definitions() -> str:
         definitions.append(f"- {name}: {desc} ({table_count} tables)")
 
     return "\n".join(definitions)
+
+
+def get_database_settings_from_context(callback_context: CallbackContext) -> dict:
+    """Extract database settings from the callback context.
+    
+    Args:
+        callback_context: The callback context from the parent agent
+        
+    Returns:
+        Database settings dictionary
+    """
+    # Try to get settings from session context first
+    if hasattr(callback_context, 'session') and hasattr(callback_context.session, 'context'):
+        if callback_context.session.context and "database_settings" in callback_context.session.context:
+            return callback_context.session.context["database_settings"]
+    
+    # Try execution context
+    if hasattr(callback_context, 'execution_context') and hasattr(callback_context.execution_context, 'context'):
+        if callback_context.execution_context.context and "database_settings" in callback_context.execution_context.context:
+            return callback_context.execution_context.context["database_settings"]
+    
+    # Fallback to environment variables
+    return {
+        "project_id": os.getenv("BQ_DATA_PROJECT_ID"),
+        "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
+        "model": os.getenv("BIGQUERY_MODEL_NAME", "gemini-2.5-flash"),
+        "temperature": float(os.getenv("BIGQUERY_TEMPERATURE", "0.01")),
+        "generate_sql_type": os.getenv("NL2SQL_METHOD", "BASELINE"),
+    }
 

@@ -145,13 +145,16 @@ def load_database_settings_in_context(
   Returns:
     None to continue execution normally.
   """
+  context = {}
+  
   try:
     # Load dataset configuration from JSON file
-    config_file = Path(__file__).parent / "dnb_statistics_dataset_config.json"
+    # NOTE: unify on dnb_datasets_config.json (matches loader and docs)
+    config_file = Path(__file__).parent / "dnb_datasets_config.json"
     if not config_file.exists():
-      logger.warning(f"Dataset config not found at {config_file}")
-      return None
-      
+      _logger.warning(f"Dataset config not found at {config_file}")
+      return context
+
     with open(config_file, "r") as f:
       dataset_config = json.load(f)
       
@@ -163,8 +166,8 @@ def load_database_settings_in_context(
     )
     
     if not dnb_dataset:
-      logger.warning("DNB statistics dataset not found in config")
-      return None
+      _logger.warning("DNB statistics dataset not found in config")
+      return context
       
     # Build database settings
     database_settings = {
@@ -173,6 +176,10 @@ def load_database_settings_in_context(
         "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
         "description": dnb_dataset.get("description", ""),
         "tables": dnb_dataset.get("tables", []),
+        # Optional hints used by NL2SQL tools; keep sane defaults
+        "model": os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash"),
+        "temperature": float(os.getenv("DATA_SCIENCE_TEMPERATURE", "0.2")),
+        "generate_sql_type": os.getenv("GENERATE_SQL_TYPE", "QP"),  # QP or DC
     }
     
     # The correct way to set context in CallbackContext
@@ -182,34 +189,17 @@ def load_database_settings_in_context(
       if callback_context.session.context is None:
         callback_context.session.context = {}
       callback_context.session.context["database_settings"] = database_settings
-      logger.info(f"Loaded database settings: {database_settings['dataset_id']}")
+      _logger.info(f"Loaded database settings: {database_settings['dataset_id']}")
     else:
-      # If the structure is different, try to find where to set the context
-      # Log the actual structure for debugging
-      logger.debug(f"CallbackContext attributes: {dir(callback_context)}")
-      if hasattr(callback_context, '__dict__'):
-        logger.debug(f"CallbackContext dict: {callback_context.__dict__}")
-      
-      # Try alternative ways to set context based on ADK patterns
-      # Option 1: Direct attributes
-      if hasattr(callback_context, 'execution_context'):
-        if not hasattr(callback_context.execution_context, 'context'):
-          callback_context.execution_context.context = {}
-        callback_context.execution_context.context["database_settings"] = database_settings
-      # Option 2: Use the session's set_context method if available
-      elif hasattr(callback_context, 'session') and hasattr(callback_context.session, 'set_context'):
-        current_context = callback_context.session.get_context() or {}
-        current_context["database_settings"] = database_settings
-        callback_context.session.set_context(current_context)
-      else:
-        logger.warning("Could not determine how to set context in CallbackContext")
-        
-  except Exception as e:
-    logger.error(f"Error loading database settings: {e}")
-    # Return None to continue execution even if settings fail to load
-    return None
-    
-  # Return None to continue normal execution
+      _logger.warning(
+          "CallbackContext.session.context not available; database settings not injected"
+      )
+      return context
+
+  except Exception as e:  # pylint: disable=broad-except
+    _logger.error(f"Failed to load database settings: {e}")
+    return context
+
   return None
 
 
@@ -254,36 +244,46 @@ When a user asks a question:
 Always provide clear, actionable insights from the data.
 """
   
-  # Configure sub-agents
+  # Configure sub-agents - use factory functions for fresh instances
   sub_agents = []
   
   # Add BigQuery agent
   try:
+    from .sub_agents.bigquery.agent import get_bigquery_agent
     bigquery = get_bigquery_agent()
     sub_agents.append(bigquery)
     _logger.info("BigQuery agent loaded")
   except Exception as e:
     _logger.warning(f"Could not load BigQuery agent: {e}")
   
-  # Add Analytics agent
+  # Add Analytics agent  
   try:
+    from .sub_agents.analytics.agent import get_analytics_agent
     analytics = get_analytics_agent()
     sub_agents.append(analytics)
     _logger.info("Analytics agent loaded")
   except Exception as e:
     _logger.warning(f"Could not load Analytics agent: {e}")
   
-  # Add BQML agent
+  # Add BQML agent - use factory if available
   try:
-    sub_agents.append(bqml_agent)
+    from .sub_agents.bqml.agent import get_bqml_agent
+    bqml = get_bqml_agent()
+    sub_agents.append(bqml)
     _logger.info("BQML agent loaded")
-  except Exception as e:
-    _logger.warning(f"Could not load BQML agent: {e}")
+  except ImportError:
+    # Fallback to module instance if no factory exists yet
+    try:
+      from .sub_agents.bqml.agent import root_agent as bqml_agent
+      sub_agents.append(bqml_agent)
+      _logger.info("BQML agent loaded (module instance)")
+    except Exception as e:
+      _logger.warning(f"Could not load BQML agent: {e}")
   
   # Create the coordinator agent
   coordinator = Agent(
     name="data_science_coordinator",
-    model=os.getenv("DATA_SCIENCE_MODEL", "gemini-2.0-flash-exp"),
+    model=os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash"),
     instruction=instruction,
     description="Coordinates data science operations across BigQuery, analytics, and ML sub-agents",
     tools=[load_artifacts_tool],
@@ -299,12 +299,9 @@ _logger.info("Loading Orkhon Data Science Coordinator...")
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Export BOTH the instance (for your current usage) AND the factory
-root_agent = get_root_agent()
-data_science_coordinator = root_agent  # Alias for compatibility
-
-# This allows both patterns:
-# from adk.agents.data_science import data_science_coordinator  # Your current way
-# from adk.agents.data_science.agent import root_agent  # ADK standard way
+# Create module-level instance following ADK convention
+# This provides both patterns for maximum compatibility:
+root_agent = get_root_agent()  # ADK standard: root_agent
+data_science_coordinator = root_agent  # Alias for backward compatibility
 
 _logger.info("Orkhon Data Science Coordinator ready")

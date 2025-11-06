@@ -109,11 +109,29 @@ def initial_bq_nl2sql(
     number_of_candidates = tool_context.state["database_settings"][
         "number_of_candidates"
     ]
-    model = tool_context.state["database_settings"]["model"]
-    temperature = tool_context.state["database_settings"]["temperature"]
-    generate_sql_type = tool_context.state["database_settings"][
-        "generate_sql_type"
-    ]
+    # Pull settings with robust fallbacks
+    settings = tool_context.state.get("database_settings", {}) if hasattr(tool_context, "state") else {}
+    requested_model = settings.get(
+        "model", os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash")
+    )
+    temperature = settings.get(
+        "temperature", float(os.getenv("DATA_SCIENCE_TEMPERATURE", "0.2"))
+    )
+    generate_sql_type = settings.get(
+        "generate_sql_type", os.getenv("GENERATE_SQL_TYPE", GenerateSQLType.QP.value)
+    )
+
+    # Region-aware model fallback: exp models are not available in europe-west4
+    region = os.getenv("GOOGLE_CLOUD_LOCATION", "").lower()
+    def _safe_model_name(model_name: str, region_name: str) -> str:
+        try:
+            if model_name.endswith("-exp") and region_name.startswith(("europe", "europe-west")):
+                return model_name.replace("-exp", "")
+            return model_name
+        except Exception:
+            return "gemini-2.5-flash"
+
+    requested_model = _safe_model_name(requested_model, region)
 
     if generate_sql_type == GenerateSQLType.DC.value:
         prompt = DC_PROMPT_TEMPLATE.format(
@@ -130,9 +148,10 @@ def initial_bq_nl2sql(
     else:
         raise ValueError(f"Unsupported generate_sql_type: {generate_sql_type}")
 
-    model = GeminiModel(model_name=model, temperature=temperature)
+    # Build model with safe name; avoid shadowing string variable
+    gemini_model = GeminiModel(model_name=requested_model, temperature=temperature)
     requests = [prompt for _ in range(number_of_candidates)]
-    responses = model.call_parallel(requests, parser_func=parse_response)
+    responses = gemini_model.batch_generate_content(requests)
     # Take just the first response.
     responses = responses[0]
 
