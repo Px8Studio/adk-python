@@ -21,7 +21,6 @@ import os
 
 from google.adk.agents.llm_agent import LlmAgent as Agent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.bigquery import BigQueryToolset
 from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
 
@@ -35,39 +34,21 @@ USER_AGENT = "orkhon-data-science-agent"
 
 
 def setup_before_agent_call(callback_context: CallbackContext):
-    """Setup the BQML agent before execution."""
-    _logger.info("Setting up BQML agent context")
+    """Setup the BQML agent before execution.
+    
+    This follows the official ADK data-science sample pattern:
+    - Use callback_context.state directly (no invocation_context access)
+    - Retrieve or initialize database settings
+    """
+    _logger.debug("Setting up BQML agent context")
 
-    # Retrieve the InvocationContext required by ToolContext
-    inv_ctx = None
-    try:
-        if hasattr(callback_context, "execution_context") and hasattr(
-            callback_context.execution_context, "invocation_context"
-        ):
-            inv_ctx = callback_context.execution_context.invocation_context
-        elif hasattr(callback_context, "invocation_context"):
-            inv_ctx = callback_context.invocation_context
-    except Exception:  # pragma: no cover - defensive
-        inv_ctx = None
-
-    if inv_ctx is None:
-        _logger.warning(
-            "InvocationContext not available; skipping ToolContext setup."
-        )
-        return
-
-    # Initialize ToolContext with the invocation context
-    tool_context = ToolContext(inv_ctx)
-
-    # Store user_agent in state
-    tool_context.state["user_agent"] = USER_AGENT
-
-    # Get database settings from parent context
-    database_settings = get_bq_database_settings(callback_context)
-    tool_context.state["database_settings"] = database_settings
-
-    callback_context.tool_context = tool_context
-    _logger.info("BQML agent context setup complete")
+    # Get or initialize database settings using the official pattern
+    if "database_settings" not in callback_context.state:
+        # If not already set by parent, get from environment
+        database_settings = get_bq_database_settings(callback_context)
+        callback_context.state["database_settings"] = database_settings
+    
+    _logger.debug("BQML agent context setup complete")
 
 
 def get_bqml_agent() -> Agent:
@@ -75,6 +56,15 @@ def get_bqml_agent() -> Agent:
     
     Returns a fresh instance each time to avoid conflicts when used as sub-agent.
     """
+    # Get database configuration for instructions
+    project_id = (
+        os.getenv("BQ_PROJECT_ID")
+        or os.getenv("BQ_DATA_PROJECT_ID")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
+    dataset_id = os.getenv("BQ_DATASET_ID", "dnb_statistics")
+    location = os.getenv("BIGQUERY_LOCATION", "europe-west4")
+    
     bigquery_tool_config = BigQueryToolConfig(
         write_mode=WriteMode.ALLOWED,  # ALLOWED for CREATE MODEL statements
         max_query_result_rows=80,
@@ -89,7 +79,11 @@ def get_bqml_agent() -> Agent:
     agent = Agent(
         model=os.getenv("BQML_AGENT_MODEL", "gemini-2.5-flash"),
         name="bqml_agent",
-        instruction=return_instructions_bqml(),
+        instruction=return_instructions_bqml(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            location=location,
+        ),
         before_agent_callback=setup_before_agent_call,
         tools=[bq_toolset, check_bq_models, rag_response],
     )

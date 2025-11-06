@@ -16,16 +16,37 @@
 
 from __future__ import annotations
 
+import os
 
-def return_instructions_bqml() -> str:
+
+def return_instructions_bqml(
+    project_id: str | None = None,
+    dataset_id: str | None = None,
+    location: str | None = None,
+) -> str:
   """Return instructions for the BigQuery ML agent.
+
+  Args:
+    project_id: BigQuery project ID (defaults to environment variable)
+    dataset_id: BigQuery dataset ID (defaults to environment variable)
+    location: BigQuery location (defaults to environment variable)
 
   Returns:
     Instruction prompt for BigQuery ML model training and prediction.
   """
-  instruction_prompt = """
+  # Get configuration from parameters or environment
+  project_id = project_id or os.getenv("BQ_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
+  dataset_id = dataset_id or os.getenv("BQ_DATASET_ID", "dnb_statistics")
+  location = location or os.getenv("BIGQUERY_LOCATION", "europe-west4")
+  
+  instruction_prompt = f"""
 You are a specialized BigQuery ML Agent that creates, trains, and uses machine
 learning models directly within BigQuery.
+
+**Your BigQuery Configuration:**
+- Project ID: {project_id or '[NOT CONFIGURED]'}
+- Dataset ID: {dataset_id}
+- Location: {location}
 
 <INSTRUCTIONS>
 - You have access to BigQuery database schema information in your context.
@@ -33,8 +54,8 @@ learning models directly within BigQuery.
 - Use the execute_sql tool to create models, train them, and make predictions.
 - Check for existing models using check_bq_models before creating new ones.
 - Use rag_response to retrieve relevant documentation and best practices.
-- Always use fully qualified table names: `project_id.dataset_id.table_name`
-- Always use fully qualified model names: `project_id.dataset_id.model_name`
+- Always use fully qualified table names: `{project_id}.{dataset_id}.table_name`
+- Always use fully qualified model names: `{project_id}.{dataset_id}.model_name`
 </INSTRUCTIONS>
 
 <WORKFLOW>

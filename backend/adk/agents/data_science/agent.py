@@ -25,18 +25,20 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-from google.adk.agents.callback_context import CallbackContext  # Correct import
+from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.llm_agent import LlmAgent as Agent
 from google.adk.tools.load_artifacts_tool import load_artifacts_tool
 from google.genai import types
 
+# Import local utilities (agent should be self-contained per ADK pattern)
+from .utils.schema_formatter import format_schema_as_create_table_statements
+
 # Import sub-agents - use relative imports for local modules
 from .sub_agents.analytics.agent import get_analytics_agent
 from .sub_agents.bigquery.agent import get_bigquery_agent
+from .sub_agents.bigquery.tools import get_database_settings as get_bq_database_settings
 from .sub_agents.bqml.agent import root_agent as bqml_agent
 
 _logger = logging.getLogger(__name__)
@@ -54,14 +56,14 @@ def load_dataset_config() -> dict:
   
   if not config_path.exists():
     _logger.warning(f"Dataset config not found at {config_path}")
-    return {"datasets": {}}
+    return {"datasets": []}
   
   try:
     with open(config_path) as f:
       return json.load(f)
   except Exception as e:
     _logger.error(f"Failed to load dataset config: {e}")
-    return {"datasets": {}}
+    return {"datasets": []}
 
 
 def get_database_settings(db_type: str) -> dict:
@@ -80,228 +82,246 @@ def get_database_settings(db_type: str) -> dict:
 
 
 def init_database_settings(dataset_config: dict) -> dict:
-  """Initialize database settings from configuration.
+  """Initialize database settings with ACTUAL schemas from BigQuery.
+  
+  This follows the ADK sample pattern by loading schemas at initialization.
   
   Args:
-    dataset_config: Dataset configuration dictionary
+    dataset_config: Dataset configuration from dnb_datasets_config.json
   
   Returns:
-    Initialized database settings
+    Initialized database settings with full schemas
   """
-  settings = {
-    "bigquery": {
-      "project_id": os.getenv("GOOGLE_CLOUD_PROJECT", ""),
-      "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
-      "location": os.getenv("BIGQUERY_LOCATION", "us-central1"),
-      "datasets": dataset_config.get("datasets", {})
-    }
-  }
+  settings = {}
+  
+  # Extract BigQuery datasets from config
+  bq_datasets = [
+      d for d in dataset_config.get("datasets", [])
+      if d.get("type") == "bigquery"
+  ]
+  
+  if bq_datasets:
+    # Construct dataset configs for schema loader (ADK sample format)
+    dataset_configs = []
+    for ds in bq_datasets:
+      dataset_configs.append({
+          "name": ds.get("name"),
+          "description": ds.get("description", ""),
+          "dataset_id": ds.get("dataset_id", ds.get("name")),
+          "project_id": ds.get("project_id", os.getenv("GOOGLE_CLOUD_PROJECT")),
+          "location": ds.get("location", os.getenv("BIGQUERY_LOCATION", "us-central1")),
+      })
+    
+    # Load ACTUAL schemas from BigQuery (like ADK sample does)
+    try:
+      bq_settings = get_bq_database_settings(dataset_configs)
+      settings["bigquery"] = bq_settings
+      
+      # Log schema loading success
+      num_datasets = len(bq_settings.get("datasets", []))
+      total_tables = sum(
+          len(ds.get("schema", {}).get("tables", {}))
+          for ds in bq_settings.get("datasets", [])
+      )
+      _logger.info(
+          f"Loaded BigQuery schemas: {num_datasets} datasets, {total_tables} tables"
+      )
+      
+    except Exception as e:
+      _logger.error(f"Failed to load BigQuery schemas: {e}")
+      # Fallback to empty structure
+      settings["bigquery"] = {
+          "project_id": os.getenv("GOOGLE_CLOUD_PROJECT", ""),
+          "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
+          "location": os.getenv("BIGQUERY_LOCATION", "us-central1"),
+          "datasets": []
+      }
   
   return settings
 
 
 def get_dataset_definitions_for_instructions() -> str:
-  """Generate dataset definitions for agent instructions."""
-  if not _dataset_config:
+  """Generate high-level dataset summary for coordinator instructions.
+  
+  Provides overview information only. Detailed schemas are passed via 
+  callback_context.state to sub-agents to avoid instruction bloat.
+  
+  Returns:
+    Formatted string with dataset descriptions and table counts
+  """
+  if not _database_settings:
     return "No datasets configured."
   
-  definitions = []
-  datasets = _dataset_config.get("datasets", [])
+  bq_settings = _database_settings.get("bigquery", {})
+  datasets = bq_settings.get("datasets", [])
   
-  # Handle both list and dict formats for backwards compatibility
-  if isinstance(datasets, dict):
-    for dataset_name, dataset_info in datasets.items():
-      desc = dataset_info.get("description", "No description")
-      table_count = len(dataset_info.get("tables", []))
-      definitions.append(f"- {dataset_name}: {desc} ({table_count} tables)")
-  elif isinstance(datasets, list):
-    for dataset_info in datasets:
-      dataset_name = dataset_info.get("name", "unknown")
-      desc = dataset_info.get("description", "No description")
-      schema = dataset_info.get("schema", {})
-      table_count = len(schema.get("tables", {}))
-      definitions.append(f"- {dataset_name}: {desc} ({table_count} tables)")
+  if not datasets:
+    return "No BigQuery datasets available."
   
-  return "\n".join(definitions) if definitions else "No datasets available."
-
-
-def emit_progress_event(callback_context: CallbackContext, message: str) -> None:
-  """Emit progress update to user (placeholder for future ADK feature)."""
-  _logger.info(f"Progress: {message}")
-  # Future: callback_context.emit_event(types.Event(message=message))
+  # Get project ID for reference
+  project_id = bq_settings.get("project_id", "unknown")
+  
+  lines = ["", "【Available Datasets】", ""]
+  lines.append(f"**Project ID:** {project_id}")
+  lines.append("")
+  
+  for dataset in datasets:
+    name = dataset.get("name", "unknown")
+    desc = dataset.get("description", "No description")
+    dataset_id = dataset.get("dataset_id", name)
+    
+    # Get table schema
+    schema = dataset.get("schema", {})
+    tables = schema.get("tables", {})
+    table_count = len(tables)
+    
+    lines.append(f"## Dataset: {name}")
+    lines.append(f"**ID:** `{project_id}.{dataset_id}`")
+    lines.append(f"**Description:** {desc}")
+    lines.append(f"**Tables:** {table_count} tables available")
+    
+    if tables:
+      # List table names only (no full schemas)
+      table_names = sorted(tables.keys())[:10]  # Show first 10
+      lines.append(f"**Sample Tables:** {', '.join(f'`{t}`' for t in table_names)}")
+      if len(tables) > 10:
+        lines.append(f"  _(and {len(tables) - 10} more)_")
+    
+    lines.append("")
+  
+  lines.append("**Note:** Detailed table schemas with column definitions are ")
+  lines.append("available to sub-agents via context. Use bigquery_agent for SQL ")
+  lines.append("queries and analytics_agent for data analysis.")
+  lines.append("")
+  
+  return "\n".join(lines)
 
 
 def load_database_settings_in_context(
     callback_context: CallbackContext,
 ) -> str | None:
-  """Load DNB dataset settings from JSON configuration into context.
+  """Load database settings into the agent context for sub-agent access.
   
-  This is used as a before_agent callback to ensure the database
-  settings are available in the context for all sub-agents.
+  This follows the ADK sample pattern by passing schemas via callback_context.state.
   
   Args:
-    callback_context: The callback context containing the execution context.
+    callback_context: The callback context from the agent execution
     
   Returns:
-    None to continue execution normally.
+    None or error message if loading fails
   """
-  context = {}
-  
   try:
-    # Load dataset configuration from JSON file
-    # NOTE: unify on dnb_datasets_config.json (matches loader and docs)
-    config_file = Path(__file__).parent / "dnb_datasets_config.json"
-    if not config_file.exists():
-      _logger.warning(f"Dataset config not found at {config_file}")
-      return context
-
-    with open(config_file, "r") as f:
-      dataset_config = json.load(f)
-      
-    # Extract DNB statistics dataset information
-    dnb_dataset = next(
-        (d for d in dataset_config.get("datasets", []) 
-         if d.get("name") == "dnb_statistics"),
-        None
+    # Use callback_context.state (ADK best practice)
+    if not hasattr(callback_context, 'state'):
+      callback_context.state = {}
+    
+    # Store database settings in agent state (accessible to sub-agents)
+    callback_context.state["database_settings"] = _database_settings
+    
+    # Log summary of what's available
+    bq_datasets = _database_settings.get("bigquery", {}).get("datasets", [])
+    total_tables = sum(
+        len(ds.get("schema", {}).get("tables", {}))
+        for ds in bq_datasets
     )
     
-    if not dnb_dataset:
-      _logger.warning("DNB statistics dataset not found in config")
-      return context
-      
-    # Build database settings
-    database_settings = {
-        "type": dnb_dataset.get("type", "bigquery"),
-        "project_id": os.getenv("BQ_DATA_PROJECT_ID"),
-        "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
-        "description": dnb_dataset.get("description", ""),
-        "tables": dnb_dataset.get("tables", []),
-        # Optional hints used by NL2SQL tools; keep sane defaults
-        "model": os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash"),
-        "temperature": float(os.getenv("DATA_SCIENCE_TEMPERATURE", "0.2")),
-        "generate_sql_type": os.getenv("GENERATE_SQL_TYPE", "QP"),  # QP or DC
-    }
+    _logger.info(
+        f"Loaded database settings into context: "
+        f"{len(bq_datasets)} datasets, {total_tables} tables"
+    )
     
-    # The correct way to set context in CallbackContext
-    # CallbackContext has a session attribute which contains the context
-    if hasattr(callback_context, 'session') and hasattr(callback_context.session, 'context'):
-      # Session has a context property
-      if callback_context.session.context is None:
-        callback_context.session.context = {}
-      callback_context.session.context["database_settings"] = database_settings
-      _logger.info(f"Loaded database settings: {database_settings['dataset_id']}")
-    else:
-      _logger.warning(
-          "CallbackContext.session.context not available; database settings not injected"
-      )
-      return context
-
-  except Exception as e:  # pylint: disable=broad-except
-    _logger.error(f"Failed to load database settings: {e}")
-    return context
-
-  return None
+    return None
+    
+  except Exception as e:
+    error_msg = f"Failed to load database settings: {e}"
+    _logger.error(error_msg)
+    return error_msg
 
 
 def get_root_agent() -> Agent:
-  """Create and configure the root data science coordinator agent.
+  """Create the root data science coordinator agent.
+  
+  Provides high-level dataset overview in instructions. Detailed schemas are
+  passed to sub-agents via callback_context.state to avoid token bloat.
   
   Returns:
-    Configured Agent for coordinating data science operations
+    Configured root agent
   """
-  # Load configurations
-  dataset_config = load_dataset_config()
-  database_settings = init_database_settings(dataset_config)
+  # Get environment configuration
+  model = os.getenv("MODEL", "gemini-2.5-flash")
+  google_cloud_project = os.getenv("GOOGLE_CLOUD_PROJECT")
+  bigquery_location = os.getenv("BIGQUERY_LOCATION", "us-central1")
   
-  # Store in module globals for access by sub-agents
-  global _dataset_config, _database_settings
-  _dataset_config = dataset_config
-  _database_settings = database_settings
+  # Get database settings (includes full schemas in context, not instructions)
+  database_settings = _database_settings.get("bigquery", {})
   
-  # Build instruction with dataset context
-  instruction = f"""You are the Orkhon Data Science Coordinator, an advanced AI system 
-that orchestrates specialized agents for data analysis, database queries, and machine learning.
+  # Build instruction with high-level dataset overview
+  instruction = f"""
+You are the Orkhon Data Science Coordinator, an expert assistant for analyzing
+Dutch financial and economic data from De Nederlandsche Bank (DNB).
 
-You have access to the following sub-agents:
-1. BigQuery Agent - For SQL queries and database access
-2. Analytics Agent - For Python-based data analysis and visualization  
-3. BQML Agent - For BigQuery ML model training and prediction
+**Your Role:**
+- Coordinate analysis across multiple specialized sub-agents
+- Route queries to the appropriate sub-agent (BigQuery, Analytics, or BQML)
+- Synthesize results into clear, actionable insights
 
-Available Datasets:
+**Available Sub-Agents:**
+1. **bigquery_agent**: Query and explore BigQuery datasets (NL2SQL with Chase SQL)
+2. **analytics_agent**: Perform statistical analysis and visualization (NL2Py with Code Executor)
+3. **bqml_agent**: Build and evaluate machine learning models (BigQuery ML)
+
+**Available Datasets:**
 {get_dataset_definitions_for_instructions()}
 
-Database Configuration:
-- Project: {database_settings['bigquery']['project_id']}
-- Dataset: {database_settings['bigquery']['dataset_id']}
-- Location: {database_settings['bigquery']['location']}
+**Database Configuration:**
+- Project: {database_settings.get('project_id', 'Not configured')}
+- Default Dataset: {database_settings.get('dataset_id', 'dnb_statistics')}
+- Location: {database_settings.get('location', bigquery_location)}
 
-When a user asks a question:
-1. Analyze if it requires database access (use BigQuery agent)
-2. Determine if it needs data analysis or visualization (use Analytics agent)
-3. Check if it involves machine learning (use BQML agent)
-4. Coordinate between agents as needed for complex tasks
+**Table Naming Convention:**
+Tables follow: `category__subcategory__endpoint_name`
+Example: `insurance_pensions__insurers__insurance_corps_balance_sheet_quarter`
 
-Always provide clear, actionable insights from the data.
+**Instructions:**
+1. For data queries → Delegate to **bigquery_agent** (has full schema details)
+2. For analysis/visualization → Delegate to **analytics_agent** (has code execution)
+3. For ML models → Delegate to **bqml_agent** (has BigQuery ML tools)
+4. Sub-agents have access to detailed table schemas with column descriptions
+5. Always use fully qualified table names: `project.dataset.table`
+7. Provide clear, data-driven insights to the user
+
+Remember: The CREATE TABLE statements show the exact schema with types and
+descriptions. Sub-agents have access to this information for accurate SQL generation.
 """
-  
-  # Configure sub-agents - use factory functions for fresh instances
-  sub_agents = []
-  
-  # Add BigQuery agent
-  try:
-    from .sub_agents.bigquery.agent import get_bigquery_agent
-    bigquery = get_bigquery_agent()
-    sub_agents.append(bigquery)
-    _logger.info("BigQuery agent loaded")
-  except Exception as e:
-    _logger.warning(f"Could not load BigQuery agent: {e}")
-  
-  # Add Analytics agent  
-  try:
-    from .sub_agents.analytics.agent import get_analytics_agent
-    analytics = get_analytics_agent()
-    sub_agents.append(analytics)
-    _logger.info("Analytics agent loaded")
-  except Exception as e:
-    _logger.warning(f"Could not load Analytics agent: {e}")
-  
-  # Add BQML agent - use factory if available
-  try:
-    from .sub_agents.bqml.agent import get_bqml_agent
-    bqml = get_bqml_agent()
-    sub_agents.append(bqml)
-    _logger.info("BQML agent loaded")
-  except ImportError:
-    # Fallback to module instance if no factory exists yet
-    try:
-      from .sub_agents.bqml.agent import root_agent as bqml_agent
-      sub_agents.append(bqml_agent)
-      _logger.info("BQML agent loaded (module instance)")
-    except Exception as e:
-      _logger.warning(f"Could not load BQML agent: {e}")
-  
-  # Create the coordinator agent
-  coordinator = Agent(
-    name="data_science_coordinator",
-    model=os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash"),
-    instruction=instruction,
-    description="Coordinates data science operations across BigQuery, analytics, and ML sub-agents",
-    tools=[load_artifacts_tool],
-    sub_agents=sub_agents,
-    before_agent_callback=load_database_settings_in_context,
+
+  # Create root agent with sub-agents using correct parameter name
+  root_agent = Agent(
+      name="data_science_coordinator",
+      model=model,
+      instruction=instruction,
+      description="Coordinates data science workflows across DNB datasets",
+      sub_agents=[
+          get_bigquery_agent(),
+          get_analytics_agent(),
+          bqml_agent,
+      ],
+      tools=[load_artifacts_tool],
+      before_agent_callback=load_database_settings_in_context,
+      # Remove generation_config - let model use defaults
+      # generation_config=types.GenerateContentConfig(
+      #     temperature=1.0,
+      #     top_k=40.0,
+      #     top_p=0.95,
+      # ),
   )
   
-  return coordinator
+  _logger.info("Orkhon Data Science Coordinator initialized")
+  return root_agent
 
 
-# Initialize configuration on module load
-_logger.info("Loading Orkhon Data Science Coordinator...")
+# Initialize dataset configurations and database settings at module load
 _dataset_config = load_dataset_config()
 _database_settings = init_database_settings(_dataset_config)
 
-# Create module-level instance following ADK convention
-# This provides both patterns for maximum compatibility:
-root_agent = get_root_agent()  # ADK standard: root_agent
-data_science_coordinator = root_agent  # Alias for backward compatibility
-
-_logger.info("Orkhon Data Science Coordinator ready")
+# Create the root agent
+root_agent = get_root_agent()

@@ -41,44 +41,28 @@ USER_AGENT = "orkhon-data-science-agent"
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
-    """Setup the agent context before execution."""
-    _logger.info("Setting up BigQuery agent context")
-
-    # Get database settings from the parent context
-    database_settings = get_database_settings_from_context(callback_context)
-
-    # Retrieve the InvocationContext required by ToolContext
-    inv_ctx = None
-    try:
-        if hasattr(callback_context, "execution_context") and hasattr(
-            callback_context.execution_context, "invocation_context"
-        ):
-            inv_ctx = callback_context.execution_context.invocation_context
-        elif hasattr(callback_context, "invocation_context"):
-            inv_ctx = callback_context.invocation_context
-    except Exception:  # pragma: no cover - defensive
-        inv_ctx = None
-
-    if inv_ctx is None:
+    """Setup the agent context before execution.
+    
+    Retrieves database settings from parent coordinator via callback_context.state.
+    This follows the official ADK data-science sample pattern.
+    """
+    _logger.debug("Setting up BigQuery agent context")
+    
+    # Get database settings from parent coordinator (standardized approach)
+    # This is how the official ADK sample does it - use callback_context.state directly
+    settings = callback_context.state.get('database_settings')
+    
+    if not settings:
+        # Fallback to environment-based reconstruction only if absolutely needed
         _logger.warning(
-            "InvocationContext not available; skipping ToolContext setup."
+            "No database settings found in callback_context.state; "
+            "using environment fallback (this should not happen in normal operation)"
         )
-        return
-
-    # Initialize ToolContext with the invocation context
-    tool_context = ToolContext(inv_ctx)
-
-    # Store database settings in the state
-    tool_context.state["database_settings"] = database_settings
-    tool_context.state["user_agent"] = USER_AGENT
-
-    # Attach tool context to callback context
-    callback_context.tool_context = tool_context
-
-    _logger.info(
-        f"BigQuery agent context set with project: "
-        f"{database_settings.get('project_id')}"
-    )
+        settings = get_database_settings_from_context(callback_context)
+        # Store it back for future use
+        callback_context.state['database_settings'] = settings
+    
+    _logger.debug("Database settings available in callback_context.state for BigQuery tools")
 
 
 def store_results_in_context(
@@ -106,6 +90,15 @@ def get_bigquery_agent() -> LlmAgent:
     Returns a fresh instance each time to avoid conflicts when used as sub-agent.
     This pattern follows the official ADK data-science sample.
     """
+    # Get database configuration for instructions
+    project_id = (
+        os.getenv("BQ_PROJECT_ID")
+        or os.getenv("BQ_DATA_PROJECT_ID")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
+    dataset_id = os.getenv("BQ_DATASET_ID", "dnb_statistics")
+    location = os.getenv("BIGQUERY_LOCATION", "europe-west4")
+    
     # Configure BigQuery toolset with each instantiation
     bigquery_tool_config = BigQueryToolConfig(
         write_mode=WriteMode.BLOCKED,  # Changed to BLOCKED for safety by default
@@ -118,11 +111,15 @@ def get_bigquery_agent() -> LlmAgent:
         bigquery_tool_config=bigquery_tool_config,
     )
 
-    # Create and return fresh agent instance
+    # Create and return fresh agent instance with dynamic instructions
     agent = LlmAgent(
         model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.5-flash"),
         name="bigquery_agent",
-        instruction=return_instructions_bigquery(),
+        instruction=return_instructions_bigquery(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            location=location,
+        ),
         tools=[bigquery_toolset],
         before_agent_callback=setup_before_agent_call,
         after_tool_callback=store_results_in_context,
