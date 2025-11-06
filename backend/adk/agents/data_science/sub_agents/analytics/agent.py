@@ -22,7 +22,6 @@ import os
 from google.adk.agents.llm_agent import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools.load_artifacts_tool import load_artifacts_tool
-from google.adk.tools.tool_context import ToolContext
 from google.adk.code_executors.vertex_ai_code_executor import VertexAiCodeExecutor
 from google.genai import types
 
@@ -81,12 +80,15 @@ def _create_code_executor():
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
-  """Setup callback executed before agent processes a request."""
-  # Fix: Remove user_agent parameter from ToolContext initialization
-  tool_context = ToolContext()
-  # Store user_agent in state instead
-  tool_context.state["user_agent"] = USER_AGENT
-  callback_context.tool_context = tool_context
+  """Setup callback executed before agent processes a request.
+  
+  Note: The official ADK analytics agent doesn't need complex setup.
+  This follows the simplified pattern from the official sample.
+  """
+  # Simply ensure database_settings are available in state if needed
+  if "database_settings" not in callback_context.state:
+    # This will be populated by the parent coordinator
+    pass
 
 
 def get_analytics_agent() -> LlmAgent:

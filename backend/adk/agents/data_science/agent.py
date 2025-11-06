@@ -141,12 +141,13 @@ def init_database_settings(dataset_config: dict) -> dict:
 
 
 def get_dataset_definitions_for_instructions() -> str:
-  """Generate dataset definitions WITH actual table schemas for agent instructions.
+  """Generate high-level dataset summary for coordinator instructions.
   
-  This follows the ADK sample pattern by including table/column metadata.
+  Provides overview information only. Detailed schemas are passed via 
+  callback_context.state to sub-agents to avoid instruction bloat.
   
   Returns:
-    Formatted string with dataset descriptions and table listings
+    Formatted string with dataset descriptions and table counts
   """
   if not _database_settings:
     return "No datasets configured."
@@ -157,42 +158,41 @@ def get_dataset_definitions_for_instructions() -> str:
   if not datasets:
     return "No BigQuery datasets available."
   
-  # Get project ID for fully qualified table names
+  # Get project ID for reference
   project_id = bq_settings.get("project_id", "unknown")
   
-  lines = ["", "【Database Schema】", ""]
+  lines = ["", "【Available Datasets】", ""]
+  lines.append(f"**Project ID:** {project_id}")
+  lines.append("")
   
   for dataset in datasets:
     name = dataset.get("name", "unknown")
     desc = dataset.get("description", "No description")
-    
-    lines.append(f"## Dataset: {name}")
-    lines.append(f"Description: {desc}")
-    lines.append("")
+    dataset_id = dataset.get("dataset_id", name)
     
     # Get table schema
     schema = dataset.get("schema", {})
     tables = schema.get("tables", {})
+    table_count = len(tables)
+    
+    lines.append(f"## Dataset: {name}")
+    lines.append(f"**ID:** `{project_id}.{dataset_id}`")
+    lines.append(f"**Description:** {desc}")
+    lines.append(f"**Tables:** {table_count} tables available")
     
     if tables:
-      # Generate CREATE TABLE statements (ADK pattern)
-      # This format is optimal for LLM understanding:
-      # - Full table names with project prefix
-      # - OPTIONS(description) for columns with descriptions
-      # - Self-documenting schema
-      create_statements = format_schema_as_create_table_statements(
-        project_id=project_id,
-        dataset_id=name,
-        tables=tables,
-        include_table_description=True,
-        max_tables=20,  # Limit for token management (can adjust based on needs)
-      )
-      
-      lines.append(create_statements)
-      lines.append("")
-    else:
-      lines.append("(No tables found - schema may not have loaded)")
-      lines.append("")
+      # List table names only (no full schemas)
+      table_names = sorted(tables.keys())[:10]  # Show first 10
+      lines.append(f"**Sample Tables:** {', '.join(f'`{t}`' for t in table_names)}")
+      if len(tables) > 10:
+        lines.append(f"  _(and {len(tables) - 10} more)_")
+    
+    lines.append("")
+  
+  lines.append("**Note:** Detailed table schemas with column definitions are ")
+  lines.append("available to sub-agents via context. Use bigquery_agent for SQL ")
+  lines.append("queries and analytics_agent for data analysis.")
+  lines.append("")
   
   return "\n".join(lines)
 
@@ -241,7 +241,8 @@ def load_database_settings_in_context(
 def get_root_agent() -> Agent:
   """Create the root data science coordinator agent.
   
-  This follows the ADK sample pattern by including schemas in instructions.
+  Provides high-level dataset overview in instructions. Detailed schemas are
+  passed to sub-agents via callback_context.state to avoid token bloat.
   
   Returns:
     Configured root agent
@@ -251,10 +252,10 @@ def get_root_agent() -> Agent:
   google_cloud_project = os.getenv("GOOGLE_CLOUD_PROJECT")
   bigquery_location = os.getenv("BIGQUERY_LOCATION", "us-central1")
   
-  # Get database settings (now includes full schemas)
+  # Get database settings (includes full schemas in context, not instructions)
   database_settings = _database_settings.get("bigquery", {})
   
-  # Build instruction with schema information (like ADK sample)
+  # Build instruction with high-level dataset overview
   instruction = f"""
 You are the Orkhon Data Science Coordinator, an expert assistant for analyzing
 Dutch financial and economic data from De Nederlandsche Bank (DNB).
@@ -265,11 +266,11 @@ Dutch financial and economic data from De Nederlandsche Bank (DNB).
 - Synthesize results into clear, actionable insights
 
 **Available Sub-Agents:**
-1. **bigquery_agent**: Query and explore BigQuery datasets
-2. **analytics_agent**: Perform statistical analysis and visualization
-3. **bqml_agent**: Build and evaluate machine learning models
+1. **bigquery_agent**: Query and explore BigQuery datasets (NL2SQL with Chase SQL)
+2. **analytics_agent**: Perform statistical analysis and visualization (NL2Py with Code Executor)
+3. **bqml_agent**: Build and evaluate machine learning models (BigQuery ML)
 
-**Database Schema (CREATE TABLE format with column descriptions):**
+**Available Datasets:**
 {get_dataset_definitions_for_instructions()}
 
 **Database Configuration:**
@@ -282,12 +283,11 @@ Tables follow: `category__subcategory__endpoint_name`
 Example: `insurance_pensions__insurers__insurance_corps_balance_sheet_quarter`
 
 **Instructions:**
-1. For data queries → Use bigquery_agent
-2. For analysis/visualization → Use analytics_agent  
-3. For ML models → Use bqml_agent
-4. The schema above shows CREATE TABLE statements with OPTIONS(description) for columns
-5. Use column descriptions to understand data meaning and relationships
-6. Always use fully qualified table names: `project.dataset.table`
+1. For data queries → Delegate to **bigquery_agent** (has full schema details)
+2. For analysis/visualization → Delegate to **analytics_agent** (has code execution)
+3. For ML models → Delegate to **bqml_agent** (has BigQuery ML tools)
+4. Sub-agents have access to detailed table schemas with column descriptions
+5. Always use fully qualified table names: `project.dataset.table`
 7. Provide clear, data-driven insights to the user
 
 Remember: The CREATE TABLE statements show the exact schema with types and

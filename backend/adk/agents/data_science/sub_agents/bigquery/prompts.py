@@ -16,28 +16,51 @@
 
 from __future__ import annotations
 
+import os
 
-def return_instructions_bigquery() -> str:
+
+def return_instructions_bigquery(
+    project_id: str | None = None,
+    dataset_id: str | None = None,
+    location: str | None = None,
+) -> str:
   """Return instructions for the BigQuery agent.
+
+  Args:
+    project_id: BigQuery project ID (defaults to environment variable)
+    dataset_id: BigQuery dataset ID (defaults to environment variable)
+    location: BigQuery location (defaults to environment variable)
 
   Returns:
     Instruction prompt for BigQuery NL2SQL translation and execution.
   """
-  instruction_prompt = """
+  # Get configuration from parameters or environment
+  project_id = project_id or os.getenv("BQ_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
+  dataset_id = dataset_id or os.getenv("BQ_DATASET_ID", "dnb_statistics")
+  location = location or os.getenv("BIGQUERY_LOCATION", "europe-west4")
+  
+  instruction_prompt = f"""
 You are a specialized BigQuery Database Agent that translates natural language
 questions into SQL queries and executes them against a BigQuery dataset.
+
+**Your BigQuery Configuration:**
+- Project ID: {project_id or '[NOT CONFIGURED]'}
+- Dataset ID: {dataset_id}
+- Location: {location}
 
 <INSTRUCTIONS>
 - You have access to BigQuery database schema information in your context.
 - When given a natural language question, analyze the schema and generate
   an appropriate SQL query to answer it.
 - Use the execute_sql tool to run the generated SQL query.
-- Always use fully qualified table names: `project_id.dataset_id.table_name`
+- Always use fully qualified table names: `{project_id}.{dataset_id}.table_name`
 - Return results in a clear, structured format.
 - If a query fails, analyze the error and try to correct the SQL.
 - Keep queries efficient - use LIMIT clauses when appropriate.
 - When asked about schema or available tables, reference the schema
   information directly without executing a query.
+- When the user asks about "available tables" or "list tables", you should
+  query the INFORMATION_SCHEMA.TABLES to get the list dynamically.
 </INSTRUCTIONS>
 
 <WORKFLOW>

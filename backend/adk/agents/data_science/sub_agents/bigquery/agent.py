@@ -41,39 +41,28 @@ USER_AGENT = "orkhon-data-science-agent"
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
-    """Setup the agent context before execution."""
-    _logger.info("Setting up BigQuery agent context")
+    """Setup the agent context before execution.
     
-    # Try multiple sources for database settings
-    settings = None
+    Retrieves database settings from parent coordinator via callback_context.state.
+    This follows the official ADK data-science sample pattern.
+    """
+    _logger.debug("Setting up BigQuery agent context")
     
-    # 1. Try callback_context.state (parent agent's state)
-    if hasattr(callback_context, 'state') and callback_context.state:
-        settings = callback_context.state.get('database_settings')
-        if settings:
-            _logger.info("Retrieved database settings from callback_context.state")
+    # Get database settings from parent coordinator (standardized approach)
+    # This is how the official ADK sample does it - use callback_context.state directly
+    settings = callback_context.state.get('database_settings')
     
-    # 2. Try invocation_context (for sub-agent calls)
-    if not settings and hasattr(callback_context, 'invocation_context'):
-        inv_ctx = callback_context.invocation_context
-        if hasattr(inv_ctx, 'tool_context') and hasattr(inv_ctx.tool_context, 'state'):
-            settings = inv_ctx.tool_context.state.get('database_settings')
-            if settings:
-                _logger.info("Retrieved database settings from invocation_context")
-    
-    # 3. Final fallback: reconstruct from environment
     if not settings:
-        _logger.warning("No database settings found in context; using environment fallback")
+        # Fallback to environment-based reconstruction only if absolutely needed
+        _logger.warning(
+            "No database settings found in callback_context.state; "
+            "using environment fallback (this should not happen in normal operation)"
+        )
         settings = get_database_settings_from_context(callback_context)
+        # Store it back for future use
+        callback_context.state['database_settings'] = settings
     
-    # Store in invocation_context for tool access
-    if hasattr(callback_context, 'invocation_context'):
-        inv_ctx = callback_context.invocation_context
-        if hasattr(inv_ctx, 'tool_context'):
-            if not hasattr(inv_ctx.tool_context, 'state'):
-                inv_ctx.tool_context.state = {}
-            inv_ctx.tool_context.state['database_settings'] = settings
-            _logger.info("Injected database settings into tool_context.state")
+    _logger.debug("Database settings available in callback_context.state for BigQuery tools")
 
 
 def store_results_in_context(
@@ -101,6 +90,15 @@ def get_bigquery_agent() -> LlmAgent:
     Returns a fresh instance each time to avoid conflicts when used as sub-agent.
     This pattern follows the official ADK data-science sample.
     """
+    # Get database configuration for instructions
+    project_id = (
+        os.getenv("BQ_PROJECT_ID")
+        or os.getenv("BQ_DATA_PROJECT_ID")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
+    dataset_id = os.getenv("BQ_DATASET_ID", "dnb_statistics")
+    location = os.getenv("BIGQUERY_LOCATION", "europe-west4")
+    
     # Configure BigQuery toolset with each instantiation
     bigquery_tool_config = BigQueryToolConfig(
         write_mode=WriteMode.BLOCKED,  # Changed to BLOCKED for safety by default
@@ -113,11 +111,15 @@ def get_bigquery_agent() -> LlmAgent:
         bigquery_tool_config=bigquery_tool_config,
     )
 
-    # Create and return fresh agent instance
+    # Create and return fresh agent instance with dynamic instructions
     agent = LlmAgent(
         model=os.getenv("BIGQUERY_AGENT_MODEL", "gemini-2.5-flash"),
         name="bigquery_agent",
-        instruction=return_instructions_bigquery(),
+        instruction=return_instructions_bigquery(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            location=location,
+        ),
         tools=[bigquery_toolset],
         before_agent_callback=setup_before_agent_call,
         after_tool_callback=store_results_in_context,
