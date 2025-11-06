@@ -131,32 +131,86 @@ def emit_progress_event(callback_context: CallbackContext, message: str) -> None
   # Future: callback_context.emit_event(types.Event(message=message))
 
 
-def load_database_settings_in_context(callback_context: CallbackContext) -> str:
-  """Load database settings from config file into context."""
-  # Load database settings from config file
-  database_settings = None
-  config_path = Path(__file__).parent / "dnb_statistics_dataset_config.json"
-  if config_path.exists():
-    with open(config_path, "r", encoding="utf-8") as f:
-      config = json.loads(f.read())
-      database_settings = config.get("datasets", [])
-  else:
-    # Default if no config file
-    database_settings = [{
-      "type": "bigquery",
-      "name": "dnb_statistics",
-      "description": "DNB Statistics dataset containing financial and pension fund data"
-    }]
-
-  # Use context dictionary directly instead of set_in_context
-  callback_context.context["database_settings"] = database_settings
+def load_database_settings_in_context(
+    callback_context: CallbackContext,
+) -> str | None:
+  """Load DNB dataset settings from JSON configuration into context.
   
-  # Log what was loaded
-  logger.info(
-    f"Loaded {len(database_settings)} database settings into context"
-  )
+  This is used as a before_agent callback to ensure the database
+  settings are available in the context for all sub-agents.
   
-  return f"Loaded {len(database_settings)} database settings"
+  Args:
+    callback_context: The callback context containing the execution context.
+    
+  Returns:
+    None to continue execution normally.
+  """
+  try:
+    # Load dataset configuration from JSON file
+    config_file = Path(__file__).parent / "dnb_statistics_dataset_config.json"
+    if not config_file.exists():
+      logger.warning(f"Dataset config not found at {config_file}")
+      return None
+      
+    with open(config_file, "r") as f:
+      dataset_config = json.load(f)
+      
+    # Extract DNB statistics dataset information
+    dnb_dataset = next(
+        (d for d in dataset_config.get("datasets", []) 
+         if d.get("name") == "dnb_statistics"),
+        None
+    )
+    
+    if not dnb_dataset:
+      logger.warning("DNB statistics dataset not found in config")
+      return None
+      
+    # Build database settings
+    database_settings = {
+        "type": dnb_dataset.get("type", "bigquery"),
+        "project_id": os.getenv("BQ_DATA_PROJECT_ID"),
+        "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
+        "description": dnb_dataset.get("description", ""),
+        "tables": dnb_dataset.get("tables", []),
+    }
+    
+    # The correct way to set context in CallbackContext
+    # CallbackContext has a session attribute which contains the context
+    if hasattr(callback_context, 'session') and hasattr(callback_context.session, 'context'):
+      # Session has a context property
+      if callback_context.session.context is None:
+        callback_context.session.context = {}
+      callback_context.session.context["database_settings"] = database_settings
+      logger.info(f"Loaded database settings: {database_settings['dataset_id']}")
+    else:
+      # If the structure is different, try to find where to set the context
+      # Log the actual structure for debugging
+      logger.debug(f"CallbackContext attributes: {dir(callback_context)}")
+      if hasattr(callback_context, '__dict__'):
+        logger.debug(f"CallbackContext dict: {callback_context.__dict__}")
+      
+      # Try alternative ways to set context based on ADK patterns
+      # Option 1: Direct attributes
+      if hasattr(callback_context, 'execution_context'):
+        if not hasattr(callback_context.execution_context, 'context'):
+          callback_context.execution_context.context = {}
+        callback_context.execution_context.context["database_settings"] = database_settings
+      # Option 2: Use the session's set_context method if available
+      elif hasattr(callback_context, 'session') and hasattr(callback_context.session, 'set_context'):
+        current_context = callback_context.session.get_context() or {}
+        current_context["database_settings"] = database_settings
+        callback_context.session.set_context(current_context)
+      else:
+        logger.warning("Could not determine how to set context in CallbackContext")
+        
+  except Exception as e:
+    logger.error(f"Error loading database settings: {e}")
+    # Return None to continue execution even if settings fail to load
+    return None
+    
+  # Return None to continue normal execution
+  return None
 
 
 def get_root_agent() -> Agent:
