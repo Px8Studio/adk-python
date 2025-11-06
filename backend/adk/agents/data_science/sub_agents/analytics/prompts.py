@@ -47,7 +47,7 @@ You must ALWAYS return results in this structured format:
 
 <WORKFLOW>
 1. Understand the analysis request
-2. Review any data in context (e.g., from bigquery_query_result in tool_context.state)
+2. Review any data in context (e.g., from bigquery_agent_output in tool_context.state)
 3. Write Python code for the analysis
 4. Execute code using Code Interpreter
 5. If code fails, debug and retry (max 2 retries)
@@ -57,7 +57,7 @@ You must ALWAYS return results in this structured format:
 </WORKFLOW>
 
 <INSTRUCTIONS>
-- Access query results from tool_context.state['bigquery_query_result'] if available
+- Access query results from tool_context.state['bigquery_agent_output'] if available
 - Use pandas for data manipulation and analysis
 - Use matplotlib/seaborn for visualizations
 - Charts are automatically saved as artifacts
