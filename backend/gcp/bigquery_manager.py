@@ -693,23 +693,19 @@ class BigQueryManager:
     # ==========================================
     
     @staticmethod
-    def parquet_to_bigquery_schema(parquet_path: str) -> list[bigquery.SchemaField]:
+    def parquet_to_bigquery_schema(
+        parquet_path: str,
+        descriptions: dict[str, str] | None = None,  # NEW parameter
+    ) -> list[bigquery.SchemaField]:
         """
-        Infer BigQuery schema from parquet file.
+        Infer BigQuery schema from parquet file with optional descriptions.
         
         Args:
             parquet_path: Path to local parquet file
+            descriptions: Optional dict mapping field_name -> description
         
         Returns:
-            List of BigQuery SchemaField objects
-        
-        Note:
-            Schema is inferred directly from Parquet types. String columns stay as STRING.
-            To use timestamp partitioning, the source Parquet must have proper datetime types.
-        
-        Example:
-            >>> schema = BigQueryManager.parquet_to_bigquery_schema("data.parquet")
-            >>> bq.create_table("dataset", "table", schema=schema)
+            List of BigQuery SchemaField objects with descriptions
         """
         import pyarrow.parquet as pq
         from pathlib import Path
@@ -761,11 +757,17 @@ class BigQueryManager:
             
             mode = "NULLABLE" if field.nullable else "REQUIRED"
             
+            # NEW: Get description for this field
+            description = None
+            if descriptions:
+                description = descriptions.get(field.name)
+            
             schema_fields.append(
                 bigquery.SchemaField(
                     name=field.name,
                     field_type=bq_type,
                     mode=mode,
+                    description=description,  # NEW: Add description
                 )
             )
         
