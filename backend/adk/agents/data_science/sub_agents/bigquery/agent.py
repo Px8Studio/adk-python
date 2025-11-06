@@ -43,42 +43,37 @@ USER_AGENT = "orkhon-data-science-agent"
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
     """Setup the agent context before execution."""
     _logger.info("Setting up BigQuery agent context")
-
-    # Get database settings from the parent context
-    database_settings = get_database_settings_from_context(callback_context)
-
-    # Retrieve the InvocationContext required by ToolContext
-    inv_ctx = None
-    try:
-        if hasattr(callback_context, "execution_context") and hasattr(
-            callback_context.execution_context, "invocation_context"
-        ):
-            inv_ctx = callback_context.execution_context.invocation_context
-        elif hasattr(callback_context, "invocation_context"):
-            inv_ctx = callback_context.invocation_context
-    except Exception:  # pragma: no cover - defensive
-        inv_ctx = None
-
-    if inv_ctx is None:
-        _logger.warning(
-            "InvocationContext not available; skipping ToolContext setup."
-        )
-        return
-
-    # Initialize ToolContext with the invocation context
-    tool_context = ToolContext(inv_ctx)
-
-    # Store database settings in the state
-    tool_context.state["database_settings"] = database_settings
-    tool_context.state["user_agent"] = USER_AGENT
-
-    # Attach tool context to callback context
-    callback_context.tool_context = tool_context
-
-    _logger.info(
-        f"BigQuery agent context set with project: "
-        f"{database_settings.get('project_id')}"
-    )
+    
+    # Try multiple sources for database settings
+    settings = None
+    
+    # 1. Try callback_context.state (parent agent's state)
+    if hasattr(callback_context, 'state') and callback_context.state:
+        settings = callback_context.state.get('database_settings')
+        if settings:
+            _logger.info("Retrieved database settings from callback_context.state")
+    
+    # 2. Try invocation_context (for sub-agent calls)
+    if not settings and hasattr(callback_context, 'invocation_context'):
+        inv_ctx = callback_context.invocation_context
+        if hasattr(inv_ctx, 'tool_context') and hasattr(inv_ctx.tool_context, 'state'):
+            settings = inv_ctx.tool_context.state.get('database_settings')
+            if settings:
+                _logger.info("Retrieved database settings from invocation_context")
+    
+    # 3. Final fallback: reconstruct from environment
+    if not settings:
+        _logger.warning("No database settings found in context; using environment fallback")
+        settings = get_database_settings_from_context(callback_context)
+    
+    # Store in invocation_context for tool access
+    if hasattr(callback_context, 'invocation_context'):
+        inv_ctx = callback_context.invocation_context
+        if hasattr(inv_ctx, 'tool_context'):
+            if not hasattr(inv_ctx.tool_context, 'state'):
+                inv_ctx.tool_context.state = {}
+            inv_ctx.tool_context.state['database_settings'] = settings
+            _logger.info("Injected database settings into tool_context.state")
 
 
 def store_results_in_context(

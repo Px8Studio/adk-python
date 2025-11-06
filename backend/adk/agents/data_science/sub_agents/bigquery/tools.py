@@ -212,20 +212,38 @@ def get_database_settings_from_context(callback_context: CallbackContext) -> dic
     Returns:
         Database settings dictionary
     """
-    # Try to get settings from session context first
-    if hasattr(callback_context, 'session') and hasattr(callback_context.session, 'context'):
-        if callback_context.session.context and "database_settings" in callback_context.session.context:
-            return callback_context.session.context["database_settings"]
+    # Try callback_context.state first (correct pattern)
+    if hasattr(callback_context, 'state') and callback_context.state:
+        settings = callback_context.state.get('database_settings')
+        if settings:
+            return settings
     
-    # Try execution context
-    if hasattr(callback_context, 'execution_context') and hasattr(callback_context.execution_context, 'context'):
-        if callback_context.execution_context.context and "database_settings" in callback_context.execution_context.context:
-            return callback_context.execution_context.context["database_settings"]
+    # Try invocation_context
+    if hasattr(callback_context, 'invocation_context'):
+        inv_ctx = callback_context.invocation_context
+        if hasattr(inv_ctx, 'tool_context') and hasattr(inv_ctx.tool_context, 'state'):
+            settings = inv_ctx.tool_context.state.get('database_settings')
+            if settings:
+                return settings
     
-    # Fallback to environment variables
+    # Fallback to environment variables with enhanced error handling
+    project_id = (
+        os.getenv("BQ_DATA_PROJECT_ID")
+        or os.getenv("BQ_PROJECT_ID")
+        or os.getenv("GOOGLE_CLOUD_PROJECT")
+    )
+    dataset_id = os.getenv("BQ_DATASET_ID", "dnb_statistics")
+    
+    if not project_id:
+        _logger.error(
+            "No BigQuery project ID found. Set BQ_DATA_PROJECT_ID, "
+            "BQ_PROJECT_ID, or GOOGLE_CLOUD_PROJECT in your .env file."
+        )
+    
     return {
-        "project_id": os.getenv("BQ_DATA_PROJECT_ID"),
-        "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
+        "project_id": project_id,
+        "dataset_id": dataset_id,
+        "location": os.getenv("BIGQUERY_LOCATION", "europe-west4"),
         "model": os.getenv("BIGQUERY_MODEL_NAME", "gemini-2.5-flash"),
         "temperature": float(os.getenv("BIGQUERY_TEMPERATURE", "0.01")),
         "generate_sql_type": os.getenv("NL2SQL_METHOD", "BASELINE"),

@@ -134,73 +134,33 @@ def emit_progress_event(callback_context: CallbackContext, message: str) -> None
 def load_database_settings_in_context(
     callback_context: CallbackContext,
 ) -> str | None:
-  """Load DNB dataset settings from JSON configuration into context.
-  
-  This is used as a before_agent callback to ensure the database
-  settings are available in the context for all sub-agents.
+  """Load database settings into the agent context for sub-agent access.
   
   Args:
-    callback_context: The callback context containing the execution context.
+    callback_context: The callback context from the agent execution
     
   Returns:
-    None to continue execution normally.
+    None or error message if loading fails
   """
-  context = {}
-  
   try:
-    # Load dataset configuration from JSON file
-    # NOTE: unify on dnb_datasets_config.json (matches loader and docs)
-    config_file = Path(__file__).parent / "dnb_datasets_config.json"
-    if not config_file.exists():
-      _logger.warning(f"Dataset config not found at {config_file}")
-      return context
-
-    with open(config_file, "r") as f:
-      dataset_config = json.load(f)
-      
-    # Extract DNB statistics dataset information
-    dnb_dataset = next(
-        (d for d in dataset_config.get("datasets", []) 
-         if d.get("name") == "dnb_statistics"),
-        None
+    # Use callback_context.state instead of session.context
+    if not hasattr(callback_context, 'state'):
+      callback_context.state = {}
+    
+    # Store database settings in agent state (accessible to sub-agents)
+    callback_context.state["database_settings"] = _database_settings
+    
+    _logger.info(
+        "Loaded database settings into agent context: %s",
+        {k: v for k, v in _database_settings.items() if k in ['bigquery']}
     )
     
-    if not dnb_dataset:
-      _logger.warning("DNB statistics dataset not found in config")
-      return context
-      
-    # Build database settings
-    database_settings = {
-        "type": dnb_dataset.get("type", "bigquery"),
-        "project_id": os.getenv("BQ_DATA_PROJECT_ID"),
-        "dataset_id": os.getenv("BQ_DATASET_ID", "dnb_statistics"),
-        "description": dnb_dataset.get("description", ""),
-        "tables": dnb_dataset.get("tables", []),
-        # Optional hints used by NL2SQL tools; keep sane defaults
-        "model": os.getenv("DATA_SCIENCE_MODEL", "gemini-2.5-flash"),
-        "temperature": float(os.getenv("DATA_SCIENCE_TEMPERATURE", "0.2")),
-        "generate_sql_type": os.getenv("GENERATE_SQL_TYPE", "QP"),  # QP or DC
-    }
+    return None
     
-    # The correct way to set context in CallbackContext
-    # CallbackContext has a session attribute which contains the context
-    if hasattr(callback_context, 'session') and hasattr(callback_context.session, 'context'):
-      # Session has a context property
-      if callback_context.session.context is None:
-        callback_context.session.context = {}
-      callback_context.session.context["database_settings"] = database_settings
-      _logger.info(f"Loaded database settings: {database_settings['dataset_id']}")
-    else:
-      _logger.warning(
-          "CallbackContext.session.context not available; database settings not injected"
-      )
-      return context
-
-  except Exception as e:  # pylint: disable=broad-except
-    _logger.error(f"Failed to load database settings: {e}")
-    return context
-
-  return None
+  except Exception as e:
+    error_msg = f"Failed to load database settings: {e}"
+    _logger.error(error_msg)
+    return error_msg
 
 
 def get_root_agent() -> Agent:
