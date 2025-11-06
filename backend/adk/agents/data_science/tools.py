@@ -94,8 +94,8 @@ async def call_analytics_agent(
   # Extract actual query results (stored by BigQuery agent's after_tool_callback)
   # Following official sample pattern: analytics reads "bigquery_query_result"
   bigquery_data = ""
-  if "bigquery_query_result" in tool_context.state:
-    bigquery_data = tool_context.state["bigquery_query_result"]
+  if "bigquery_agent_output" in tool_context.state:
+    bigquery_data = tool_context.state["bigquery_agent_output"]
   
   # Embed data context in the question
   question_with_data = f"""
