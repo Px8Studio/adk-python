@@ -18,7 +18,12 @@ This module defines functions that return instruction prompts for the bqml_agent
 These instructions guide the agent's behavior, workflow, and tool usage.
 """
 
-from data_science.utils.utils import get_env_var
+from __future__ import annotations
+
+import os
+
+# ✅ CORRECT - Use relative import for ADK source code
+from ...utils.utils import get_env_var
 
 
 def return_instructions_bqml() -> str:

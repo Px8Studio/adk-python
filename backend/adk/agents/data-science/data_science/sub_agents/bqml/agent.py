@@ -13,13 +13,11 @@
 # limitations under the License.
 
 """BigQuery ML Agent."""
+
+from __future__ import annotations
+
 import os
 
-from data_science.sub_agents.bigquery.agent import bigquery_agent
-from data_science.sub_agents.bigquery.tools import (
-    get_database_settings as get_bq_database_settings,
-)
-from data_science.sub_agents.bqml.tools import check_bq_models, rag_response
 from google.adk.agents import Agent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools import ToolContext
@@ -27,8 +25,11 @@ from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.bigquery import BigQueryToolset
 from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
 
-from .prompts import return_instructions_bqml
 from ...utils.utils import USER_AGENT
+from ..bigquery.agent import bigquery_agent
+from ..bigquery.tools import get_database_settings as get_bq_database_settings
+from .prompts import return_instructions_bqml
+from .tools import check_bq_models, rag_response
 
 # BigQuery built-in tools in ADK
 # https://google.github.io/adk-docs/tools/built-in-tools/#bigquery
