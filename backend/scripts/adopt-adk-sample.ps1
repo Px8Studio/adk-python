@@ -130,70 +130,120 @@ $sampleExists = git ls-tree -r "$ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH" --name-onl
 
 if (-not $sampleExists) {
   Write-Host "Sample '$SampleName' not found in upstream repository" -ForegroundColor Red
-  Write-Host "Please verify the sample name and try again" -ForegroundColor Yellow
+  Write-Host ""
+  Write-Host "Available samples:" -ForegroundColor Yellow
+  
+  $availableSamples = git ls-tree -r "$ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH" --name-only | 
+    Where-Object { $_ -like "python/agents/*" } |
+    ForEach-Object { ($_ -split '/')[2] } |
+    Select-Object -Unique |
+    Sort-Object
+  
+  $availableSamples | ForEach-Object { Write-Host "  - $_" -ForegroundColor White }
+  
   exit 1
 }
 
-Write-Host "Sample '$SampleName' found in upstream" -ForegroundColor Green
-
+Write-Host "Sample exists in upstream" -ForegroundColor Green
 Write-Host ""
 
-# Step 3: Check if already imported
-Write-Host "[Step 3/5] Checking if sample already imported..." -ForegroundColor Yellow
-if (Test-Path $TargetPath) {
-  Write-Host "⚠️  WARNING: $TargetPath already exists" -ForegroundColor Red
-  $continue = Read-Host "Continue and update? [y/n]"
-  if ($continue -ne 'y') {
+# Step 3: Check if target path already exists
+Write-Host "[Step 3/5] Checking target directory..." -ForegroundColor Yellow
+
+$isUpdate = Test-Path $TargetPath
+
+if ($isUpdate) {
+  Write-Host "Target directory already exists: $TargetPath" -ForegroundColor Yellow
+  
+  $response = Read-Host "Continue and pull updates from upstream? [y/N]"
+  if ($response -ne 'y' -and $response -ne 'Y') {
     Write-Host "Aborted by user" -ForegroundColor Red
-    exit 1
+    exit 0
   }
   
-  # Pull updates instead
-  Write-Host "Pulling updates via git subtree..." -ForegroundColor Yellow
-  if (-not $DryRun) {
-    git subtree pull --prefix=$TargetPath `
-        $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH:$upstreamPath `
-        --squash
-  } else {
-    Write-Host "[DRY RUN] Would execute: git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH:$upstreamPath --squash" -ForegroundColor Gray
-  }
-  Write-Host "✅ Sample updated successfully" -ForegroundColor Green
+  Write-Host "Will update existing sample" -ForegroundColor Green
 } else {
-  # Add new subtree
-  Write-Host "Importing sample via git subtree..." -ForegroundColor Yellow
-  if (-not $DryRun) {
-    git subtree add --prefix=$TargetPath `
-        $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH:$upstreamPath `
-        --squash
-  } else {
-    Write-Host "[DRY RUN] Would execute: git subtree add --prefix=$TargetPath $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH:$upstreamPath --squash" -ForegroundColor Gray
-  }
-  Write-Host "✅ Sample imported successfully" -ForegroundColor Green
+  Write-Host "Target directory does not exist - will import fresh" -ForegroundColor Green
 }
 
 Write-Host ""
 
-# Step 4: Post-import instructions
-Write-Host "✨ Success! Next steps:" -ForegroundColor Green
+# Step 4: Execute git subtree command
+# FIX: Use proper refspec format with explicit string concatenation
+$gitRefspec = "$UPSTREAM_BRANCH`:$upstreamPath"
+
+if ($isUpdate) {
+  Write-Host "[Step 4/5] Pulling updates via git subtree..." -ForegroundColor Yellow
+  
+  if (-not $DryRun) {
+    Write-Host "Executing: git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash" -ForegroundColor Gray
+    git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash
+    
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host ""
+      Write-Host "Git subtree pull failed" -ForegroundColor Red
+      Write-Host "This may be due to conflicts. Resolve manually and run:" -ForegroundColor Yellow
+      Write-Host "  git add ." -ForegroundColor White
+      Write-Host "  git commit -m 'merge: Update $SampleName from upstream'" -ForegroundColor White
+      exit 1
+    }
+    
+    Write-Host ""
+    Write-Host "Sample updated successfully" -ForegroundColor Green
+  } else {
+    Write-Host "[DRY RUN] Would execute: git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash" -ForegroundColor Gray
+  }
+} else {
+  Write-Host "[Step 4/5] Importing sample via git subtree..." -ForegroundColor Yellow
+  
+  if (-not $DryRun) {
+    Write-Host "Executing: git subtree add --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash" -ForegroundColor Gray
+    git subtree add --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash
+    
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host ""
+      Write-Host "Git subtree add failed" -ForegroundColor Red
+      exit 1
+    }
+    
+    Write-Host ""
+    Write-Host "Sample imported successfully" -ForegroundColor Green
+  } else {
+    Write-Host "[DRY RUN] Would execute: git subtree add --prefix=$TargetPath $ADK_SAMPLES_REMOTE $gitRefspec --squash" -ForegroundColor Gray
+  }
+}
+
 Write-Host ""
-Write-Host "1. Review the imported agent:"
-Write-Host "   cd $TargetPath"
-Write-Host "   code README.md"
+
+# Step 5: Post-import instructions
+Write-Host "[Step 5/5] Next steps" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "2. Copy and configure .env file:"
-Write-Host "   cd $TargetPath"
-Write-Host "   copy .env.example .env"
-Write-Host "   notepad .env"
+Write-Host "1. Review the imported agent:" -ForegroundColor Cyan
+Write-Host "   cd $TargetPath" -ForegroundColor White
+Write-Host "   code README.md" -ForegroundColor White
 Write-Host ""
-Write-Host "3. Install dependencies:"
-Write-Host "   cd backend/adk"
-Write-Host "   # Merge dependencies from $TargetPath/pyproject.toml"
-Write-Host "   uv sync"
+
+Write-Host "2. Copy and configure .env file:" -ForegroundColor Cyan
+Write-Host "   cd $TargetPath" -ForegroundColor White
+Write-Host "   copy .env.example .env" -ForegroundColor White
+Write-Host "   notepad .env" -ForegroundColor White
 Write-Host ""
-Write-Host "4. Test the agent:"
-Write-Host "   adk run $TargetPath"
+
+Write-Host "3. Install dependencies:" -ForegroundColor Cyan
+Write-Host "   cd backend/adk" -ForegroundColor White
+Write-Host "   uv sync" -ForegroundColor White
 Write-Host ""
-Write-Host "5. Commit the changes:"
-Write-Host "   git commit -m 'feat(adk): Import $SampleName from ADK samples'"
-Write-Host "   git push origin dev"
+
+Write-Host "4. Test the agent:" -ForegroundColor Cyan
+Write-Host "   adk run $TargetPath" -ForegroundColor White
+Write-Host ""
+
+if (-not $isUpdate) {
+  Write-Host "5. Commit the changes:" -ForegroundColor Cyan
+  Write-Host "   git commit -m 'feat(adk): Import $SampleName from ADK samples'" -ForegroundColor White
+  Write-Host "   git push origin dev" -ForegroundColor White
+  Write-Host ""
+}
+
+Write-Host "Success!" -ForegroundColor Green
 Write-Host ""
