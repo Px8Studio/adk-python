@@ -1,5 +1,20 @@
 # 🚀 ADK Samples: 5-Minute Quick Start
 
+> **Goal:** Adopt the `data-science` agent from official ADK samples and integrate it with Orkhon in under 5 minutes.
+
+---
+
+## Why Adopt Official Samples?
+
+✅ **Save 4-6 weeks** of development time per sample  
+✅ **Production-tested** code from Google  
+✅ **Automatic updates** via git subtree sync  
+✅ **20+ ready-to-use agents** across domains  
+
+**Official samples:** https://github.com/google/adk-samples
+
+---
+
 ## Adopt Your First Sample (data-science)
 
 ### 1. Run Adoption Script
@@ -7,6 +22,11 @@
 cd C:\Users\rjjaf\_Projects\orkhon
 .\backend\scripts\adopt-adk-sample.ps1 -SampleName "data-science"
 ```
+
+**What this does:**
+- Imports the entire `data-science` agent via git subtree
+- Creates a commit with clear attribution
+- Sets up for easy monthly upstream sync
 
 ### 2. Configure Environment
 ```powershell
