@@ -748,12 +748,7 @@
     {
       "label": "🔄 ADK: Pull data-science Agent Updates",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-Command",
-        "Write-Host '📥 Fetching from adk-samples remote...' -ForegroundColor Cyan; git fetch adk-samples; Write-Host ''; Write-Host '🔄 Pulling updates for data-science agent...' -ForegroundColor Cyan; git subtree pull --prefix=backend/adk/agents/data-science adk-samples/main --squash; Write-Host ''; Write-Host '✅ Update complete! Review changes and test agent.' -ForegroundColor Green"
-      ],
+      "command": "${workspaceFolder}/backend/scripts/adk-pull-data-science-upstream.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -769,28 +764,27 @@
       "group": "none"
     },
     {
-      "label": "🔍 ADK: Check data-science Agent Updates",
+      "label": "🔍 ADK: Check data-science Agent Upstream Changes",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-File",
-        "${workspaceFolder}/backend/scripts/check-upstream-data-science.ps1"
-      ],
+      "command": "${workspaceFolder}/backend/scripts/adk-check-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
       "presentation": {
+        "echo": true,
         "reveal": "always",
-        "panel": "new"
-      }
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
     },
     {
       "label": "📋 ADK: Compare data-science with Upstream",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-Command",
-        "Write-Host '📥 Fetching from adk-samples remote...' -ForegroundColor Cyan; git fetch adk-samples; Write-Host ''; Write-Host '📊 File differences between local and upstream:' -ForegroundColor Cyan; Write-Host ''; git diff --stat HEAD adk-samples/main -- python/agents/data-science; Write-Host ''; Write-Host '💡 Use \"git diff HEAD adk-samples/main -- python/agents/data-science/<file>\" for detailed diff' -ForegroundColor Yellow"
-      ],
+      "command": "${workspaceFolder}/backend/scripts/adk-compare-data-science-upstream.ps1",
       "options": {
         "cwd": "${workspaceFolder}"
       },
