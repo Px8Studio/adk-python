@@ -36,7 +36,7 @@ from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from .prompts import return_instructions_root
-from .sub_agents import bqml_agent
+from .sub_agents.bqml.agent import get_bqml_agent
 from .sub_agents.alloydb.tools import (
     get_database_settings as get_alloydb_database_settings,
 )
@@ -184,7 +184,8 @@ def get_root_agent() -> LlmAgent:
     for dataset in _dataset_config["datasets"]:
         if dataset["type"] == "bigquery":
             tools.append(call_bigquery_agent)
-            sub_agents.append(bqml_agent)
+            # Create a fresh BQML agent instance
+            sub_agents.append(get_bqml_agent())
         elif dataset["type"] == "alloydb":
             tools.append(call_alloydb_agent)
 

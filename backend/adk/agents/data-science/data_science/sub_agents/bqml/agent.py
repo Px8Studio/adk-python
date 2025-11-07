@@ -83,14 +83,20 @@ bigquery_tool_config = BigQueryToolConfig(
     max_query_result_rows=80,
     application_name=USER_AGENT,
 )
-bq_execute_sql = BigQueryToolset(
-    tool_filter=bigquery_tool_filter, bigquery_tool_config=bigquery_tool_config
-)
+def get_bqml_agent() -> Agent:
+    """Factory function to create a fresh BQML agent instance."""
+    bq_execute_sql = BigQueryToolset(
+        tool_filter=bigquery_tool_filter, bigquery_tool_config=bigquery_tool_config
+    )
 
-root_agent = Agent(
-    model=os.getenv("BQML_AGENT_MODEL"),
-    name="bq_ml_agent",
-    instruction=return_instructions_bqml(),
-    before_agent_callback=setup_before_agent_call,
-    tools=[bq_execute_sql, check_bq_models, call_db_agent, rag_response],
-)
+    return Agent(
+        model=os.getenv("BQML_AGENT_MODEL"),
+        name="bq_ml_agent",
+        instruction=return_instructions_bqml(),
+        before_agent_callback=setup_before_agent_call,
+        tools=[bq_execute_sql, check_bq_models, call_db_agent, rag_response],
+    )
+
+
+# Maintain backward compatibility
+root_agent = get_bqml_agent()
