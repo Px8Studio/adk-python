@@ -743,6 +743,63 @@
       "group": "none"
     },
     // ============================================================
+    // ADK Samples - Data Science Agent Sync
+    // ============================================================
+    {
+      "label": "🔄 ADK: Pull data-science Agent Updates",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-pull-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 ADK: Check data-science Agent Upstream Changes",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-check-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "📋 ADK: Compare data-science with Upstream",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-compare-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    // ============================================================
     // Server Management - Development
     // ============================================================
     {

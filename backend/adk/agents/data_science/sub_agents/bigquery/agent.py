@@ -71,14 +71,19 @@ def store_results_in_context(
     tool_context: ToolContext,
     tool_response: Dict,
 ) -> Optional[Dict]:
-    """Store query results in context for potential reuse.
+    """Store query results in context for analytics agent.
     
-    This follows the ADK sample pattern for after_tool_callback.
+    Following official ADK sample pattern: stores in 'bigquery_query_result'
+    so analytics agent can access the data.
     """
     if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
-        # Store in tool context for access by other tools
-        tool_context.state["last_query_result"] = tool_response
-        _logger.debug("Stored query result in context")
+        if tool_response.get("status") == "SUCCESS":
+            # Store query result rows for analytics agent (official pattern)
+            tool_context.state["bigquery_query_result"] = tool_response.get("rows", [])
+            _logger.debug(
+                "Stored %d rows in bigquery_query_result for analytics agent",
+                len(tool_response.get("rows", []))
+            )
     
     # Return None to use the original tool response
     return None
