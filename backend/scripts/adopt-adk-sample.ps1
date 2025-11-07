@@ -173,60 +173,44 @@ if ($isUpdate) {
   Write-Host "[Step 4/5] Pulling updates via git subtree..." -ForegroundColor Yellow
   
   if (-not $DryRun) {
-    Write-Host "Executing: git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH --squash" -ForegroundColor Gray
-    
-    # Create temporary branch that points to the subdirectory
-    $tempBranch = "temp-subtree-$SampleName-$(Get-Date -Format 'yyyyMMddHHmmss')"
-    git branch -D $tempBranch 2>$null  # Delete if exists
-    git subtree split --prefix=$upstreamPath --branch=$tempBranch $ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH
-    
-    # Pull from the temporary branch
-    git subtree pull --prefix=$TargetPath . $tempBranch --squash
-    
-    # Clean up temporary branch
-    git branch -D $tempBranch
+    # Fetch the specific path as a subtree
+    git fetch $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH
+    git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH --squash
     
     if ($LASTEXITCODE -ne 0) {
       Write-Host ""
       Write-Host "Git subtree pull failed" -ForegroundColor Red
-      Write-Host "This may be due to conflicts. Resolve manually and run:" -ForegroundColor Yellow
-      Write-Host "  git add ." -ForegroundColor White
-      Write-Host "  git commit -m 'merge: Update $SampleName from upstream'" -ForegroundColor White
       exit 1
     }
     
     Write-Host ""
     Write-Host "Sample updated successfully" -ForegroundColor Green
   } else {
-    Write-Host "[DRY RUN] Would execute: git subtree pull with temporary branch strategy" -ForegroundColor Gray
+    Write-Host "[DRY RUN] Would execute: git subtree pull --prefix=$TargetPath $ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH --squash" -ForegroundColor Gray
   }
 } else {
   Write-Host "[Step 4/5] Importing sample via git subtree..." -ForegroundColor Yellow
   
   if (-not $DryRun) {
-    Write-Host "Executing: git subtree add --prefix=$TargetPath $ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH:$upstreamPath --squash" -ForegroundColor Gray
+    # Use read-tree to import just the subdirectory
+    git fetch $ADK_SAMPLES_REMOTE $UPSTREAM_BRANCH
     
-    # Create temporary branch that points to the subdirectory
-    $tempBranch = "temp-subtree-$SampleName-$(Get-Date -Format 'yyyyMMddHHmmss')"
-    git branch -D $tempBranch 2>$null  # Delete if exists
-    git subtree split --prefix=$upstreamPath --branch=$tempBranch $ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH
+    $commitHash = git rev-parse "$ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH"
+    $treeHash = git ls-tree "$commitHash" "$upstreamPath" | ForEach-Object { ($_ -split '\s+')[2] }
     
-    # Add from the temporary branch
-    git subtree add --prefix=$TargetPath . $tempBranch --squash
-    
-    # Clean up temporary branch
-    git branch -D $tempBranch
-    
-    if ($LASTEXITCODE -ne 0) {
-      Write-Host ""
-      Write-Host "Git subtree add failed" -ForegroundColor Red
+    if ([string]::IsNullOrWhiteSpace($treeHash)) {
+      Write-Host "Failed to find tree hash for $upstreamPath" -ForegroundColor Red
       exit 1
     }
+    
+    # Read the tree into the index at the target path
+    git read-tree --prefix=$TargetPath/ -u $treeHash
+    git commit -m "Add '$SampleName' from adk-samples@$commitHash"
     
     Write-Host ""
     Write-Host "Sample imported successfully" -ForegroundColor Green
   } else {
-    Write-Host "[DRY RUN] Would execute: git subtree add with temporary branch strategy" -ForegroundColor Gray
+    Write-Host "[DRY RUN] Would import using git read-tree strategy" -ForegroundColor Gray
   }
 }
 
