@@ -1,0 +1,9 @@
+{
+  "datasets": [
+    {
+      "type": "bigquery",
+      "name": "dnb_statistics",
+      "description": "DNB Statistics data warehouse containing financial market data, insurance data, pension data, and other statistical information from De Nederlandsche Bank (Dutch Central Bank). The dataset includes time-series data on various financial indicators and market metrics."
+    }
+  ]
+}
