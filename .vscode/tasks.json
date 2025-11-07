@@ -743,6 +743,69 @@
       "group": "none"
     },
     // ============================================================
+    // ADK Samples - Data Science Agent Sync
+    // ============================================================
+    {
+      "label": "🔄 ADK: Pull data-science Agent Updates",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Write-Host '📥 Fetching from adk-samples remote...' -ForegroundColor Cyan; git fetch adk-samples; Write-Host ''; Write-Host '🔄 Pulling updates for data-science agent...' -ForegroundColor Cyan; git subtree pull --prefix=backend/adk/agents/data-science adk-samples/main --squash; Write-Host ''; Write-Host '✅ Update complete! Review changes and test agent.' -ForegroundColor Green"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 ADK: Check data-science Agent Updates",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-File",
+        "${workspaceFolder}/backend/scripts/check-upstream-data-science.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "📋 ADK: Compare data-science with Upstream",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Write-Host '📥 Fetching from adk-samples remote...' -ForegroundColor Cyan; git fetch adk-samples; Write-Host ''; Write-Host '📊 File differences between local and upstream:' -ForegroundColor Cyan; Write-Host ''; git diff --stat HEAD adk-samples/main -- python/agents/data-science; Write-Host ''; Write-Host '💡 Use \"git diff HEAD adk-samples/main -- python/agents/data-science/<file>\" for detailed diff' -ForegroundColor Yellow"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    // ============================================================
     // Server Management - Development
     // ============================================================
     {
