@@ -92,6 +92,11 @@ def load_dataset_config():
     if not dataset_config_file:
         _logger.fatal("DATASET_CONFIG_FILE env var not set")
 
+    # Resolve path relative to agent directory if not absolute
+    if not os.path.isabs(dataset_config_file):
+        agent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dataset_config_file = os.path.join(agent_dir, dataset_config_file)
+
     with open(dataset_config_file, "r", encoding="utf-8") as f:
         dataset_config = json.load(f)
 
