@@ -82,6 +82,17 @@ def return_instructions_analytics() -> str:
     - Print variables (e.g., `print(f'{{variable=}}')`.
     - Give out the generated code under 'Code:'.
 
+  **Visualizations and Artifacts:** When you create plots or save files (like
+  PNG charts), they are automatically saved as artifacts. After generating
+  visualizations, you MUST use the `load_artifacts` tool to load them back
+  into the conversation so the user can see them. Provide the artifact filenames
+  as an array to the load_artifacts tool. For example:
+    - After creating multiple charts, call:
+      ```tool_call
+      load_artifacts(artifact_names=["chart1.png", "chart2.png", "trend_analysis.png"])
+      ```
+    - This will display the images inline in the chat for the user to view.
+
   **No Assumptions:** **Crucially, avoid making assumptions about the nature of
   the data or column names.** Base findings solely on the data itself. Always
   use the information obtained from `explore_df` to guide your analysis.

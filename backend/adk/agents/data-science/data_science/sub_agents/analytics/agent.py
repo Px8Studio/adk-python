@@ -17,6 +17,7 @@ import os
 
 from google.adk.agents import Agent
 from google.adk.code_executors import VertexAiCodeExecutor
+from google.adk.tools import load_artifacts
 
 from .prompts import return_instructions_analytics
 
@@ -24,6 +25,7 @@ analytics_agent = Agent(
     model=os.getenv("ANALYTICS_AGENT_MODEL", ""),
     name="analytics_agent",
     instruction=return_instructions_analytics(),
+    tools=[load_artifacts],
     code_executor=VertexAiCodeExecutor(
         optimize_data_file=True,
         stateful=True,

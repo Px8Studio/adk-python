@@ -14,21 +14,23 @@
 
 """This file contains the tools used by the database agent."""
 
+from __future__ import annotations
+
 import datetime
 import logging
 import os
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
-from data_science.utils.utils import get_env_var, USER_AGENT
-from google.adk.tools import ToolContext
+from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.bigquery.client import get_bigquery_client
 from google.cloud import bigquery
 from google.genai import Client
 from google.genai.types import HttpOptions
 
 from .chase_sql import chase_constants
-from ...utils.utils import USER_AGENT
+from ...utils.utils import get_env_var, USER_AGENT
 
 logger = logging.getLogger(__name__)
 

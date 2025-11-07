@@ -18,13 +18,13 @@ import logging
 import os
 import re
 
-from data_science.utils.utils import get_env_var
+from ...utils.utils import get_env_var  # ✅ CORRECT - relative import
 from google.adk.tools import ToolContext
 from google.genai import Client
 from google.genai.types import HttpOptions
 from toolbox_core import ToolboxSyncClient, auth_methods
 
-from ...utils.utils import USER_AGENT
+from ...utils.utils import USER_AGENT  # ✅ CORRECT - relative import
 
 ALLOYDB_TOOLSET = os.getenv("ALLOYDB_TOOLSET", "postgres-database-tools")
 # The agent connects to AlloyDB using the MCP Toolbox for Databases
