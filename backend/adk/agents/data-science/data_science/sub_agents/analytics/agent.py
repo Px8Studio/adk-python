@@ -14,10 +14,10 @@
 
 """Analytics Agent: generate nl2py and use code interpreter to run the code."""
 import os
-
 from google.adk.agents import Agent
 from google.adk.code_executors import VertexAiCodeExecutor
 from google.adk.tools import load_artifacts
+from google.ads.googleads.v10.services.types import GenerateContentConfig
 
 from .prompts import return_instructions_analytics
 
@@ -29,5 +29,9 @@ analytics_agent = Agent(
     code_executor=VertexAiCodeExecutor(
         optimize_data_file=True,
         stateful=True,
+    ),
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.1,
+        response_modalities=["TEXT"],  # Ensure text output
     ),
 )

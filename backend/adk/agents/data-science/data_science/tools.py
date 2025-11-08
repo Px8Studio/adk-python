@@ -136,7 +136,13 @@ async def call_analytics_agent(
         
         if not analytics_agent_output or analytics_agent_output.strip() == "":
             logger.error("Analytics agent returned empty output")
-            return "Analytics agent execution completed but no output was generated. This may indicate an issue with the code executor or model configuration."
+            
+            # Try to extract artifacts anyway
+            if tool_context.artifacts:
+                artifact_names = [a.name for a in tool_context.artifacts]
+                return f"Visualization created: {', '.join(artifact_names)}. However, the agent did not provide a text explanation. Please check the artifacts for results."
+            
+            return "Analytics processing completed but no output was generated."
         
         logger.info(f"Analytics agent returned output of length: {len(analytics_agent_output)}")
         tool_context.state["analytics_agent_output"] = analytics_agent_output
