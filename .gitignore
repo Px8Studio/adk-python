@@ -1,4 +1,12 @@
 .env
+.env.local
+.env.*.local
+
+# Google Cloud Service Account Keys (CRITICAL: Never commit these!)
+service-account-key.json
+*-service-account*.json
+credentials.json
+key.json
 
 # Python
 __pycache__/
