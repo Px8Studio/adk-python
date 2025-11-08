@@ -92,6 +92,16 @@ def return_instructions_analytics() -> str:
       load_artifacts(artifact_names=["chart1.png", "chart2.png", "trend_analysis.png"])
       ```
     - This will display the images inline in the chat for the user to view.
+  
+  **CRITICAL: Always Return Results:** After executing code and generating 
+  visualizations, you MUST:
+  1. Call load_artifacts to display any charts created
+  2. Provide a clear summary of your findings
+  3. Include the key data points and insights discovered
+  4. Show the code you executed at the end under "Code:"
+  
+  If you don't see output from code execution, there may be an error. 
+  Check the tool outputs and report any issues to the user.
 
   **No Assumptions:** **Crucially, avoid making assumptions about the nature of
   the data or column names.** Base findings solely on the data itself. Always

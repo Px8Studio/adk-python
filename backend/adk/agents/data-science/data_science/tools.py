@@ -98,8 +98,17 @@ async def call_analytics_agent(
 
     if "bigquery_query_result" in tool_context.state:
         bigquery_data = tool_context.state["bigquery_query_result"]
+        logger.info(f"Found BigQuery data with {len(bigquery_data) if isinstance(bigquery_data, (list, str)) else 'unknown'} items/chars")
+    else:
+        logger.warning("No 'bigquery_query_result' found in tool_context.state")
+    
     if "alloydb_query_result" in tool_context.state:
         alloydb_data = tool_context.state["alloydb_query_result"]
+        logger.info(f"Found AlloyDB data with {len(alloydb_data) if isinstance(alloydb_data, (list, str)) else 'unknown'} items/chars")
+
+    if not bigquery_data and not alloydb_data:
+        logger.warning("No data found in context for analytics agent. Available keys: %s", list(tool_context.state.keys()))
+        return "No data available for analysis. Please ensure data has been retrieved from BigQuery or AlloyDB first."
 
     question_with_data = f"""
   Question to answer: {question}
@@ -117,10 +126,21 @@ async def call_analytics_agent(
 
   """
 
+    logger.debug("Calling analytics agent with data context")
     agent_tool = AgentTool(agent=analytics_agent)
 
-    analytics_agent_output = await agent_tool.run_async(
-        args={"request": question_with_data}, tool_context=tool_context
-    )
-    tool_context.state["analytics_agent_output"] = analytics_agent_output
-    return analytics_agent_output
+    try:
+        analytics_agent_output = await agent_tool.run_async(
+            args={"request": question_with_data}, tool_context=tool_context
+        )
+        
+        if not analytics_agent_output or analytics_agent_output.strip() == "":
+            logger.error("Analytics agent returned empty output")
+            return "Analytics agent execution completed but no output was generated. This may indicate an issue with the code executor or model configuration."
+        
+        logger.info(f"Analytics agent returned output of length: {len(analytics_agent_output)}")
+        tool_context.state["analytics_agent_output"] = analytics_agent_output
+        return analytics_agent_output
+    except Exception as e:
+        logger.error(f"Error calling analytics agent: {e}", exc_info=True)
+        return f"Error during analytics processing: {str(e)}"
