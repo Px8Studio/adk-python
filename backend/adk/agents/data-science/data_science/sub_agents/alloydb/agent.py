@@ -24,6 +24,10 @@ from google.genai import types
 from . import tools
 from .prompts import return_instructions_alloydb
 
+
+class DataScienceAlloyDbAgent(LlmAgent):
+    """Subclass to keep the runner aligned with the data_science app."""
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +41,7 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
         )
 
 
-alloydb_agent = LlmAgent(
+alloydb_agent = DataScienceAlloyDbAgent(
     model=os.getenv("ALLOYDB_AGENT_MODEL", ""),
     name="alloydb_agent",
     instruction=return_instructions_alloydb(),

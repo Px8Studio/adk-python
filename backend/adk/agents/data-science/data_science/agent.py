@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Top level agent for data agent multi-agents.
+"""Top level agent for the data-science multi-agent system.
 
--- it get data from database (e.g., BQ) using NL2SQL
--- then, it use NL2Py to do further data analysis as needed
+Responsibilities:
+  * Retrieve data from databases (BigQuery / AlloyDB) via NL2SQL.
+  * Perform analytics / visualization (NL2Py) on retrieved data.
+
+This file diverged from the upstream ADK sample by adding a duplicate
+subclass and custom App creation. We streamline it here to better align
+with the official sample while retaining the App wrapper for discovery.
 """
+
+from __future__ import annotations
+
 import base64
 import json
 import logging
@@ -25,8 +33,7 @@ from datetime import date
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-
-# from google.adk.tools import load_artifacts
+from google.adk.apps import App
 from google.genai import types
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
@@ -189,6 +196,7 @@ def get_root_agent() -> LlmAgent:
         elif dataset["type"] == "alloydb":
             tools.append(call_alloydb_agent)
 
+    # Upstream sample uses LlmAgent directly; we keep that for alignment.
     agent = LlmAgent(
         model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.5-flash"),
         name="data_science_root_agent",
@@ -216,3 +224,8 @@ _database_settings = init_database_settings(_dataset_config)
 
 # Fetch the root agent
 root_agent = get_root_agent()
+
+# Expose an App so the runner uses the canonical "data-science" name.
+# (Hyphen variant matches the directory; sample agent doesn't wrap in App,
+# but we keep this to leverage Orkhon tooling expectations.)
+app = App(name="data-science", root_agent=root_agent)

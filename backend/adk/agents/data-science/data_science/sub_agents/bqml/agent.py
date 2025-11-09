@@ -31,6 +31,10 @@ from ..bigquery.tools import get_database_settings as get_bq_database_settings
 from .prompts import return_instructions_bqml
 from .tools import check_bq_models, rag_response
 
+
+class DataScienceBqmlAgent(Agent):
+    """Subclass so the runner aligns the BQML agent with data_science."""
+
 # BigQuery built-in tools in ADK
 # https://google.github.io/adk-docs/tools/built-in-tools/#bigquery
 ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL = "execute_sql"
@@ -89,7 +93,7 @@ def get_bqml_agent() -> Agent:
         tool_filter=bigquery_tool_filter, bigquery_tool_config=bigquery_tool_config
     )
 
-    return Agent(
+    return DataScienceBqmlAgent(
         model=os.getenv("BQML_AGENT_MODEL"),
         name="bq_ml_agent",
         instruction=return_instructions_bqml(),

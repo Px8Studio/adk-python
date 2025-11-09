@@ -14,8 +14,12 @@
 
 """Database Agent: get data from database (BigQuery) using NL2SQL."""
 
+import json
 import logging
 import os
+from collections.abc import Mapping
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from ...utils.utils import get_env_var, USER_AGENT
@@ -39,12 +43,41 @@ ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL = "execute_sql"
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
-    """Setup the agent."""
-
+    """Setup the agent and cache database settings to avoid repeated queries."""
+    
+    # Cache database settings on first call to avoid repeated schema queries
     if "database_settings" not in callback_context.state:
+        logger.info("Loading and caching BigQuery database settings")
         callback_context.state["database_settings"] = (
             tools.get_database_settings()
         )
+        callback_context.state["bigquery_schema_cached"] = True
+    else:
+        logger.debug("Using cached BigQuery database settings")
+
+
+def _serialize_value(value: Any) -> Any:
+    """Serialize BigQuery values so they are JSON friendly for downstream use."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return value.decode("utf-8", "replace")
+    if isinstance(value, Mapping):
+        return {k: _serialize_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_serialize_value(item) for item in value]
+    return value
+
+
+def _serialize_row(row: Any) -> Any:
+    """Convert BigQuery rows to basic Python types for analytics agent."""
+    if isinstance(row, Mapping):
+        return {k: _serialize_value(v) for k, v in row.items()}
+    if hasattr(row, "items"):
+        return {k: _serialize_value(v) for k, v in dict(row).items()}
+    return _serialize_value(row)
 
 
 def store_results_in_context(
@@ -53,12 +86,29 @@ def store_results_in_context(
     tool_context: ToolContext,
     tool_response: Dict,
 ) -> Optional[Dict]:
-
+    """Store query results in context and log execution details."""
+    
     # We are setting a state for the data science agent to be able to use the
     # sql query results as context
     if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
         if tool_response["status"] == "SUCCESS":
-            tool_context.state["bigquery_query_result"] = tool_response["rows"]
+            rows = tool_response["rows"]
+            serialized_rows = [_serialize_row(row) for row in rows]
+            preview_rows = serialized_rows[:5]
+            tool_context.state["bigquery_query_result"] = serialized_rows
+            tool_context.state["bigquery_query_result_json"] = json.dumps(
+                serialized_rows, default=_serialize_value
+            )
+            tool_context.state["bigquery_query_result_preview"] = preview_rows
+            logger.info(
+                "BigQuery query succeeded, stored %s rows in context",
+                len(serialized_rows)
+            )
+        else:
+            logger.warning(
+                "BigQuery query failed with status: %s",
+                tool_response.get("status")
+            )
 
     return None
 
@@ -71,7 +121,12 @@ bigquery_toolset = BigQueryToolset(
     tool_filter=bigquery_tool_filter, bigquery_tool_config=bigquery_tool_config
 )
 
-bigquery_agent = LlmAgent(
+
+class DataScienceBigQueryAgent(LlmAgent):
+    """Subclass to align runner origin with the data_science package."""
+
+
+bigquery_agent = DataScienceBigQueryAgent(
     model=os.getenv("BIGQUERY_AGENT_MODEL", ""),
     name="bigquery_agent",
     instruction=return_instructions_bigquery(),

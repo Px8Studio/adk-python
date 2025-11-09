@@ -14,14 +14,20 @@
 
 """Analytics Agent: generate nl2py and use code interpreter to run the code."""
 import os
+
 from google.adk.agents import Agent
 from google.adk.code_executors import VertexAiCodeExecutor
 from google.adk.tools import load_artifacts
-from google.ads.googleads.v10.services.types import GenerateContentConfig
+from google.genai import types
 
 from .prompts import return_instructions_analytics
 
-analytics_agent = Agent(
+
+class DataScienceAnalyticsAgent(Agent):
+    """Subclass to ensure the runner detects the data_science origin."""
+
+
+analytics_agent = DataScienceAnalyticsAgent(
     model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.5-flash"),
     name="analytics_agent",
     instruction=return_instructions_analytics(),
