@@ -235,6 +235,38 @@ Use VS Code tasks (Ctrl+Shift+P → "Tasks: Run Task"):
 
 ---
 
+## 📦 ADK Samples Integration
+
+Orkhon reuses official [google/adk-samples](https://github.com/google/adk-samples) agents via **git subtree**, enabling:
+
+- ✅ **Reuse** 20+ production-grade agents from Google
+- ✅ **Customize** with Orkhon-specific DNB integrations  
+- ✅ **Sync** with upstream improvements automatically
+- ✅ **Contribute** improvements back to community
+
+### Quick Commands
+
+```powershell
+# Adopt a sample (e.g., data-science)
+.\backend\scripts\adopt-adk-sample.ps1 -SampleName "data-science"
+
+# Sync all adopted samples with upstream
+.\backend\scripts\sync-adk-samples.ps1
+```
+
+### High-Priority Samples for Orkhon
+
+| Sample | Value | Status |
+|--------|-------|--------|
+| **data-science** | BigQuery/AlloyDB multi-agent, NL2SQL, BQML | ✅ Ready |
+| **financial-advisor** | Portfolio analysis, risk assessment | 📋 Planned |
+| **customer-service** | Multi-turn conversations, escalation | 📋 Planned |
+
+**📖 Full Guide:** [`adk/ADK_SAMPLES_INTEGRATION.md`](adk/ADK_SAMPLES_INTEGRATION.md)  
+**⚡ Quick Ref:** [`adk/ADK_SAMPLES_QUICK_REFERENCE.md`](adk/ADK_SAMPLES_QUICK_REFERENCE.md)
+
+---
+
 ## 🤝 Contributing
 
 When contributing to the backend:
@@ -243,40 +275,49 @@ When contributing to the backend:
 2. **Tool Definitions:** Regenerate with `open-api-box/openapi_toolbox.py`
 3. **Agent Code:** Follow ADK three-level hierarchy pattern in `adk/agents/`
    - **System Root:** `root_agent` (entry point)
-   - **Domain Coordinators:** `adk/agents/api_coordinators/` and `adk/agents/data_science/`
-   - **Specialists (Leaf):** `adk/agents/api_agents/` and `data_science/sub_agents/`
-4. **ETL Changes:** Update extractors in `etl/`
-5. **Documentation:** Update relevant README and markdown files
+   - **Domain Coordinators:** `api_coordinators/`, adopted samples (e.g., `data_science/`)
+   - **Specialists (Leaf):** `api_agents/`, sample sub-agents
+4. **Adopt Samples:** Use `adopt-adk-sample.ps1` script (maintains git history)
+5. **ETL Changes:** Update extractors in `etl/`
+6. **Documentation:** Update relevant README and markdown files
 
 **Current Agent Count:**
 - **System Root:** 1 (`root_agent`)
 - **Domain Coordinators:** 2 (`dnb_coordinator`, `data_science_coordinator`)
 - **Specialists (Leaf):** 5 (3 DNB API + 2 Data Science)
-- **Total: 8 agents in 3-level hierarchy** ✅
+- **Adoptable:** 20+ from [adk-samples](https://github.com/google/adk-samples)
+- **Total: 8 active agents in 3-level hierarchy** ✅
 
 **Agent Hierarchy:**
 ```
 root_agent (L1: System Root)
-├── dnb_coordinator (L2: Domain Coordinator)
+├── dnb_coordinator (L2: Domain Coordinator - Orkhon custom)
 │   ├── dnb_echo_agent (L3: Specialist)
 │   ├── dnb_statistics_agent (L3: Specialist)
 │   └── dnb_public_register_agent (L3: Specialist)
-└── data_science_coordinator (L2: Domain Coordinator)
-    ├── bigquery_agent (L3: Specialist)
-    └── analytics_agent (L3: Specialist)
+├── data_science_coordinator (L2: Domain Coordinator - Orkhon custom)
+│   ├── bigquery_agent (L3: Specialist)
+│   └── analytics_agent (L3: Specialist)
+└── {adopted_sample} (L2/L3: From adk-samples via git subtree)
+    └── sub_agents/ (L3: If multi-agent sample)
 ```
 
-**Agent Files:**
-- **System Root (L1):** `adk/agents/root_agent.py` or `adk/agents/root_agent.yaml`
-- **Domain Coordinators (L2):** `adk/agents/domain_coordinators/`
-  - `dnb_coordinator.py` or `dnb_coordinator.yaml`
-  - `data_science_coordinator.py` or `data_science_coordinator.yaml`
-- **Specialists (L3):** `adk/agents/specialists/`
-  - `dnb_echo_agent.py` or `dnb_echo_agent.yaml`
-  - `dnb_statistics_agent.py` or `dnb_statistics_agent.yaml`
-  - `dnb_public_register_agent.py` or `dnb_public_register_agent.yaml`
-  - `bigquery_agent.py` or `bigquery_agent.yaml`
-  - `analytics_agent.py` or `analytics_agent.yaml`
+**Integration Pattern for Adopted Samples:**
+```
+adk/agents/
+├── root_agent/              # Orkhon custom
+├── api_coordinators/        # Orkhon custom  
+├── api_agents/              # Orkhon custom
+└── {sample_name}/           # ← Adopted via git subtree
+    ├── agent.py             # Upstream (don't modify)
+    ├── sub_agents/          # Upstream (don't modify)
+    ├── tools.py             # Upstream (don't modify)
+    ├── orkhon_config.json   # Orkhon customization
+    ├── orkhon_dnb_tools.py  # Orkhon customization
+    └── orkhon_prompts.py    # Orkhon customization
+```
+
+**Key Principle:** Never modify upstream files directly—use `orkhon_*.py` pattern for customizations
 
 ---
 
