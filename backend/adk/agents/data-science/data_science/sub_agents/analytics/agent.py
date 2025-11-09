@@ -14,6 +14,13 @@
 
 """Analytics Agent: generate nl2py and use code interpreter to run the code."""
 import os
+try:
+    from ...._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_llm_model() -> str:
+        return os.getenv("ORKHON_LLM_MODEL") or os.getenv("ROOT_AGENT_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.5-flash"
+    def get_model(profile: str) -> str:
+        return get_llm_model()
 
 from google.adk.agents import Agent
 from google.adk.code_executors import VertexAiCodeExecutor
@@ -28,7 +35,7 @@ class DataScienceAnalyticsAgent(Agent):
 
 
 analytics_agent = DataScienceAnalyticsAgent(
-    model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.5-flash"),
+    model=os.getenv("ANALYTICS_AGENT_MODEL") or get_model("smart"),
     name="analytics_agent",
     instruction=return_instructions_analytics(),
     tools=[load_artifacts],

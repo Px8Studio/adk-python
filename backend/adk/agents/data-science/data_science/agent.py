@@ -42,7 +42,7 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-from _common.config import get_llm_model
+from _common.config import get_model
 
 from .prompts import return_instructions_root
 from .sub_agents.bqml.agent import get_bqml_agent
@@ -200,7 +200,7 @@ def get_root_agent() -> LlmAgent:
 
     # Upstream sample uses LlmAgent directly; we keep that for alignment.
     agent = LlmAgent(
-        model=get_llm_model(),
+        model=get_model("smart"),
         name="data_science_root_agent",
         instruction=return_instructions_root()
         + get_dataset_definitions_for_instructions(),

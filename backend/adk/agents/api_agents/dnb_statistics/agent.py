@@ -28,10 +28,17 @@ import os
 
 from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
+try:
+  from .._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+  def get_llm_model() -> str:
+    return "gemini-2.5-flash"
+  def get_model(profile: str) -> str:
+    return get_llm_model()
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
 _TOOLSET_NAME = os.getenv("DNB_STATISTICS_TOOLSET_NAME", "dnb_statistics_tools")
-MODEL = os.getenv("DNB_STATISTICS_MODEL", "gemini-2.0-flash")
+MODEL = os.getenv("DNB_STATISTICS_MODEL") or get_model("smart")
 
 dnb_statistics_agent = Agent(
   name="dnb_statistics_agent",

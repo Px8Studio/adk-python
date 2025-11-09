@@ -28,7 +28,7 @@ from typing import Any
 
 from google.adk.agents import Agent
 from google.genai import types
-from _common.config import get_llm_model
+from _common.config import get_model
 
 
 # Patch ToolboxToolset.close to await the underlying async client close
@@ -92,8 +92,8 @@ def get_root_agent() -> Agent:
   dnb_coordinator = get_dnb_coordinator_agent()
   data_science_coordinator = get_data_science_coordinator()  # fresh instance
 
-  # Model configuration (centralized)
-  model_name = get_llm_model()
+  # Model configuration (profile-based)
+  model_name = get_model("fast")
 
   # Build the root agent with ONLY the two domain coordinators
   root = Agent(

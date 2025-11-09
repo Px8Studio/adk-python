@@ -141,10 +141,19 @@ def _unified_instruction() -> str:
     )
 
 
+try:
+    from .._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_llm_model() -> str:
+        return "gemini-2.5-flash"
+    def get_model(profile: str) -> str:
+        return get_llm_model()
+
+
 def build_agent(api: str | None = None, model: str | None = None) -> Agent:
     """Create an Agent wired with the DNB OpenAPI toolset."""
     api = api or os.getenv("DNB_OPENAPI_API", "echo")
-    model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
+    model = model or os.getenv("DNB_OPENAPI_MODEL") or get_model("fast")
 
     toolset = build_openapi_toolset(api)
     instruction = _default_instruction(api)
@@ -161,7 +170,7 @@ def build_agent(api: str | None = None, model: str | None = None) -> Agent:
 
 def build_unified_agent(model: str | None = None) -> Agent:
     """Create an Agent with ALL DNB OpenAPI toolsets combined."""
-    model = model or os.getenv("DNB_OPENAPI_MODEL", "gemini-2.0-flash")
+    model = model or os.getenv("DNB_OPENAPI_MODEL") or get_model("fast")
 
     # Build all three toolsets
     echo_toolset = build_openapi_toolset("echo")

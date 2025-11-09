@@ -133,6 +133,36 @@ python backend\adk\run_dnb_openapi_agent.py
 - **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
 - **[Data Science Agent](backend/adk/agents/data_science/README.md)** - BigQuery + Analytics setup
 
+### LLM Model Profiles (Simple Policy)
+
+We use a small set of semantic profiles to simplify model choice and costs:
+
+- fast → gemini-2.5-flash (cheap/low-latency; routing, tool-calls)
+- smart → gemini-2.5-pro (better reasoning; code/analytics/NL2SQL)
+- lite → gemini-1.5-flash (ultra low cost fallback)
+- embed → text-embedding-005 (embeddings)
+
+How to override (highest wins):
+
+1) Per-agent env var (kept for specialization), e.g.
+
+	- ANALYTICS_AGENT_MODEL
+	- DNB_STATISTICS_MODEL
+
+2) Per-profile env var (recommended):
+
+	- ORKHON_MODEL_FAST
+	- ORKHON_MODEL_SMART
+	- ORKHON_MODEL_LITE
+	- ORKHON_MODEL_EMBED
+
+3) Global cascade:
+
+	ORKHON_LLM_MODEL > ROOT_AGENT_MODEL > GOOGLE_GEMINI_MODEL > defaults
+
+Defaults are defined in `backend/adk/agents/_common/config.py`. Agents call
+`get_model("fast")` or `get_model("smart")` instead of hard-coded strings.
+
 ## 🆘 Common Issues
 
 ### Missing Google AI/Vertex credentials
