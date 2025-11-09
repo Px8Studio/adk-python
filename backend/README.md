@@ -176,6 +176,8 @@ clients/
 
 ### 📊 `/etl` - ETL Pipelines
 
+Local-only. DNB Statistics & Public Register extraction runs locally and writes directly to BigQuery; no cloud ETL services.
+
 Extract-Transform-Load pipelines for DNB data.
 
 **Structure:**

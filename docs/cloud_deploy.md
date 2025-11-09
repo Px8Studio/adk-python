@@ -1,6 +1,8 @@
 # Cloud Deployment Guide for Orkhon
 
-This document outlines the recommended approach for deploying Orkhon (ADK agents + Toolbox + ETL + React frontend) to Google Cloud Platform with strong separation of concerns, incremental safety, and production-ready practices.
+This document outlines the recommended approach for deploying Orkhon (ADK agents + Toolbox + React frontend) to Google Cloud Platform with strong separation of concerns, incremental safety, and production-ready practices.
+
+Note: Data ETL runs locally and is not part of the cloud deployment. Required datasets already exist in BigQuery and are refreshed from local scripts when needed.
 
 ## Target Cloud Architecture
 
@@ -14,7 +16,7 @@ This document outlines the recommended approach for deploying Orkhon (ADK agents
 4. **Authentication** → Firebase Auth (OIDC tokens) or Google Identity Platform
 5. **Data Lake / Warehouse** → GCS (raw/parquet) + BigQuery (curated)
 6. **Secrets** → Secret Manager (API keys, Gemini/Google API key, DNB subscription key)
-7. **Messaging / Async** → Pub/Sub (ETL triggers, long-running workflows)
+7. **Messaging / Async** → Pub/Sub (for async workflows; not used for ETL)
 8. **Monitoring & Tracing** → Cloud Logging, Cloud Trace, Metrics Explorer
 9. **CI/CD** → Cloud Build (GitHub triggers) OR GitHub Actions with Workload Identity
 10. **Artifact Storage** → Artifact Registry (Python app / Toolbox images)
@@ -68,9 +70,7 @@ Firebase Hosting (HTTPS, static assets)
 4. Separate dev vs prod config using environment variable `TOOLBOX_ENV`
 
 ### Phase 4: Data / ETL
-1. Convert ETL pipelines to Cloud Run jobs or Cloud Workflows / Cloud Scheduler
-2. Store raw parquet in GCS `gs://orkhon-raw/` and curated in `gs://orkhon-processed/`
-3. BigQuery external table or load jobs from curated layer
+Local-only. ETL pipelines are executed outside the cloud environment and write directly to BigQuery.
 
 ### Phase 5: Observability & Scale
 1. Add structured logging (JSON) in ADK and toolbox containers
@@ -207,21 +207,8 @@ GitHub push to dev branch triggers build:
 ### Option B: GitHub Actions + Workload Identity
 Reusable workflow: build, push (using `gcloud auth login --workload-identity`), deploy
 
-## Data & ETL Patterns
-
-### Data Layers
-- **Bronze (raw parquet)** → GCS
-- **Silver (cleaned)** → GCS curated prefix
-- **Gold (analytics)** → BigQuery partitioned tables
-
-### Loading Strategy
-Cloud Run job (Python) triggered daily by Cloud Scheduler hitting Pub/Sub:
-1. Add Dockerfile (root service, not just sample agent).  
-2. Add `backend/adk/serve.py` launching ADK web + health check.  
-3. Create `cloudbuild.yaml` at repo root for ADK deployment.  
-4. Create `infra/terraform/` directory (optional) for declarative: Artifact Registry, Cloud Run service, secrets.  
-5. Add README section `DEPLOYMENT.md` documenting build → deploy → test.  
-6. Draft `firebase.json` and `.firebaserc` in frontend.
+## Data & ETL
+ETL runs locally and writes directly to BigQuery using existing scripts. No cloud ETL components (Cloud Run jobs, Scheduler, Workflows) are used.
 
 I can implement initial Dockerfile + serve.py + cloudbuild.yaml for you next if you want—just say “create deployment scaffolding” and I’ll proceed.
 

@@ -128,6 +128,7 @@ python backend\adk\run_dnb_openapi_agent.py
 ## 📚 Documentation
 - **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - What we built (8 agents, 87 tools)
 - **[Future Architecture](backend/etl/docs/ARCHITECTURE_DNB_FUTURE.md)** - DNB IT deployment (Azure)
+- **ETL:** Runs locally; data already in BigQuery. No cloud ETL components.
 - **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence
 - **[Backend README](backend/README.md)** - Component overview
 - **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
