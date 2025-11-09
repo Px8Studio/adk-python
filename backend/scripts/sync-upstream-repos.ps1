@@ -76,6 +76,12 @@ $repos = @(
     Upstream = "https://github.com/google/a2a-inspector.git"
     Branch = "main"
     Name = "A2A Inspector"
+  },
+  @{
+    Path = "C:\Users\rjjaf\_Projects\a2a-samples"
+    Upstream = "https://github.com/google/a2a-samples.git"
+    Branch = "main"
+    Name = "A2A Samples"
   }
 )
 
