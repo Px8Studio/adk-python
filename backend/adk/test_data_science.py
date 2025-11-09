@@ -42,8 +42,9 @@ def test_env():
     # Check both naming conventions (ADK samples use different patterns)
     required_vars = [
         ("GOOGLE_CLOUD_PROJECT", "woven-art-475517-n4"),
-        ("BQ_PROJECT_ID", "woven-art-475517-n4"),  
-        ("BQ_DATASET_ID", "dnb_statistics")
+        ("BQ_DATA_PROJECT_ID", "woven-art-475517-n4"),
+        ("BQ_COMPUTE_PROJECT_ID", "woven-art-475517-n4"),
+        ("BQ_DATASET_ID", "dnb_statistics"),
     ]
     
     all_good = True
