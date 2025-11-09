@@ -26,8 +26,30 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from google.adk.agents.llm_agent import Agent
+from google.adk.agents import Agent
 from google.genai import types
+from _common.config import get_llm_model
+
+
+# Patch ToolboxToolset.close to await the underlying async client close
+try:
+  import inspect
+  from google.adk.tools.toolbox_toolset import ToolboxToolset  # type: ignore
+
+  async def _patched_toolbox_close(self) -> None:
+    client = getattr(self, "_toolbox_client", None)
+    if client:
+      maybe = client.close()
+      if inspect.isawaitable(maybe):
+        await maybe
+
+  # Apply patch only once
+  if not getattr(ToolboxToolset.close, "__patched__", False):  # type: ignore[attr-defined]
+    ToolboxToolset.close = _patched_toolbox_close  # type: ignore[assignment]
+    setattr(ToolboxToolset.close, "__patched__", True)  # type: ignore[attr-defined]
+except Exception:
+  # Best-effort patch; ignore if ToolboxToolset not used
+  pass
 
 
 def get_root_agent() -> Agent:
@@ -43,24 +65,36 @@ def get_root_agent() -> Agent:
   
   if agents_dir_str not in sys.path:
     sys.path.insert(0, agents_dir_str)
+
+  # Also add the data-science directory so `data_science` package is importable.
+  data_science_dir = agents_dir / "data-science"
+  data_science_dir_str = str(data_science_dir)
+  if data_science_dir.exists() and data_science_dir_str not in sys.path:
+    sys.path.insert(0, data_science_dir_str)
   
   try:
     # Import from sibling packages
     from api_coordinators.dnb_coordinator.agent import get_dnb_coordinator_agent  # type: ignore
-    from data_science.agent import root_agent as data_science_coordinator  # type: ignore
+    from data_science.agent import (  # type: ignore
+        get_root_agent as get_data_science_coordinator,
+    )
   except ImportError as e:
+    agents_dir_str = str(agents_dir.resolve()) if "agents_dir" in locals() else "<unknown>"
+    data_science_dir_str = str(data_science_dir.resolve()) if "data_science_dir" in locals() else "<unknown>"
     raise ImportError(
         f"Failed to import coordinators. "
         f"Agents directory: {agents_dir_str}, "
+        f"added data_science dir: {data_science_dir_str}, "
         f"sys.path: {sys.path[:3]}..."
     ) from e
 
   # Get coordinator agents
   dnb_coordinator = get_dnb_coordinator_agent()
+  data_science_coordinator = get_data_science_coordinator()  # fresh instance
 
-  # Model configuration from environment
-  model_name = os.environ.get("GOOGLE_GEMINI_MODEL", "gemini-2.0-flash-exp")
-  
+  # Model configuration (centralized)
+  model_name = get_llm_model()
+
   # Build the root agent with ONLY the two domain coordinators
   root = Agent(
       model=model_name,
@@ -71,21 +105,13 @@ Your role is to:
 1. Understand the user's query and intent
 2. Delegate to the appropriate coordinator agent:
    - dnb_coordinator: For DNB API queries (Echo, Statistics, Public Register)
-   - data_science_coordinator: For data analysis, BigQuery, and analytics
-3. Present results clearly to the user
-4. Handle errors gracefully
-
-When routing queries:
-- DNB API operations → dnb_coordinator
-- Data science operations → data_science_coordinator
-- Multi-domain workflows → chain coordinators sequentially
-
-Always explain what you're doing and why.
+   - data_science_coordinator: For analytics and data science workflows
 """,
-      description="System root orchestrator for Orkhon multi-agent system",
-      sub_agents=[dnb_coordinator, data_science_coordinator]  # ONLY 2 coordinators
+      sub_agents=[  # Ensure each sub-agent instance is unique per load
+        dnb_coordinator,
+        data_science_coordinator,
+      ],
   )
-
   return root
 
 
