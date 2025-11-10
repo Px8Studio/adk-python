@@ -191,22 +191,24 @@ graph TB
 | **Identity** | Azure Entra ID | Authentication & authorization |
 | **Compute** | Azure Container Apps | Serverless container hosting |
 | **Databases** | Azure SQL + PostgreSQL | Internal data sources |
+| **Data Warehouse** | Azure Synapse Analytics (Dedicated SQL Pools) | XBRL Verrijkt (enriched) and other enterprise warehouses |
 | **Observability** | Application Insights | Distributed tracing |
 | **Data Platform** | Microsoft Fabric | Lakehouse + Warehouse |
 | **Reporting** | Power BI | Executive dashboards |
 | **Registry** | Azure Container Registry | Private container images |
-| **Protocol** | A2A (Agent-to-Agent) | Cross-org communication |
+| **Protocol** | Agent-to-Agent (A2A) | Cross-org communication |
 
 ## Microsoft AI Foundry Deep Dive
 
 ### Overview
-Azure AI Foundry is the enterprise platform for model access, orchestration (Prompt Flow), evaluation, and governed deployment.
+Azure AI Foundry is the enterprise platform for model access, orchestration
+(Prompt Flow), evaluation, and governed deployment.
 
 ### Drivers for Selection
 - Compliance: EU residency, audit logging, integrated identity.
-- M365 Integration: Teams, Copilot Studio, SharePoint, Outlook.
+- Microsoft 365 (M365) Integration: Teams, Copilot Studio, SharePoint, Outlook.
 - Low-Code Acceleration: Prompt Flow templates and connectors.
-- Operational Foundations: Auto-scaling, HA, cost telemetry.
+- Operational Foundations: Auto-scaling, high availability (HA), cost telemetry.
 
 ### Components
 
@@ -836,18 +838,18 @@ graph LR
         Intent["LLM Node<br/>Intent Classification"]
         Router["Router Node<br/>Condition Logic"]
         
-        subgraph Routes["Routing Paths"]
-            Internal["Call Internal<br/>Coordinator"]
-            External["Call External<br/>Coordinator"]
-            Data["Call Data<br/>Coordinator"]
+        subgraph Tools["Tool Nodes"]
+            DB_Tool["Database Query Tool<br/>Azure SQL + PostgreSQL"]
+            API_Tool["REST API Tool<br/>Internal DNB APIs"]
+            A2A_Tool["A2A Tool<br/>Remote Agent Call"]
         end
         
-        Merge["Merge Node<br/>Combine Results"]
-        Output["Output Node<br/>Format Response"]
+        Output["Output Node<br/>Formatted Response"]
     end
-    
-    Input --> Intent
-    Intent --> Router
+
+    Canvas --> Input
+    Input --> LLM
+    LLM --> Router
     Router --> Tools
     Tools --> Output
 
@@ -855,7 +857,7 @@ graph LR
     classDef flow fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     
     class Canvas,Nodes foundry
-    class Input,LLM,Router,Merge,Output flow
+    class Input,LLM,Router,DB_Tool,API_Tool,A2A_Tool,Output flow
 ```
 
 **Prompt Flow Configuration:**
@@ -1102,646 +1104,71 @@ graph LR
 
 ## Internal Service Integration
 
-### Database-First Access Pattern
-
-```mermaid
-sequenceDiagram
-    participant User as DNB User<br/>(Teams/Copilot)
-    participant Agent as Root Agent<br/>(Azure Container Apps)
-    participant IAM as Azure Entra ID
-    participant DB as Azure SQL/PostgreSQL
-    participant API as Internal REST API
-
-    User->>Agent: "Get report status for FI X"
-    Agent->>IAM: Request database access token
-    IAM-->>Agent: Issue token with roles
-    
-    alt Primary: Direct Database Access
-        Agent->>DB: SQL Query (with IAM token)
-        DB-->>Agent: Query results
-    else Fallback: REST API
-        Agent->>API: HTTPS request
-        API->>DB: Internal query
-        DB-->>API: Results
-        API-->>Agent: JSON response
-    end
-    
-    Agent-->>User: Formatted response
-```
-
 **Key Requirements:**
-- 📋 Azure Entra ID (formerly Azure AD) for authentication
-- 📋 Managed Identities for service-to-service auth
-- 📋 Role-Based Access Control (RBAC) for database permissions
-- 📋 Token refresh and caching
-- 📋 Connection pooling for performance
+- Azure Entra ID (formerly Azure Active Directory) for authentication
+- Managed Identities for service-to-service auth
+- Role-Based Access Control (RBAC) for database permissions
+- Token refresh and caching
+- Connection pooling for performance
+...existing code...
 
 ## A2A Protocol Implementation
-
-### Agent Card System
-
-```mermaid
-graph TB
-    subgraph Agent_A["DNB DataLoop Agent"]
-        Card_A["Agent Card<br/>/.well-known/agent.json"]
-        Capabilities_A["Capabilities:<br/>• get_report_status<br/>• search_fi_reports<br/>• export_to_csv"]
-    end
-
-    subgraph Agent_B["DNB ATM Agent"]
-        Card_B["Agent Card<br/>/.well-known/agent.json"]
-        Capabilities_B["Capabilities:<br/>• get_model_info<br/>• run_prediction<br/>• list_models"]
-    end
-
-    subgraph Registry["DNB Agent Registry"]
-        Discovery["Agent Discovery Service<br/>Central Registry"]
-        Index["Agent Index<br/>Name → Endpoint Mapping"]
-    end
-
-    subgraph Protocol["A2A Protocol"]
-        JSON_RPC["JSON-RPC 2.0<br/>Task Management"]
-        Streaming["Server-Sent Events<br/>Real-time Updates"]
-    end
-
-    Card_A --> Discovery
-    Card_B --> Discovery
-    Discovery --> Index
-    
-    Agent_A --> JSON_RPC
-    Agent_B --> JSON_RPC
-    JSON_RPC --> Streaming
-
-    classDef agent fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef registry fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef protocol fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    
-    class Card_A,Capabilities_A,Card_B,Capabilities_B agent
-    class Discovery,Index registry
-    class JSON_RPC,Streaming protocol
-```
-
-**Agent Card Example:**
-```json
-{
-  "agentName": "DNB DataLoop Agent",
-  "agentDescription": "Query financial institution report statuses",
-  "capabilities": {
-    "tools": [
-      {
-        "name": "get_report_status",
-        "description": "Get current status of regulatory reports",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "fi_id": {"type": "string"},
-            "report_type": {"type": "string"}
-          }
-        }
-      }
-    ]
-  },
-  "authorization": {
-    "type": "bearer",
-    "issuer": "https://login.microsoftonline.com/dnb-tenant-id"
-  }
-}
-```
+- JSON-RPC 2.0 (JavaScript Object Notation Remote Procedure Call) for task
+  management; Server-Sent Events (SSE) for real-time updates.
+...existing code...
 
 ## Data Science Platform
+...existing code...
 
 ### Microsoft Fabric Integration
+...existing code...
 
-```mermaid
-graph TB
-    subgraph Sources["Data Sources"]
-        Internal_DB["Internal Databases<br/>DataLoop + ATM + MEGA"]
-        External_API["External APIs<br/>DNB Statistics"]
-    end
-
-    subgraph Fabric["Microsoft Fabric"]
-        direction TB
-        
-        subgraph Lakehouse["Fabric Lakehouse"]
-            Bronze["Bronze Layer<br/>Raw Data"]
-            Silver["Silver Layer<br/>Cleaned Data"]
-            Gold["Gold Layer<br/>Business Aggregates"]
-        end
-        
-        subgraph Warehouse["Fabric Warehouse"]
-            DW_Schema["SQL Schema<br/>Star/Snowflake"]
-            Views["Semantic Views<br/>Business Logic"]
-        end
-        
-        subgraph ML["Fabric ML"]
-            Notebooks["Spark Notebooks<br/>Python/R"]
-            Models["ML Models<br/>Training + Deployment"]
-        end
-    end
-
-    subgraph Reporting["Reporting Layer"]
-        PowerBI["Power BI<br/>Interactive Dashboards"]
-        Exports["Data Exports<br/>Excel/CSV"]
-    end
-
-    Internal_DB --> Bronze
-    External_API --> Bronze
-    Bronze --> Silver
-    Silver --> Gold
-    Gold --> DW_Schema
-    DW_Schema --> Views
-    Views --> PowerBI
-    
-    Notebooks --> Models
-    Models --> PowerBI
-
-    classDef source fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    classDef fabric fill:#e1f5fe,stroke:#01579b,stroke-width:3px
-    classDef report fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    
-    class Internal_DB,External_API source
-    class Bronze,Silver,Gold,DW_Schema,Views,Notebooks,Models fabric
-    class PowerBI,Exports report
-```
+### Synapse Data Warehouses (Azure Synapse Analytics)
+- XBRL Verrijkt (enriched) warehouse hosted on Azure Synapse Analytics
+  Dedicated SQL pools; primary store for enriched XBRL filings.
+- Access patterns:
+  - Data Engineering Agent: Conversational T‑SQL and Spark for joins,
+    compaction, and lineage-aware transformations.
+  - Data Analytics Agent: Aggregations and slice‑and‑dice over curated schemas
+    with citation and audit notes.
+- Connectivity: Private endpoints, Managed Identity, Azure Entra ID RBAC.
+- Coexistence with Microsoft Fabric: Fabric remains the enterprise data
+  platform; Synapse serves existing warehouses and high-throughput SQL workloads.
+...existing code...
 
 ## Deployment Architecture
-
-### Azure Container Apps Deployment
-
-```mermaid
-graph TB
-    subgraph ACA_Environment["Azure Container Apps Environment"]
-        direction TB
-        
-        subgraph Apps["Container Apps"]
-            Root_App["Root Agent App<br/>Min: 1, Max: 10<br/>CPU: 0.5, RAM: 1Gi"]
-            DataLoop_App["DataLoop Agent App<br/>Min: 0, Max: 5"]
-            ATM_App["ATM Agent App<br/>Min: 0, Max: 5"]
-            MEGA_App["MEGA Agent App<br/>Min: 0, Max: 5"]
-        end
-        
-        subgraph Network["Networking"]
-            VNET["Virtual Network<br/>Private Subnet"]
-            Ingress["Managed Ingress<br/>HTTPS + IAM"]
-        end
-        
-        subgraph Storage["Storage"]
-            Volumes["Persistent Volumes<br/>Azure Files"]
-        end
-    end
-
-    subgraph Supporting_Services["Supporting Services"]
-        ACR_Registry["Azure Container Registry<br/>dnb-agents"]
-        KeyVault["Azure Key Vault<br/>Secrets + Certificates"]
-        Monitoring["Application Insights<br/>Logs + Traces"]
-    end
-
-    subgraph CI_CD["CI/CD Pipeline"]
-        GitHub_Actions["GitHub Actions<br/>Build + Deploy"]
-        AzDevOps["Azure DevOps<br/>Release Pipeline"]
-    end
-
-    Apps --> VNET
-    VNET --> Ingress
-    Apps --> Volumes
-    
-    Apps --> ACR_Registry
-    Apps --> KeyVault
-    Apps --> Monitoring
-    
-    GitHub_Actions --> AzDevOps
-    AzDevOps --> Apps
-
-    classDef aca fill:#fff3e0,stroke:#f57c00,stroke-width:3px
-    classDef support fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef cicd fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
-    
-    class Root_App,DataLoop_App,ATM_App,MEGA_App,VNET,Ingress,Volumes aca
-    class ACR_Registry,KeyVault,Monitoring support
-    class GitHub_Actions,AzDevOps cicd
-```
-
-**Deployment Configuration:**
-```yaml
-# container-app.yaml (Azure Container Apps)
-name: dnb-root-agent
-environment: dnb-agents-env
-containerImage: dnb-agents.azurecr.io/root-agent:latest
-cpu: 0.5
-memory: 1Gi
-minReplicas: 1
-maxReplicas: 10
-ingress:
-  external: true
-  targetPort: 8000
-  allowInsecure: false
-  clientCertificateMode: require
-env:
-  - name: COPILOT_MODEL
-    value: "gpt-4-32k"
-  - name: DATABASE_CONNECTION_STRING
-    secretRef: dataloop-db-connection
-identity:
-  type: SystemAssigned
-```
+...existing code...
 
 ## Technical Decision Matrix
-
-### Why These Technologies? Detailed Rationale
-
-This section explains **why each Microsoft technology was chosen** and what alternatives were considered.
-
-#### 1. **Model: GitHub Copilot vs Azure OpenAI**
-
-| Criterion | GitHub Copilot | Azure OpenAI | Winner |
-|-----------|----------------|--------------|--------|
-| **DNB IT Standard** | ✅ Official DNB model | ❌ Not standard | **Copilot** |
-| **Cost** | Included in M365 license | Pay-per-token | **Copilot** |
-| **Performance** | GPT-4 based (32k context) | GPT-4 Turbo (128k context) | **OpenAI** |
-| **Integration** | Native M365 integration | Requires custom connector | **Copilot** |
-| **Context Window** | 32k tokens | 128k tokens | **OpenAI** |
-| **Fine-tuning** | ❌ Not supported | ✅ Supported | **OpenAI** |
-| **Data Privacy** | ✅ No training on DNB data | ✅ No training on DNB data | Tie |
-
-**Decision**: **GitHub Copilot** (primary) + **Azure OpenAI** (fallback for large contexts)
-
-**Rationale**:
-- Copilot is the DNB standard, so we must use it for most scenarios
-- For queries requiring >32k context (rare), fall back to Azure OpenAI GPT-4 Turbo
-- Cost savings: Copilot is included in existing M365 licenses
-- Teams integration: Copilot works natively in Microsoft Teams
-
-#### 2. **Orchestration: Prompt Flow vs Semantic Kernel vs LangChain**
-
-| Criterion | Prompt Flow | Semantic Kernel | LangChain | Winner |
-|-----------|-------------|-----------------|-----------|--------|
-| **Low-Code Development** | ✅ Visual canvas | ❌ Code-only | ❌ Code-only | **Prompt Flow** |
-| **Azure Integration** | ✅ Native | ✅ Native | ❌ Third-party | **Tie** |
-| **Debugging Tools** | ✅ Step-through | ⚠️ Basic | ⚠️ Basic | **Prompt Flow** |
-| **Version Control** | ✅ Built-in | ❌ Manual | ❌ Manual | **Prompt Flow** |
-| **Enterprise Support** | ✅ Microsoft SLA | ✅ Microsoft SLA | ❌ Community | **Tie** |
-| **Complex Logic** | ⚠️ Limited | ✅ Full control | ✅ Full control | **Semantic Kernel** |
-| **Learning Curve** | Low (visual) | Medium (C#/.NET) | High (Python) | **Prompt Flow** |
-
-**Decision**: **Prompt Flow** (80% of agents) + **Semantic Kernel** (20% for complex logic)
-
-**Rationale**:
-- Prompt Flow enables business analysts to build simple agents (democratization)
-- Visual debugging accelerates development and troubleshooting
-- Semantic Kernel provides escape hatch for complex business logic
-- LangChain excluded due to lack of enterprise support
-
-#### 3. **Compute: Container Apps vs Kubernetes vs Azure Functions**
-
-| Criterion | Container Apps | AKS (Kubernetes) | Azure Functions | Winner |
-|-----------|----------------|------------------|-----------------|--------|
-| **Ease of Setup** | ✅ Simple | ❌ Complex | ✅ Simple | **Tie** |
-| **Auto-Scaling** | ✅ Built-in (0→n) | ✅ Built-in (manual config) | ✅ Built-in (0→n) | **Tie** |
-| **Multi-Agent Support** | ✅ Excellent | ✅ Excellent | ⚠️ Limited | **Tie** |
-| **State Management** | ✅ Volumes + Cosmos | ✅ Volumes + StatefulSets | ❌ Stateless only | **Container Apps** |
-| **Cost (Idle)** | $0 (scale to zero) | $150/month (min) | $0 (scale to zero) | **Tie** |
-| **Ingress Control** | ✅ Managed | ⚠️ Manual (nginx) | ✅ Managed | **Tie** |
-| **Observability** | ✅ AppInsights | ⚠️ Manual (Prometheus) | ✅ AppInsights | **Tie** |
-| **DNB Operations Team** | ✅ Easy to manage | ❌ Requires K8s expertise | ✅ Easy to manage | **Container Apps** |
-
-**Decision**: **Azure Container Apps**
-
-**Rationale**:
-- Simpler than Kubernetes (no need for K8s expertise)
-- More flexible than Azure Functions (stateful agents)
-- Scale-to-zero saves costs during off-hours
-- Managed ingress and TLS certificates
-- DNB operations team can manage without specialized K8s training
-
-#### 4. **Database: Azure SQL vs PostgreSQL vs Cosmos DB**
-
-| Database | Use Case | Rationale |
-|----------|----------|-----------|
-| **Azure SQL Server** | DataLoop, MEGA (existing systems) | Legacy databases already on Azure SQL; IAM auth supported |
-| **Azure PostgreSQL** | ATM (existing system) | ATM team prefers PostgreSQL; Azure AD integration available |
-| **Cosmos DB** | Agent session state, memory | Global distribution, low latency, auto-scaling for conversations |
-| **Azure AI Search** | Vector embeddings, RAG | Specialized for semantic search and document retrieval |
-
-**Decision**: **Hybrid approach** - Use existing databases where they exist, Cosmos DB for new agent state
-
-**Rationale**:
-- Don't migrate existing databases (high risk, no business value)
-- Cosmos DB is optimized for agent conversation state (JSON documents, low latency)
-- Azure AI Search provides vector database for future RAG use cases
+...existing code...
 
 #### 5. **Data Platform: Microsoft Fabric vs Databricks vs Synapse**
+...existing code...
 
-| Criterion | Microsoft Fabric | Databricks | Azure Synapse | Winner |
-|-----------|------------------|------------|---------------|--------|
-| **Unified Platform** | ✅ All-in-one | ❌ Separate tools | ⚠️ Partial | **Fabric** |
-| **Power BI Integration** | ✅ Native | ⚠️ Connector | ✅ Native | **Tie** |
-| **Cost Model** | Consumption-based | VM-based (expensive) | Consumption-based | **Tie** |
-| **Learning Curve** | Low (familiar UI) | High (Spark/Scala) | Medium (SQL) | **Fabric** |
-| **OneLake** | ✅ Built-in | ❌ External storage | ⚠️ Limited | **Fabric** |
-| **DNB IT Standard** | ✅ Emerging standard | ❌ Not approved | ⚠️ Being phased out | **Fabric** |
-
-**Decision**: **Microsoft Fabric**
+**Decision**: Microsoft Fabric (primary) + Azure Synapse Analytics (for existing
+enterprise warehouses such as XBRL Verrijkt)
 
 **Rationale**:
-- DNB is standardizing on Fabric for enterprise data platform
-- Unified experience: Data engineering + warehousing + BI + ML in one platform
-- OneLake provides single source of truth for all data (Bronze/Silver/Gold)
-- Power BI integration is seamless (no ETL needed)
-- Lower learning curve than Databricks (familiar SQL and Power BI skills)
-
-#### 6. **Observability: Application Insights vs Prometheus vs Jaeger**
-
-| Criterion | Application Insights | Prometheus + Grafana | Jaeger | Winner |
-|-----------|---------------------|---------------------|--------|--------|
-| **Azure Integration** | ✅ Native | ❌ Manual setup | ❌ Manual setup | **App Insights** |
-| **Distributed Tracing** | ✅ Built-in | ⚠️ Limited | ✅ Built-in | **Tie** |
-| **Log Correlation** | ✅ Automatic | ⚠️ Manual | ❌ Not supported | **App Insights** |
-| **Alerting** | ✅ Azure Monitor | ⚠️ Prometheus Alertmanager | ❌ No alerting | **App Insights** |
-| **Cost** | Usage-based | Self-hosted (infra cost) | Self-hosted (infra cost) | **App Insights** |
-| **DNB Standard** | ✅ Yes | ❌ Not approved | ❌ Not approved | **App Insights** |
-
-**Decision**: **Application Insights** + **Log Analytics**
-
-**Rationale**:
-- Native integration with all Azure services (no configuration needed)
-- Automatic correlation of logs, metrics, and traces
-- Azure Monitor provides real-time alerting and dashboards
-- DNB operations team already uses Application Insights
-- No need to manage Prometheus/Grafana infrastructure
-
-#### 7. **Agent Protocol: A2A vs OpenAPI vs gRPC**
-
-| Criterion | A2A (Google) | OpenAPI 3.0 | gRPC | Winner |
-|-----------|--------------|-------------|------|--------|
-| **Agent Discovery** | ✅ Built-in (.well-known/agent.json) | ❌ Manual registry | ❌ Manual registry | **A2A** |
-| **Streaming** | ✅ SSE (Server-Sent Events) | ⚠️ Limited | ✅ Bidirectional | **Tie** |
-| **Human-Readable** | ✅ JSON | ✅ JSON | ❌ Binary (Protobuf) | **Tie** |
-| **Cross-Organization** | ✅ Designed for it | ⚠️ Needs auth layer | ⚠️ Needs auth layer | **A2A** |
-| **Industry Adoption** | 🆕 Emerging (Google-backed) | ✅ Ubiquitous | ✅ Common in microservices | **OpenAPI** |
-| **Azure Support** | ⚠️ Community libraries | ✅ Native connectors | ✅ Native connectors | **Tie** |
-
-**Decision**: **A2A Protocol** (primary) with **OpenAPI fallback**
-
-**Rationale**:
-- A2A is specifically designed for agent-to-agent communication (not just APIs)
-- Agent discovery via `.well-known/agent.json` is elegant and decentralized
-- JSON-RPC 2.0 provides structured task management (not just request/response)
-- SSE streaming enables real-time updates (better UX than polling)
-- OpenAPI used as fallback for legacy systems that don't support A2A
-
-### Decision Summary Table
-
-| Component | Technology Chosen | Primary Reason | Alternative Considered |
-|-----------|-------------------|----------------|------------------------|
-| **Model** | GitHub Copilot | DNB standard, M365 included | Azure OpenAI (fallback) |
-| **Orchestration** | Prompt Flow | Low-code, visual debugging | Semantic Kernel (complex logic) |
-| **Compute** | Container Apps | Scale-to-zero, easy management, no K8s complexity | AKS (too complex), Functions (limited) |
-| **Databases** | Azure SQL + PostgreSQL + Cosmos | Existing systems + new state | No migration (too risky) |
-| **Data Platform** | Microsoft Fabric | DNB standard, unified platform | Databricks (too expensive), Synapse (phased out) |
-| **Observability** | Application Insights | Azure native, DNB standard | Prometheus (manual setup) |
-| **Agent Protocol** | A2A (Agent-to-Agent) JSON-RPC | Cross-org discovery and communication | OpenAPI (fallback) |
-| **Authentication** | Azure Entra ID + Managed Identity | DNB standard, no secrets | API keys (insecure) |
-| **Reporting** | Power BI | DNB standard, native Fabric integration | Tableau (not DNB standard) |
-
-### Non-Functional Requirements Mapping
-
-| Requirement | Solution | Technology |
-|-------------|----------|------------|
-| **99.95% Uptime** | Multi-region failover | Container Apps + Traffic Manager |
-| **<500ms Response Time** | Caching + CDN | Azure Front Door + Redis Cache |
-| **GDPR Compliance** | Data residency, PII masking | EU-West region + Content Safety |
-| **Audit Trails** | Immutable logs | Log Analytics + Azure Monitor |
-| **Zero Trust Security** | No secrets in code | Managed Identity + Key Vault |
-| **Auto-Scaling** | Scale 0→100 based on demand | Container Apps auto-scale rules |
-| **Cost Optimization** | Scale to zero off-hours | Container Apps consumption plan |
-| **Developer Productivity** | Low-code + version control | Prompt Flow + Git integration |
+- Fabric is the enterprise standard for analytics and BI (business intelligence).
+- Synapse supports existing dedicated SQL pools and high-throughput SQL needs.
+- Agents converse with Synapse using governed T‑SQL/Spark while Fabric powers BI.
+...existing code...
 
 ## Comparison: Current vs Future
-
-| Aspect | Current (Local Dev) | Future (DNB IT) |
-|--------|---------------------|-----------------|
-| **Model** | Gemini 2.5-flash | GitHub Copilot / Azure OpenAI |
-| **Framework** | Google ADK (Python) | Azure AI Foundry Prompt Flow |
-| **IDE** | VS Code (generic) | VS Code + Copilot extension |
-| **Authentication** | API Keys in .env | Azure Entra ID + Managed Identities |
-| **Databases** | None (public APIs only) | Azure SQL + PostgreSQL (IAM) |
-| **Deployment** | Docker Compose (local) | Azure Container Apps |
-| **Observability** | Jaeger (local) | Application Insights + Log Analytics |
-| **Data Platform** | Local Parquet files | Microsoft Fabric Lakehouse |
-| **Reporting** | None | Power BI dashboards |
-| **Agent Protocol** | None | A2A (Agent-to-Agent) JSON-RPC |
-| **CI/CD** | Manual scripts | Azure DevOps pipelines |
+...existing code...
 
 ## Migration Path
+...existing code...
 
 ### From Current to Future
-
-```mermaid
-flowchart LR
-    subgraph Phase1["Phase 1: Preparation"]
-        P1_1["Convert agents to<br/>Prompt Flow format"]
-        P1_2["Set up Azure<br/>subscriptions"]
-        P1_3["Configure Entra ID<br/>roles & permissions"]
-    end
-
-    subgraph Phase2["Phase 2: Infrastructure"]
-        P2_1["Deploy Container Apps<br/>environment"]
-        P2_2["Set up Managed<br/>Identities"]
-        P2_3["Configure VNET<br/>& private endpoints"]
-    end
-
-    subgraph Phase3["Phase 3: Data Integration"]
-        P3_1["Connect to internal<br/>databases (IAM)"]
-        P3_2["Implement A2A<br/>agent cards"]
-        P3_3["Set up Fabric<br/>Lakehouse"]
-    end
-
-    subgraph Phase4["Phase 4: Deployment"]
-        P4_1["Deploy agents to<br/>Container Apps"]
-        P4_2["Configure monitoring<br/>& alerting"]
-        P4_3["Train users on<br/>Copilot interface"]
-    end
-
-    Phase1 --> Phase2
-    Phase2 --> Phase3
-    Phase3 --> Phase4
-
-    classDef phase fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    class P1_1,P1_2,P1_3,P2_1,P2_2,P2_3,P3_1,P3_2,P3_3,P4_1,P4_2,P4_3 phase
-```
+...existing code...
+- Phase 3: Connect Azure Synapse Analytics (XBRL Verrijkt dedicated SQL pool)
+  and configure Managed Identity + private endpoints.
+...existing code...
 
 ## Summary
-
-### Future DNB IT Implementation: Executive Overview
-
-This document provides a comprehensive blueprint for migrating the Orkhon multi-agent system from the current **Google ADK prototype** to the production-ready **Microsoft Azure AI Foundry** platform required by DNB IT.
-
-#### **Multi-Agent Architecture**
-
-The DNB system implements a **hierarchical three-layer architecture**:
-
-1. **Layer 1 - System Root**: Single root agent that serves as entry point and orchestrates all domains
-2. **Layer 2 - Domain Coordinators**: Three specialized coordinators (Internal Services, External APIs, Data Science)
-3. **Layer 3 - Specialist Agents**: Nine specialist agents that execute specific tasks (database queries, API calls, analytics)
-
-**Communication Patterns:**
-- **Sequential Delegation** (most common): Root → Coordinator → Specialist → Tool execution
-- **Parallel Fan-Out** (multi-source): Root spawns multiple coordinators simultaneously
-- **A2A Cross-Organization** (future): Agent-to-agent communication across DNB departments
-
-#### **Microsoft AI Foundry Stack**
-
-| Component | Technology | Why Chosen |
-|-----------|-----------|------------|
-| **Model** | GitHub Copilot (GPT-4) | DNB standard, included in M365 license |
-| **Orchestration** | Prompt Flow (80%) + Semantic Kernel (20%) | Low-code visual development + code for complex logic |
-| **Compute** | Azure Container Apps | Scale-to-zero, easy management, no K8s complexity |
-| **Databases** | Azure SQL + PostgreSQL + Cosmos DB | Existing systems + new agent state management |
-| **Authentication** | Azure Entra ID + Managed Identity | Zero secrets, DNB IAM standard |
-| **Data Platform** | Microsoft Fabric (Lakehouse + Warehouse) | DNB standard, unified analytics platform |
-| **Observability** | Application Insights + Log Analytics | Native Azure integration, DNB standard |
-| **Agent Protocol** | A2A (Agent-to-Agent) JSON-RPC | Cross-org discovery and communication |
-| **Reporting** | Power BI | DNB standard, native Fabric integration |
-
-#### **Migration Effort**
-
-**Estimated Timeline**: **2.5 months** (51 developer-days, 1 FTE)
-
-**Migration Strategy**:
-- **Phase 1 (2 weeks)**: Agent conversion to Prompt Flow format
-- **Phase 2 (2 weeks)**: Infrastructure setup (Container Apps, IAM, networking)
-- **Phase 3 (3 weeks)**: Data integration (internal databases, A2A protocol, Fabric)
-- **Phase 4 (3 weeks)**: Deployment, testing, and user training
-
-**Component Mapping**:
-- ADK `Agent` class → Prompt Flow visual canvas
-- ADK `Runner` → Prompt Flow orchestration engine (built-in)
-- ADK Python tools → Azure Functions with Managed Identity
-- ADK `InMemorySessionService` → Cosmos DB (auto-managed by Prompt Flow)
-- Gemini 2.5-flash → GitHub Copilot (GPT-4)
-
-#### **Security & Compliance**
-
-**DNB-Specific Requirements Met**:
-- ✅ **Zero Trust Architecture**: Every request authenticated via Azure Entra ID
-- ✅ **No Secrets in Code**: Managed Identity for all service-to-service auth
-- ✅ **PII Protection**: Azure AI Content Safety filters all queries
-- ✅ **Data Residency**: All data processing in EU-West Azure region
-- ✅ **Audit Trails**: Immutable logs in Log Analytics (90-day retention)
-- ✅ **GDPR Compliance**: Automatic PII masking and data deletion policies
-- ✅ **NIS2/DORA Ready**: Compliance reports generated automatically
-
-**Security Layers**:
-1. **Authentication**: Azure Entra ID with MFA + Conditional Access
-2. **Authorization**: RBAC (Agent Admin, Agent User, Read-Only roles)
-3. **Content Safety**: Jailbreak detection, hate speech filter, PII masking
-4. **Encryption**: AES-256 at rest (customer-managed keys), TLS 1.3 in transit
-5. **Network Isolation**: Private endpoints, VNET integration, no public internet access
-
-#### **Key Architectural Decisions**
-
-**Why Prompt Flow instead of pure code?**
-- Enables business analysts to build 80% of agents without coding
-- Visual debugging accelerates troubleshooting by 3-5x
-- Built-in version control and deployment pipelines
-- Semantic Kernel provides "escape hatch" for complex 20%
-
-**Why Container Apps instead of Kubernetes?**
-- DNB operations team lacks K8s expertise
-- Simpler management (no cluster maintenance)
-- Scale-to-zero saves costs ($0 during off-hours)
-- Managed ingress and TLS certificates (no nginx config)
-
-**Why Microsoft Fabric instead of Databricks?**
-- DNB is standardizing on Fabric enterprise-wide
-- Unified platform (no separate tools for ETL, warehouse, BI, ML)
-- OneLake provides single source of truth (Bronze/Silver/Gold layers)
-- Power BI integration is seamless (no ETL needed)
-
-**Why A2A protocol instead of OpenAPI?**
-- Designed specifically for agent-to-agent communication (not just APIs)
-- Agent discovery via `.well-known/agent.json` (no manual registry)
-- JSON-RPC 2.0 task management (not just request/response)
-- SSE streaming for real-time updates (better UX than polling)
-
-#### **Business Benefits**
-
-**For DNB Employees:**
-- ✅ Access agents via **Microsoft Teams** (no new tools to learn)
-- ✅ Natural language queries (no SQL or API knowledge needed)
-- ✅ Real-time answers from multiple internal databases
-- ✅ Power BI dashboards for executive reporting
-
-**For DNB IT Operations:**
-- ✅ **90% reduction in infrastructure complexity** (Container Apps vs K8s)
-- ✅ **Zero secrets management** (Managed Identity handles everything)
-- ✅ **Automatic scaling** (0→100 replicas based on demand)
-- ✅ **Built-in observability** (no Prometheus/Grafana setup)
-
-**For DNB Security Team:**
-- ✅ **Complete audit trails** (every agent action logged)
-- ✅ **Zero Trust compliance** (no network trust assumed)
-- ✅ **PII protection** (automatic masking in logs)
-- ✅ **GDPR/NIS2/DORA reports** (automated compliance)
-
-**For DNB Development Team:**
-- ✅ **5x faster agent development** (Prompt Flow vs pure code)
-- ✅ **Built-in testing tools** (evaluation suite, safety checks)
-- ✅ **Version control** (Git integration out-of-the-box)
-- ✅ **Production deployment** (one-click to Container Apps)
-
-#### **Cost Optimization**
-
-**Savings vs Traditional Infrastructure:**
-
-| Component | Traditional Approach | Azure AI Foundry | Savings |
-|-----------|---------------------|------------------|---------|
-| **Compute** | 3 VMs @ $200/month = $600 | Container Apps scale-to-zero = $50/month avg | **$550/month (92%)** |
-| **Database** | Self-managed PostgreSQL = $300/month | Managed Azure SQL = $150/month | **$150/month (50%)** |
-| **Observability** | Prometheus + Grafana self-hosted = $150/month | Application Insights included | **$150/month (100%)** |
-| **AI Model** | Azure OpenAI pay-per-token = $500/month | GitHub Copilot included in M365 | **$500/month (100%)** |
-| **Total** | **$1,550/month** | **$200/month** | **$1,350/month (87% savings)** |
-
-**Annual Savings**: **$16,200** (87% cost reduction)
-
-**Note**: Savings assume agents are idle 80% of time (nights/weekends) and scale to zero.
-
-#### **Next Steps**
-
-**Immediate Actions (Week 1-2):**
-1. Request Azure AI Foundry subscription from DNB IT
-2. Set up Azure Entra ID service principals for agents
-3. Export current ADK agents to YAML format
-4. Schedule training session on Prompt Flow for development team
-
-**Short-Term (Month 1):**
-1. Convert 3 coordinators to Prompt Flow format
-2. Set up Azure Container Apps environment
-3. Configure Managed Identities for database access
-4. Implement Content Safety filters
-
-**Medium-Term (Month 2):**
-1. Convert 9 specialist agents to Prompt Flow/Semantic Kernel
-2. Set up Cosmos DB for session state
-3. Implement A2A protocol and agent cards
-4. Configure Application Insights monitoring
-
-**Long-Term (Month 3):**
-1. Deploy all agents to production Container Apps
-2. Train DNB employees on Microsoft Teams integration
-3. Set up Power BI dashboards for executives
-4. Establish SLAs and on-call rotation
-
----
-
-**Document Metadata:**
-- Last Updated: November 3, 2025
-- Version: 2.0
-- Status: Future State (Planned)
-- Owner: DNB IT Architecture
-- Contributors: Data Science, Security, Operations
-
-**Related Documents:**
-- [Current Implementation](./ARCHITECTURE_CURRENT.md) - Local development setup with Google ADK
-- [Architecture Enhancements](./ARCHITECTURE_ENHANCEMENTS.md) - Recent improvements and MVP milestones
-- [DNB API Standardization](../../apis/dnb/DNB_API_STANDARDIZATION_REPORT.md) - OpenAPI spec analysis
-
-**Contact**: For questions about this architecture, contact the DNB AI Architecture team.
+...existing code...
+- Synapse integration: XBRL Verrijkt warehouse exposed to Data Engineering and
+  Data Analytics agents through governed T‑SQL/Spark endpoints with RBAC and
+  audit.
+...existing code...
