@@ -19,6 +19,31 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
   - Platform fit: Azure AI Foundry provides Prompt Flow, evaluation, deployment, and governance integrated with DNB’s Azure.
   - DNB context: Cross-database queries, regulatory checks, and document analysis benefit from tool-using, policy‑aware automation.
 
+### AI agent vs Agentic AI — what’s the difference?
+
+- AI agent (component-level)
+  - Scope: Single actor that calls tools/APIs to complete a bounded task.
+  - Interaction: Often single-turn or short multi-turn; minimal planning.
+  - State: Typically stateless or local, narrow context window.
+  - Governance: Unit-level logging and RBAC.
+  - Microsoft fit: One Prompt Flow or a Semantic Kernel skill; often hosted as a single Azure Container App.
+
+- Agentic AI (system-level)
+  - Scope: Goal-driven system that plans, branches, and coordinates multiple agents/tools.
+  - Interaction: Multi-step Reason-Act loops with retries, verification, and reflection.
+  - State: Shared memory/session across steps and agents; evaluation gates.
+  - Governance: System policies, safety filters, observability, approvals (human-in-the-loop).
+  - Microsoft fit: Prompt Flow for orchestration + Microsoft Agent Framework (preview) to compose multi-agent patterns (Semantic Kernel + AutoGen), monitored via Application Insights and governed in Azure AI Foundry.
+
+- In practice at DNB
+  - AI agent: “Query DataLoop for report X” (one tool call with IAM).
+  - Agentic AI: “Compare FI X status across DataLoop/MEGA/ATM, reconcile discrepancies, and draft a cited brief” (parallel fetch, synthesis, verification, and guardrails).
+
+- Governance implications
+  - Move from testing a model to validating end-to-end behavior (tools, plans, decisions).
+  - Use Foundry evaluation (groundedness, relevance) and Content Safety gates before actions.
+  - Enforce Entra ID RBAC and Managed Identities across all agent calls; centralize traces in App Insights/Log Analytics.
+
 ## Microsoft-First Architecture Enablers
 
 - Azure AI Foundry (formerly AI Studio)
