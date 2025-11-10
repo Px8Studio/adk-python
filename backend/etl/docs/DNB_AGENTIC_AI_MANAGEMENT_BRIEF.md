@@ -6,10 +6,10 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 ## Executive Summary
 
-- Agentic AI operationalizes multi-step supervisory and data tasks with auditability.
-- Azure AI Foundry, Microsoft Agent Framework (preview), GitHub Copilot, Entra ID, Managed Identities, Key Vault, and Content Safety provide required foundation.
-- Pilot use cases show 30–60% productivity improvement in supervision research, cross‑system lookups, and reporting prep.
-- Initial deployment should focus on Insurance & Pension domain with governed expansion path.
+- Agentic AI reduces cycle time and handoffs for supervisory and data tasks with full auditability.
+- Start simple: launch a Database Agent pilot that lets non‑technical users query governed data in natural language; then expand to a full multi‑agent system.
+- Works in familiar channels (Teams/Copilot) with enterprise identity, safety, and governance.
+- Expected outcomes: faster answers, higher-quality, cited outputs, and better analyst leverage.
 
 ## What Is Agentic AI and Why It Matters
 
@@ -38,103 +38,73 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 ## Microsoft-First Architecture Enablers
 
-- Azure AI Foundry: Prompt Flow orchestration, evaluation, versioning, governed
-  deployment.
-- Microsoft Agent Framework (preview): Planning, memory, multi-agent composition.
-- Models: GitHub Copilot primary; Azure OpenAI fallback for large-context tasks.
-- Security: Azure Entra ID, Managed Identities, Content Safety, private
-  networking, customer-managed keys (CMK) encryption.
-- Data Integration: Microsoft Fabric Lakehouse/Warehouse and Power BI for
-  analytics-driven automation.
-- Azure Synapse Analytics (Synapse): Dedicated SQL pools hosting enterprise
-  data warehouses, including the XBRL Verrijkt (enriched) warehouse, accessible
-  via agents using T‑SQL and Spark for conversational data tasks.
+- Secure-by-default identity and access (single sign-on, role-based access).
+- Safety and governance controls (content safety, logging, approvals).
+- Integration with productivity tools (Teams/Copilot) for fast adoption.
+- Reuse existing, governed data sources and dashboards (no new platforms required at pilot).
 
 ## Agent Catalog (Initial Focus: Insurance & Pension)
 
 - Root Orchestrator: Entry, routing, policy enforcement.
 - Coordinators: Internal Services; External Regulatory; Data & Analytics.
-- Specialists: DataLoop, MEGA, ATM; Taxonomy (European Insurance and
-  Occupational Pensions Authority (EIOPA) retrieval‑augmented generation (RAG));
-  Statistics; Public Registers; Analytics-to-Brief; Document Ingestion; API
-  Concierge; Entity Resolution; Case Triage; Compliance Guard.
-- Synapse XBRL Warehouse Specialist: Conversational access to the XBRL Verrijkt
-  warehouse in Azure Synapse Analytics via T‑SQL and Spark; used by the
-  Data Engineering Agent and the Data Analytics Agent.
-- Validation Specialist (New): Explains EIOPA/internal validation logic, translates
-  natural language into Validation DSL, simulates rules against MEGA historical
-  results to estimate precision/recall, and proposes coverage gaps (data points
-  missing validations) with optional PRs to the rules repository.
+- Database Agent (New): Conversational access to governed datasets for non‑technical users; turns natural language into safe, approved queries and returns cited answers.
+- Specialists: DataLoop, MEGA, ATM; Taxonomy (EIOPA RAG); Statistics; Public Registers; Analytics‑to‑Brief; Document Ingestion; API Concierge; Entity Resolution; Case Triage; Compliance Guard.
+- Validation Specialist: Explains validation logic; assists natural‑language authoring and review of new rules with change control (positioned for later phase).
 - Guardrails: Identity, safety filters, evaluation gates, centralized tracing.
 
 ## Representative Use Cases
 
-1) Supervision Report Status Assistant – Consolidate status + validation notes
-   with sources.  
+1) Supervision Report Status Assistant – Consolidate status + validation notes with sources.  
 2) Taxonomy Agent – Detect taxonomy deltas, propose mapping changes.  
 3) Policy & Market Intelligence – Macro trends + cited data.  
 4) Internal API Concierge – Locate authoritative endpoints and auth method.  
-5) Analytics-to-Brief – Summarize material dashboard shifts.  
+5) Analytics‑to‑Brief – Summarize material dashboard shifts.  
 6) Entity Resolution – Canonical ID with confidence + lineage.  
 7) Case Triage – Classify, enrich, and route with audit metadata.  
-8) Synapse XBRL Warehouse Q&A – Converse with the XBRL Verrijkt warehouse
-   (Azure Synapse Analytics) to retrieve, join, and summarize filings using
-   governed T‑SQL/Spark tools with citations.
-9) Validation Authoring & Coverage – NL→Validation DSL, lint and simulate on
-   MEGA history, summarize precision/recall, propose PR, and list missing
-   validations for under-guarded data points.
+8) Database Q&A (New) – Ask questions in natural language and get cited answers from governed datasets without writing SQL.  
+9) Validation Authoring & Coverage (Later) – NL→Validation authoring, proposal and review with change control.
 
-All responses are source-grounded; human-in-the-loop (HITL) for sensitive outputs.
+All responses are source‑grounded; human‑in‑the‑loop (HITL) for sensitive outputs.
+
+## Phased Rollout (90 Days)
+
+- Weeks 1–2: Align scope, success metrics, and priority datasets; enable access and governance.
+- Weeks 3–6: Pilot Database Agent in Teams; measure time‑to‑answer and quality; collect feedback.
+- Weeks 7–10: Add routing to internal services and simple specialists; expand coverage to top use cases.
+- Weeks 11–12: Preview Validation Specialist (advisory only); define change control path.
 
 ## Business Value and Key Performance Indicators (KPIs)
 
-- Productivity: 30–60% cycle time reduction.
-- Quality: Cited, policy-aligned outputs.
-- Responsiveness: Faster supervisory insight generation.
-- Analyst Leverage: Shift from data collection to judgment.
+- Productivity: 30–60% cycle time reduction on targeted tasks.
+- Quality: Cited, policy‑aligned outputs.
+- Adoption: Weekly active users and repeat usage in Teams/Copilot.
+- Satisfaction: CSAT ≥4.2/5.
 
 KPIs:
-- Task cycle time delta (baseline vs pilot).
-- Groundedness/citation score ≥0.8 (Foundry eval).
+- Time‑to‑answer vs baseline (by use case).
+- Citation/grounding rate ≥0.8 (sampled reviews).
 - Manual correction rate <10% after week 8.
-- Customer Satisfaction (CSAT) ≥4.2/5
-- Validation precision ≥0.9 and recall ≥0.8 (on backtests before merge).
-- Coverage gap delta: ≥20% reduction of unvalidated critical datapoints in 90 days.
+- Analyst hours shifted from collection to judgment.
 
 ## Risks & Mitigations
 
-- Incorrect actions: Tool-first prompting, verification steps, evaluation
-  gating, human-in-the-loop (HITL) for sensitive flows.
-- Data leakage / personally identifiable information (PII): Content Safety,
-  redaction, private networking, no model training on DNB data.
-- Access control gaps: Azure Entra ID role-based access control (RBAC),
-  Managed Identities, least privilege database roles.
-- Framework/model drift: Versioned flows, canary deploy, telemetry anomaly alerts.
-- Rule regressions/unsafe changes: PR-only writes with mandatory reviewers,
-  policy linting, shadow-mode canary simulations, rollback templates.
+- Incorrect actions: Tool‑first prompting, verification steps, HITL for sensitive flows.
+- Data leakage / PII: Safety gating, redaction, private networking, no training on DNB data.
+- Access control gaps: Role‑based access, least privilege, approvals.
+- Drift: Versioned flows, canary rollout, telemetry and feedback loops.
 
 ## Readiness Checklist (Pre-Build)
 
-- Outcome & decision rights (advisory vs action; human-in-the-loop (HITL)
-  points).
-- Authoritative data sources / joins / freshness.
-- Identity scopes and residency constraints.
-- Safety classification, PII handling, retention.
-- Grounding sources and acceptable error thresholds.
-- Audit scope, retention period, review cadence.
-- Volume, service-level objectives (SLOs), concurrency, cost envelope.
-- Deployment channel (Microsoft Teams, web), environment (Azure Container Apps
-  (ACA)), change management.
-- Reusable tool/connectors and standard patterns.
-- Validation DSL ownership, schema, and policy guardrails.
-- Rules repo governance: branch protection, reviewers, and canary workflow.
-- Historical data windows and acceptance thresholds for simulation metrics.
+- Clear outcomes and decision rights (advisory vs action; HITL points).
+- Authoritative data sources, freshness, and citation expectations.
+- Identity scopes, residency, and retention.
+- Safety classification, PII handling, audit scope and review cadence.
+- Channels and change management (Teams/Copilot, ACA), cost envelope.
+- Reusable patterns and governance (approvals, logging, rollout gates).
 
 ## References
 
-- Azure AI Foundry (Prompt Flow, evaluation, deployment).
-- Microsoft Agent Framework (preview).
-- Azure Synapse Analytics (Dedicated SQL Pools) – XBRL Verrijkt warehouse.
-- Compliance: GDPR, NIS2, DORA via identity, safety, encryption, private
-  networking.
+- Azure AI Foundry (orchestration, evaluation, deployment).
+- Microsoft Copilot (end‑user channel).
+- Governance: GDPR, NIS2, DORA via identity, safety, encryption, and audit.
 
