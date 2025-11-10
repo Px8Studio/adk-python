@@ -61,6 +61,10 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 - Synapse XBRL Warehouse Specialist: Conversational access to the XBRL Verrijkt
   warehouse in Azure Synapse Analytics via T‑SQL and Spark; used by the
   Data Engineering Agent and the Data Analytics Agent.
+- Validation Specialist (New): Explains EIOPA/internal validation logic, translates
+  natural language into Validation DSL, simulates rules against MEGA historical
+  results to estimate precision/recall, and proposes coverage gaps (data points
+  missing validations) with optional PRs to the rules repository.
 - Guardrails: Identity, safety filters, evaluation gates, centralized tracing.
 
 ## Representative Use Cases
@@ -76,6 +80,9 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 8) Synapse XBRL Warehouse Q&A – Converse with the XBRL Verrijkt warehouse
    (Azure Synapse Analytics) to retrieve, join, and summarize filings using
    governed T‑SQL/Spark tools with citations.
+9) Validation Authoring & Coverage – NL→Validation DSL, lint and simulate on
+   MEGA history, summarize precision/recall, propose PR, and list missing
+   validations for under-guarded data points.
 
 All responses are source-grounded; human-in-the-loop (HITL) for sensitive outputs.
 
@@ -91,6 +98,8 @@ KPIs:
 - Groundedness/citation score ≥0.8 (Foundry eval).
 - Manual correction rate <10% after week 8.
 - Customer Satisfaction (CSAT) ≥4.2/5
+- Validation precision ≥0.9 and recall ≥0.8 (on backtests before merge).
+- Coverage gap delta: ≥20% reduction of unvalidated critical datapoints in 90 days.
 
 ## Risks & Mitigations
 
@@ -101,6 +110,8 @@ KPIs:
 - Access control gaps: Azure Entra ID role-based access control (RBAC),
   Managed Identities, least privilege database roles.
 - Framework/model drift: Versioned flows, canary deploy, telemetry anomaly alerts.
+- Rule regressions/unsafe changes: PR-only writes with mandatory reviewers,
+  policy linting, shadow-mode canary simulations, rollback templates.
 
 ## Readiness Checklist (Pre-Build)
 
@@ -115,6 +126,9 @@ KPIs:
 - Deployment channel (Microsoft Teams, web), environment (Azure Container Apps
   (ACA)), change management.
 - Reusable tool/connectors and standard patterns.
+- Validation DSL ownership, schema, and policy guardrails.
+- Rules repo governance: branch protection, reviewers, and canary workflow.
+- Historical data windows and acceptance thresholds for simulation metrics.
 
 ## References
 

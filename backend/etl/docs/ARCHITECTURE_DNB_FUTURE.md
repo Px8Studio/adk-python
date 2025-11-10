@@ -546,94 +546,37 @@ sequenceDiagram
 - ✅ Server-Sent Events (SSE) for real-time updates
 - ✅ OAuth 2.0 / Azure Entra ID for cross-org auth
 
-### Agent State Management
+#### Pattern 4: Validation Authoring & Coverage Analysis
 
-**Challenge**: Maintaining conversation context across multiple agents in a hierarchy
-
-**Solution**: Azure Cosmos DB as shared session store
+Use Case: Explain existing validation logic, author a new rule from natural language, simulate on historical data, and identify gaps (data points missing validations).
 
 ```mermaid
-graph LR
-    subgraph Agents["Agent Layer"]
-        Root[Root Agent]
-        Coord1[Coordinator 1]
-        Coord2[Coordinator 2]
-        Spec1[Specialist 1]
-        Spec2[Specialist 2]
-    end
-    
-    subgraph State["State Management"]
-        Cosmos[("Azure Cosmos DB<br/>Session Store")]
-        
-        subgraph Session["Session Document"]
-            SessionID["session_id: uuid"]
-            UserID["user_id: string"]
-            Messages["messages: array"]
-            Context["context: object"]
-            Metadata["metadata: object"]
-        end
-    end
-    
-    Root -->|Read/Write| Cosmos
-    Coord1 -->|Read/Write| Cosmos
-    Coord2 -->|Read/Write| Cosmos
-    Spec1 -->|Read| Cosmos
-    Spec2 -->|Read| Cosmos
-    
-    Cosmos --> Session
+sequenceDiagram
+    participant Analyst as Supervisory Analyst
+    participant Root as Root Agent
+    participant Coord as Internal Services Coordinator
+    participant Val as Validation Specialist Agent
+    participant MEGA as MEGA DB (Results)
+    participant Rules as Rules Repo (Git)
 
-    classDef agent fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef db fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
-    classDef doc fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
-    
-    class Root,Coord1,Coord2,Spec1,Spec2 agent
-    class Cosmos db
-    class SessionID,UserID,Messages,Context,Metadata doc
+    Analyst->>Root: "Create a rule: flag if SCR < 1.0 for 2 consecutive quarters"
+    Root->>Coord: Route to validation domain
+    Coord->>Val: NL→DSL authoring request
+    Note over Val: Parse NL, propose Validation DSL + rationale
+    Val->>Rules: Lint rule (syntax/policy checks)
+    Rules-->>Val: OK or issues
+    Val->>MEGA: Simulate against historical results
+    MEGA-->>Val: Hits, false positives, precision/recall
+    Val-->>Coord: Proposed DSL + simulation report
+    Coord-->>Root: Synthesis + next-step options (PR, canary)
+    Root-->>Analyst: Explanation, DSL, metrics, PR link
 ```
 
-**Session Document Structure**:
-```json
-{
-  "session_id": "550e8400-e29b-41d4-a716-446655440000",
-  "user_id": "user@dnb.nl",
-  "created_at": "2025-11-03T10:00:00Z",
-  "updated_at": "2025-11-03T10:05:23Z",
-  "messages": [
-    {
-      "role": "user",
-      "content": "What's the status of report X?",
-      "timestamp": "2025-11-03T10:00:00Z"
-    },
-    {
-      "role": "root_agent",
-      "content": "Delegating to Internal Services Coordinator",
-      "timestamp": "2025-11-03T10:00:02Z"
-    },
-    {
-      "role": "dataloop_agent",
-      "content": "Query results: Report X status = APPROVED",
-      "timestamp": "2025-11-03T10:00:05Z"
-    }
-  ],
-  "context": {
-    "current_agent": "root_agent",
-    "delegation_chain": ["root_agent", "internal_coordinator", "dataloop_agent"],
-    "active_domain": "internal_services"
-  },
-  "metadata": {
-    "total_agents_invoked": 3,
-    "total_tool_calls": 1,
-    "total_tokens": 450
-  }
-}
-```
-
-**Key Benefits:**
-- ✅ All agents share conversation history
-- ✅ Coordinators understand previous delegation decisions
-- ✅ Specialists see full user intent (not just coordinator instructions)
-- ✅ Root agent tracks entire conversation flow for synthesis
-- ✅ Cosmos DB provides global distribution and low latency
+**Key Characteristics:**
+- NL→DSL authoring with constrained schema and policy linting.
+- Historical simulation (MEGA results) with metrics (precision/recall).
+- Optional coverage analysis to propose additional rules for unguarded data points.
+- Output includes rationale, DSL, safety summary, and change control hooks.
 
 ## Framework Migration Strategy
 
@@ -1102,6 +1045,25 @@ graph LR
     class Input,LLM,Router,DB_Tool,API_Tool,A2A_Tool,Output flow
 ```
 
+Add-on: Validation Specialist flow nodes (for reference)
+```yaml
+# Additional nodes plug-in points
+- name: explain_rule
+  type: llm
+  prompt: |
+    Explain rule ${inputs.rule_id} in plain language, include source (EIOPA/internal)
+    and affected data points. Cite fields and thresholds.
+
+- name: summarize_simulation
+  type: llm
+  prompt: |
+    Summarize simulation results:
+    Precision: ${simulation_metrics.precision}
+    Recall: ${simulation_metrics.recall}
+    Top 5 hits: ${simulation_metrics.top_hits}
+    Recommend accept/canary/revise.
+```
+
 ## Internal Service Integration
 
 **Key Requirements:**
@@ -1110,31 +1072,135 @@ graph LR
 - Role-Based Access Control (RBAC) for database permissions
 - Token refresh and caching
 - Connection pooling for performance
-...existing code...
 
-## A2A Protocol Implementation
-- JSON-RPC 2.0 (JavaScript Object Notation Remote Procedure Call) for task
-  management; Server-Sent Events (SSE) for real-time updates.
-...existing code...
+### Report Validation Specialist Agent (New)
 
-## Data Science Platform
-...existing code...
+Purpose:
+- Explain and navigate the corpus of validation rules (EIOPA + internal).
+- Natural language to Validation DSL authoring with few-shot guidance.
+- Simulation over MEGA historical results; estimate precision/recall and impact.
+- Coverage analysis: identify dimensions/metrics without active validations.
 
-### Microsoft Fabric Integration
-...existing code...
+Data and Systems:
+- Inputs: EIOPA taxonomy and rule definitions, internal validation corpus (Git), MEGA validation results (Azure SQL), data dictionaries.
+- Outputs: Validation DSL proposal, explanation, simulation report, gap list, and optional PR to rules repo.
 
-### Synapse Data Warehouses (Azure Synapse Analytics)
-- XBRL Verrijkt (enriched) warehouse hosted on Azure Synapse Analytics
-  Dedicated SQL pools; primary store for enriched XBRL filings.
-- Access patterns:
-  - Data Engineering Agent: Conversational T‑SQL and Spark for joins,
-    compaction, and lineage-aware transformations.
-  - Data Analytics Agent: Aggregations and slice‑and‑dice over curated schemas
-    with citation and audit notes.
-- Connectivity: Private endpoints, Managed Identity, Azure Entra ID RBAC.
-- Coexistence with Microsoft Fabric: Fabric remains the enterprise data
-  platform; Synapse serves existing warehouses and high-throughput SQL workloads.
-...existing code...
+Tools and Connectors (Azure-first):
+- Rules Repo: Azure DevOps Repos or GitHub Enterprise; read (catalog), write via PR.
+- MEGA Results: Azure SQL (IAM via Managed Identity).
+- Lint/Policy: Azure Function for DSL schema validation and policy checks.
+- Simulator: Azure Function to execute DSL against sampled historical windows.
+- Coverage Analyzer: Azure Function scanning data models vs rules index.
+
+Prompt Flow Design (hybrid with Semantic Kernel for parsing if needed):
+```yaml
+# validation_specialist_agent.yaml
+agent:
+  name: validation_specialist_agent
+  type: prompt_flow
+  model:
+    provider: azure_openai
+    deployment: copilot-gpt4
+    temperature: 0.1
+  system_prompt: |
+    You are a validation specialist. You:
+    - Explain existing validation logic.
+    - Translate natural language into the Validation DSL.
+    - Enforce policy and schema constraints.
+    - Propose tests and simulate on historical results.
+    - Identify coverage gaps (missing validations).
+  nodes:
+    - name: intent
+      type: llm
+      prompt: |
+        Classify user task: explain_rule | author_rule | simulate_rule | coverage_analysis
+        User: ${inputs.message}
+      output: ${intent}
+    - name: fetch_rules_index
+      type: connector
+      connection: rules_repo_connection
+      op: list_rules
+    - name: nl_to_dsl
+      type: llm
+      when: ${intent} == "author_rule"
+      prompt: |
+        Using the Validation DSL schema (attached), convert the requirement to DSL.
+        Return:
+        - dsl
+        - rationale
+        - test_cases
+        Requirement: ${inputs.message}
+        DSL_SCHEMA:
+        ${inputs.validation_dsl_schema}
+      output: ${proposal}
+    - name: lint_rule
+      type: azure_function
+      connection: rules_functions
+      function_name: lint_rule
+      inputs:
+        dsl: ${proposal.dsl}
+      outputs:
+        lint_result: ${lint_result}
+    - name: simulate
+      type: azure_function
+      connection: rules_functions
+      function_name: simulate_rule
+      inputs:
+        dsl: ${proposal.dsl}
+        window: ${inputs.window}
+      outputs:
+        metrics: ${simulation_metrics}
+    - name: coverage
+      type: azure_function
+      connection: rules_functions
+      function_name: coverage_analysis
+      inputs:
+        rules_index: ${fetch_rules_index}
+      outputs:
+        gaps: ${coverage_gaps}
+    - name: propose_pr
+      type: connector
+      connection: rules_repo_connection
+      op: create_pr
+      when: ${lint_result.ok and simulation_metrics.precision >= 0.9}
+      inputs:
+        path: "rules/proposed/${proposal.dsl.id}.yaml"
+        content: ${proposal.dsl}
+  deployment:
+    target: azure_container_apps
+    environment: dnb-production
+```
+
+Example NL→DSL Authoring Prompt (constrained):
+```yaml
+# Few-shot template excerpt
+input: "Flag institutions where SCR < 1.0 for two consecutive quarters"
+output.dsl: |
+  rule:
+    id: solvency_breach_consecutive_q
+    version: 1
+    scope: institution
+    when:
+      metric: SCR_ratio
+      comparator: "<"
+      threshold: 1.0
+      consecutive_periods: 2
+      period: quarter
+    severity: high
+    actions:
+      - tag: "breach:solvency"
+      - notify: "supervision_team"
+explanation: Use SCR_ratio < 1.0 across rolling 2 quarters.
+tests:
+  - input: { SCR_ratio: [0.98, 0.97] }  expected: true
+  - input: { SCR_ratio: [0.99, 1.01] } expected: false
+```
+
+Security & Governance:
+- Read-only default; write via PR with mandatory reviewers; branch protection.
+- Managed Identity for Azure SQL; CMK encryption; private endpoints.
+- Content Safety pre-check on user inputs; PII redaction in logs.
+- App Insights tracing: rule_id, simulation window, metrics; no sensitive payloads.
 
 ## Deployment Architecture
 ...existing code...
@@ -1160,15 +1226,14 @@ enterprise warehouses such as XBRL Verrijkt)
 ## Migration Path
 ...existing code...
 
-### From Current to Future
-...existing code...
-- Phase 3: Connect Azure Synapse Analytics (XBRL Verrijkt dedicated SQL pool)
-  and configure Managed Identity + private endpoints.
-...existing code...
+- Phase N: Enable Validation Specialist Agent:
+  - Wire Rules Repo (read + PR) and MEGA Azure SQL (Managed Identity).
+  - Deploy lint/simulator/coverage Azure Functions.
+  - Seed few-shot NL→DSL templates and DSL schema doc.
+  - Canary: shadow-mode simulation for two sprints before enabling PR auto-open.
 
 ## Summary
 ...existing code...
 - Synapse integration: XBRL Verrijkt warehouse exposed to Data Engineering and
   Data Analytics agents through governed T‑SQL/Spark endpoints with RBAC and
   audit.
-...existing code...
