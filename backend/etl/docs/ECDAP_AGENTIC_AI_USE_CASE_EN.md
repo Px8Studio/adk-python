@@ -43,6 +43,47 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 - Integration with productivity tools (Teams/Copilot) for fast adoption.
 - Reuse existing, governed data sources and dashboards (no new platforms required at pilot).
 
+## Why Azure AI Foundry and not Copilot Studio?
+
+- TL;DR: Use Copilot Studio for lightweight, M365-first experiences and citizen-development. Use Azure AI Foundry for governed, multi-agent, tool-heavy backends that require private networking, managed identity, evaluation gates, and CI/CD.
+
+Key differences
+- Scope and target:
+  - Copilot Studio: Rapid M365-centric copilots, plugins, actions, and connectors inside the Microsoft 365 runtime.
+  - AI Foundry: Engineering platform for agentic backends (Prompt Flow/Semantic Kernel), any channel (incl. Teams), any model/provider, custom tools/APIs.
+- Identity, networking, and data perimeter:
+  - Copilot Studio: Strong for user-delegated access to M365 and Power Platform connectors.
+  - AI Foundry: End-to-end Entra ID with Managed Identities, Key Vault, private networking/VNet, private endpoints across LLM, APIs, and databases.
+- Orchestration and multi-agent:
+  - Copilot Studio: Prompts, plugins, and actions; limited branching/planning for complex tool use.
+  - AI Foundry: First-class orchestration (Prompt Flow, SK), retries/branching, multi-agent patterns, evaluation gates before sensitive actions.
+- Tools and internal APIs:
+  - Copilot Studio: Connector-first; custom connectors via Power Platform/Dataverse.
+  - AI Foundry: Direct SDK/OpenAPI/MCP tools, database access with MI, standardized tool schemas, reuse across agents/services.
+- Evaluation, safety, and observability:
+  - Copilot Studio: Responsible AI features for M365 experiences.
+  - AI Foundry: Offline/online evaluations (groundedness/relevance), policy gates, lineage and tracing (App Insights/Log Analytics), A/B, canary, rollbacks.
+- DevOps and portability:
+  - Copilot Studio: ALM via Power Platform solutions.
+  - AI Foundry: Projects/Hubs, infra-as-code (Bicep/Terraform), versioned flows, multi-environment CI/CD, model/provider portability.
+- Cost and scaling:
+  - Copilot Studio: Fast time-to-value for M365 scenarios; simpler cost model.
+  - AI Foundry: More control for data/compute-heavy backends, explicit cost attribution, scale-out patterns.
+
+When to use which
+- Choose Copilot Studio when:
+  - The experience is primarily in M365 (Teams/Outlook/SharePoint) with user-delegated access and simple actions.
+  - Citizen developers maintain the solution and connector breadth is sufficient.
+- Choose AI Foundry when:
+  - Workflows invoke internal APIs/databases under Managed Identity with private networking and audit needs.
+  - You need multi-agent orchestration, evaluation gates, rollouts, and platform-level observability/traceability.
+  - Model/provider portability or non-M365 channels are in scope.
+
+Coexistence pattern (recommended)
+- Frontend: Copilot/Teams (Copilot Studio for UX where helpful).
+- Backend: Agentic services in AI Foundry (Prompt Flow/SK) with tools, evaluations, and governance.
+- Integration: Expose backend APIs to Copilot via secure plugins/actions; keep Teams UX while centralizing orchestration, identity, and audit in Foundry.
+
 ## Agent Catalog (Initial Focus: Insurance & Pension)
 
 - Root Orchestrator: Entry, routing, policy enforcement.
