@@ -177,5 +177,3 @@ KPIs:
   - Data Processing Agreements and EU data boundary requirements for model providers.
   - Licensing constraints for connectors, SDKs, and any third-party components.
 
-Note: This list frames discovery to de-risk adoption; it can be refined as systems and stakeholders are inventoried.
-
