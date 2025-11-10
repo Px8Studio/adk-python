@@ -1,13 +1,13 @@
 # Why Agentic AI at DNB – Management Brief
 
-Purpose: Recommend adoption of agentic AI aligned with Microsoft-first strategy; outline value, risks, and 90‑day path to pilots.
+Purpose: Recommend adoption of agentic AI aligned with Microsoft-first strategy; outline value, risks, and fit for DNB, with an initial focus on Insurance and Pension funds.
 
 Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 ## Executive Summary
 
 - Agentic AI reduces cycle time and handoffs for supervisory and data tasks with full auditability.
-- Start simple: launch a Database Agent pilot that lets non‑technical users query governed data in natural language; then expand to a full multi‑agent system.
+- An initial high-value use case is a Database Agent that lets non‑technical users query governed data in natural language; this can expand into a multi‑agent system as needs mature.
 - Works in familiar channels (Teams/Copilot) with enterprise identity, safety, and governance.
 - Expected outcomes: faster answers, higher-quality, cited outputs, and better analyst leverage.
 
@@ -66,13 +66,6 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 All responses are source‑grounded; human‑in‑the‑loop (HITL) for sensitive outputs.
 
-## Phased Rollout (90 Days)
-
-- Weeks 1–2: Align scope, success metrics, and priority datasets; enable access and governance.
-- Weeks 3–6: Pilot Database Agent in Teams; measure time‑to‑answer and quality; collect feedback.
-- Weeks 7–10: Add routing to internal services and simple specialists; expand coverage to top use cases.
-- Weeks 11–12: Preview Validation Specialist (advisory only); define change control path.
-
 ## Business Value and Key Performance Indicators (KPIs)
 
 - Productivity: 30–60% cycle time reduction on targeted tasks.
@@ -107,4 +100,63 @@ KPIs:
 - Azure AI Foundry (orchestration, evaluation, deployment).
 - Microsoft Copilot (end‑user channel).
 - Governance: GDPR, NIS2, DORA via identity, safety, encryption, and audit.
+
+## Open Questions for DNB Architecture and Operations
+
+- Identity & Access
+  - How will agents authenticate to Azure SQL/PostgreSQL (Managed Identity vs user-delegated tokens)? Do we need per-user attribution in downstream query audit trails?
+  - What RBAC roles are required per agent and per tool? How will least privilege be enforced and reviewed?
+  - How will cross-tenant or guest access be handled, if needed, for inter-agency collaboration?
+
+- Data Residency, Retention, and Privacy
+  - Confirm EU region(s), customer-managed keys (CMK), and encryption posture for all services (Cosmos DB, Log Analytics, AI services).
+  - What retention and deletion policies apply to chats, event logs, artifacts, and intermediate data? How will PII redaction be applied to logs?
+
+- Networking & Connectivity
+  - Which services require private endpoints/VNet integration (ACA, databases, Key Vault, OpenAI endpoints)? Any egress restrictions or proxy requirements?
+  - DNS, firewall rules, and IP allowlists for internal APIs and databases.
+
+- Secrets, Keys, and Credentials
+  - Can we operate fully with Managed Identities, or are any secrets required? How will rotation and access reviews be enforced via Key Vault?
+
+- Safety & Compliance
+  - What Content Safety thresholds (PII, jailbreak, hate/abuse) should gate tool execution? Where are human-in-the-loop approvals required?
+  - How do we record safety decisions without storing sensitive payloads?
+
+- Observability & Audit
+  - What App Insights/Log Analytics schema, sampling, and correlation IDs will we adopt for end-to-end tracing (user → agent → tool → DB/API)?
+  - Which KQL queries and dashboards are needed for security investigations and compliance reporting?
+
+- Models & Orchestration
+  - Baseline model choice (Azure OpenAI GPT-4/Copilot) and fallbacks. What evaluation metrics (groundedness, relevance) define acceptable quality?
+  - Criteria for selecting Prompt Flow vs Semantic Kernel for specific agents. How will versions and rollouts be controlled?
+
+- Tools & Internal APIs
+  - Inventory of authoritative APIs with OpenAPI specs. Are rate limits, pagination, and error contracts consistent?
+  - How will tool schemas (inputs/outputs) be standardized and reused across agents?
+
+- Databases & Data Warehouse
+  - Catalog of governed datasets (DataLoop, MEGA, ATM, Synapse/Fabric). What row-level security and masking policies apply?
+  - Do we need query cost controls, caching, or synthesized datasets for evaluations/smoke tests?
+
+- Teams/Copilot Integration
+  - Which channels (Teams bot, message extensions, Copilot plugins) are in scope? How will user identity and authorization be enforced per request?
+
+- Agent-to-Agent (A2A) Interactions
+  - Do we need A2A now or later? What is the agent card format, registry location, and auth model for cross-department calls?
+  - How will we audit and rate-limit cross-org calls?
+
+- Cost & Operations
+  - Cost attribution tags, budgets, and alerts. Expected concurrency, autoscaling thresholds, and cold start mitigation for ACA.
+  - Quota management for model and data services.
+
+- Change Management & Governance
+  - PR-based change control for prompts, tools, and flows; required reviewers; canary and rollback strategies.
+  - Incident response runbooks, DR strategy (RTO/RPO), and backup/restore coverage.
+
+- Legal & Procurement
+  - Data Processing Agreements and EU data boundary requirements for model providers.
+  - Licensing constraints for connectors, SDKs, and any third-party components.
+
+Note: This list frames discovery to de-risk adoption; it can be refined as systems and stakeholders are inventoried.
 
