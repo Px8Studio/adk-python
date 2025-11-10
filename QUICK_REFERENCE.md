@@ -110,6 +110,7 @@ Invoke-WebRequest http://localhost:8000
 "List pension fund statistics"
 "Search for financial institutions in the public register"
 "Analyze pension fund data trends over time"
+"Visualize any available data (analytics smoke test)"
 ```
 
 Run with:
@@ -218,6 +219,15 @@ docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
 ```powershell
 docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp
 ```
+
+### Analytics visualization fails intermittently
+Set a persistent Code Interpreter extension to avoid re-creating it on each run:
+```powershell
+# .env (data-science agent)
+CODE_INTERPRETER_EXTENSION_NAME=projects/<PROJECT>/locations/<LOCATION>/extensions/<EXT_ID>
+GOOGLE_CLOUD_LOCATION=<LOCATION>  # match the extension location
+```
+If a chart still doesn’t render, open the Artifacts panel; if empty, relax filters or try a different table.
 
 ---
 

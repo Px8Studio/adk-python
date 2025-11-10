@@ -30,50 +30,15 @@ from google.genai import types
 from .prompts import return_instructions_analytics
 
 
-class DataScienceAnalyticsAgent(Agent):
-    """Subclass to ensure the runner detects the data_science origin."""
-
-
-# Remove region normalization and env warnings; rely on executor defaults
-if not os.getenv("CODE_INTERPRETER_EXTENSION_NAME"):
-  # Not fatal; executor can still provision or use defaults in many setups.
-  import logging
-  logging.getLogger(__name__).warning(
-      "CODE_INTERPRETER_EXTENSION_NAME not set; relying on default executor behavior."
-  )
-
-def _normalize_extension_name_by_region(ext: str | None) -> str | None:
-  """Keep provided extension even if its region differs; just warn."""
-  if not ext:
-    return None
-  try:
-    import logging
-    loc = os.getenv("GOOGLE_CLOUD_LOCATION", "").strip()
-    if "/locations/" in ext:
-      ext_loc = ext.split("/locations/")[1].split("/")[0]
-      if loc and ext_loc and ext_loc != loc:
-        logging.getLogger(__name__).warning(
-            "CODE_INTERPRETER_EXTENSION_NAME location '%s' != "
-            "GOOGLE_CLOUD_LOCATION '%s'. Using the provided extension "
-            "cross-region.",
-            ext_loc,
-            loc,
-        )
-    return ext
-  except Exception:
-    return ext
-
-_extension_name = _normalize_extension_name_by_region(
-  os.getenv("CODE_INTERPRETER_EXTENSION_NAME")
-)
-
-analytics_agent = DataScienceAnalyticsAgent(
-  model=os.getenv("ANALYTICS_AGENT_MODEL") or get_model("smart"),
-  name="analytics_agent",
-  instruction=return_instructions_analytics(),
-  # tools=[load_artifacts],  # removed; Vertex executor will collect output_files
-  code_executor=VertexAiCodeExecutor(),
-  generate_content_config=types.GenerateContentConfig(
-    temperature=0.1,
-  ),
+analytics_agent = Agent(
+    model=os.getenv("ANALYTICS_AGENT_MODEL", ""),
+    name="analytics_agent",
+    instruction=return_instructions_analytics(),
+    code_executor=VertexAiCodeExecutor(
+        optimize_data_file=True,
+        stateful=True,
+    ),
+    generate_content_config=types.GenerateContentConfig(
+        temperature=0.1,
+    ),
 )

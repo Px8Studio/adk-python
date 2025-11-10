@@ -63,6 +63,21 @@ NL2SQL_METHOD=BASELINE  # Options: BASELINE or CHASE
 # (Leave AlloyDB settings blank unless you need cross-database queries)
 ```
 
+#### Code Interpreter (stable execution)
+To avoid creation delays and intermittent visualization failures, pin a reusable Code Interpreter extension (matches official ADK behavior):
+
+```bash
+# Use an existing extension (recommended)
+CODE_INTERPRETER_EXTENSION_NAME=projects/<PROJECT>/locations/<LOCATION>/extensions/<EXT_ID>
+
+# Ensure LOCATION matches GOOGLE_CLOUD_LOCATION to avoid cross‑region warnings.
+# If you don’t have one yet, the agent will create it once and you can copy the printed resource name here.
+```
+
+Troubleshooting:
+- If you see repeated extension creation or long waits, set CODE_INTERPRETER_EXTENSION_NAME and restart the session.
+- If charts don’t appear, ensure the generated code saves files (e.g., plt.savefig(...)) and check the Artifacts panel.
+
 ### 3. Create Orkhon Dataset Configuration
 
 ```powershell

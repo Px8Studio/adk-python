@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import hashlib
 
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
@@ -128,12 +130,30 @@ async def call_analytics_agent(
         attempts = int(tool_context.state.get("analytics_attempts", 0))
     except Exception:
         attempts = 0
-    if attempts >= 2:
-        logger.warning("Analytics agent attempt cap reached: %s", attempts)
+
+    # Determine current data fingerprint; reset attempts if data changed.
+    def _safe_str(x) -> str:
+        try:
+            return x if isinstance(x, str) else json.dumps(x, default=str)
+        except Exception:
+            return str(x)
+
+    # Gather any available data blobs for fingerprinting
+    current_json = _safe_str(tool_context.state.get("bigquery_query_result_json", "")) or ""
+    current_preview = _safe_str(tool_context.state.get("bigquery_query_result_preview", "")) or ""
+    current_alloy = _safe_str(tool_context.state.get("alloydb_query_result", "")) or ""
+    data_fingerprint = hashlib.sha1((current_json + "|" + current_preview + "|" + current_alloy).encode("utf-8")).hexdigest()
+
+    if tool_context.state.get("analytics_data_fp") != data_fingerprint:
+        attempts = 0  # reset attempts when input data changes
+        tool_context.state["analytics_data_fp"] = data_fingerprint
+
+    max_attempts = int(os.getenv("ANALYTICS_MAX_ATTEMPTS", "2"))
+    if attempts >= max_attempts:
+        logger.warning("Analytics agent attempt cap reached for current dataset: %s", attempts)
         return (
-            "Analytics was already attempted multiple times. Skipping another "
-            "run to avoid loops. If you'd like to try again, please adjust "
-            "the request (e.g., choose fewer series or shorter date range)."
+            "Analytics has already been attempted for the current dataset. "
+            "Please adjust the request or fetch different data first."
         )
     tool_context.state["analytics_attempts"] = attempts + 1
 
@@ -170,6 +190,7 @@ async def call_analytics_agent(
             len(alloydb_data) if isinstance(alloydb_data, (list, str)) else "unknown",
         )
 
+    # Short-circuit if we have no data at all
     if not (bigquery_data or bigquery_data_json or alloydb_data):
         logger.warning(
             "No data found in context for analytics agent. Available keys: %s",
@@ -178,6 +199,21 @@ async def call_analytics_agent(
         return (
             "No data available for analysis. Please ensure data has been "
             "retrieved from BigQuery or AlloyDB first."
+        )
+
+    # Guard: if BigQuery returned zero rows, don't attempt a plot
+    bq_row_count = 0
+    try:
+        if isinstance(tool_context.state.get("bigquery_query_result"), list):
+            bq_row_count = len(tool_context.state["bigquery_query_result"])
+    except Exception:
+        bq_row_count = 0
+
+    if bq_row_count == 0 and not alloydb_data:
+        logger.info("BigQuery returned zero rows; skipping analytics generation.")
+        return (
+            "No rows were returned for the current query. "
+            "Please relax filters or pick another table/measure and try again."
         )
 
     # Keep payloads reasonable to avoid token bloating

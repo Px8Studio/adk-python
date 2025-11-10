@@ -107,6 +107,7 @@ def store_results_in_context(
                 serialized_rows, default=_serialize_value
             )
             tool_context.state["bigquery_query_result_preview"] = preview_rows
+            tool_context.state["bigquery_row_count"] = len(serialized_rows)  # ← store count
             logger.info(
                 "BigQuery query succeeded, stored %s rows in context",
                 len(serialized_rows)
@@ -116,6 +117,7 @@ def store_results_in_context(
                 "BigQuery query failed with status: %s",
                 tool_response.get("status")
             )
+            tool_context.state["bigquery_row_count"] = 0  # ensure present on failure
 
     return None
 
