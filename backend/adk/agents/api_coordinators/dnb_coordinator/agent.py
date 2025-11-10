@@ -54,7 +54,15 @@ if USE_OPENAPI_VARIANTS:
   except Exception:
     USE_OPENAPI_VARIANTS = False
 
-MODEL = os.getenv("DNB_COORDINATOR_MODEL", "gemini-2.0-flash")
+try:
+  from .._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+  def get_llm_model() -> str:
+    return "gemini-2.5-flash"
+  def get_model(profile: str) -> str:
+    return get_llm_model()
+
+MODEL = os.getenv("DNB_COORDINATOR_MODEL") or get_model("fast")
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
   INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")

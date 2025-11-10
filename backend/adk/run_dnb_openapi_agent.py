@@ -22,6 +22,17 @@ from google.genai import types
 
 # Import the agent builder from our OpenAPI-based agent
 from agents.api_agents.dnb_openapi.agent import build_agent, build_openapi_toolset  # type: ignore
+try:
+    from agents._common.config import get_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_model(profile: str) -> str:
+        import os
+        return os.getenv("ORKHON_LLM_MODEL") or "gemini-2.5-flash"
+try:
+    from agents._common.config import get_llm_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_llm_model() -> str:
+        return os.getenv("ORKHON_LLM_MODEL") or os.getenv("ROOT_AGENT_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.5-flash"
 
 
 def _sample_query_for(api: str) -> str:
@@ -54,7 +65,8 @@ async def main(app_name: str = "dnb_openapi_agent") -> None:
         print("  ...")
 
     # Build agent and run a short prompt to trigger at least one tool call
-    agent = build_agent(api=api)
+    # Prefer fast (tool-heavy) profile unless explicitly overridden
+    agent = build_agent(api=api, model=os.getenv("DNB_OPENAPI_MODEL") or get_model("fast"))
 
     session_service = InMemorySessionService()
     user_id = "demo-user"

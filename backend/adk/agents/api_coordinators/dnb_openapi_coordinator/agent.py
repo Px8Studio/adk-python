@@ -21,15 +21,15 @@ Toolbox definitions.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from google.adk.agents import LlmAgent as Agent
 from api_agents.dnb_openapi.agent import (  # type: ignore
     dnb_openapi_unified_agent,
 )
+from .._common.config import get_model  # type: ignore
 
-MODEL = os.getenv("DNB_OPENAPI_COORDINATOR_MODEL", "gemini-2.0-flash")
+MODEL = get_model("fast")
 _INSTRUCTIONS_FILE = Path(__file__).parent / "instructions.txt"
 if _INSTRUCTIONS_FILE.exists():
     INSTRUCTION = _INSTRUCTIONS_FILE.read_text(encoding="utf-8")

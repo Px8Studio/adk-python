@@ -137,40 +137,37 @@ async def call_analytics_agent(
         )
     tool_context.state["analytics_attempts"] = attempts + 1
 
-    # if question == "N/A":
-    #    return tool_context.state["db_agent_output"]
-
     bigquery_data = ""
     bigquery_data_json = ""
     bigquery_preview = None
     alloydb_data = ""
 
-    if "bigquery_query_result" in tool_context.state:
-        bigquery_data = tool_context.state["bigquery_query_result"]
-        logger.info(
-            "Found BigQuery data with %s items/chars",
-            len(bigquery_data)
-        )
-    else:
-        logger.warning("No 'bigquery_query_result' found in tool_context.state")
-
+    # Prefer JSON if available; otherwise, synthesize JSON from Python data
     if "bigquery_query_result_json" in tool_context.state:
         bigquery_data_json = tool_context.state["bigquery_query_result_json"]
-        logger.debug(
-            "BigQuery JSON payload length: %s", len(bigquery_data_json)
-        )
+        logger.debug("BigQuery JSON payload length: %s", len(bigquery_data_json))
+    if "bigquery_query_result" in tool_context.state:
+        bigquery_data = tool_context.state["bigquery_query_result"]
+        logger.info("Found BigQuery data with %s items/chars", len(bigquery_data))
+        if not bigquery_data_json:
+            try:
+                # If it's a list/dict, turn into JSON; else string-cast
+                if isinstance(bigquery_data, (list, dict)):
+                    bigquery_data_json = json.dumps(bigquery_data, default=str)
+                else:
+                    bigquery_data_json = json.dumps({"data": str(bigquery_data)})
+            except Exception as _:
+                bigquery_data_json = str(bigquery_data)
+
     if "bigquery_query_result_preview" in tool_context.state:
         bigquery_preview = tool_context.state["bigquery_query_result_preview"]
-        logger.debug(
-            "BigQuery preview sample rows: %s",
-            len(bigquery_preview),
-        )
-    
+        logger.debug("BigQuery preview sample rows: %s", len(bigquery_preview))
+
     if "alloydb_query_result" in tool_context.state:
         alloydb_data = tool_context.state["alloydb_query_result"]
         logger.info(
             "Found AlloyDB data with %s items/chars",
-            len(alloydb_data) if isinstance(alloydb_data, (list, str)) else "unknown"
+            len(alloydb_data) if isinstance(alloydb_data, (list, str)) else "unknown",
         )
 
     if not (bigquery_data or bigquery_data_json or alloydb_data):
@@ -183,33 +180,43 @@ async def call_analytics_agent(
             "retrieved from BigQuery or AlloyDB first."
         )
 
+    # Keep payloads reasonable to avoid token bloating
+    def _trim(s: str, max_len: int = 150_000) -> str:
+        return s if len(s) <= max_len else s[:max_len] + "\n/* trimmed */"
+
+    # Embed data as Python variables so generated code can reference them directly.
+    bigquery_json_literal = _trim(bigquery_data_json or "")
+    bigquery_preview_literal = json.dumps(bigquery_preview, default=str) if bigquery_preview else ""
+    alloydb_json_literal = _trim(
+        alloydb_data if isinstance(alloydb_data, str) else json.dumps(alloydb_data, default=str) if alloydb_data else ""
+    )
+
     question_with_data = f"""
-  Question to answer: {question}
+Question to answer:
+{question}
 
-  Actual data to analyze this question is available in the following data
-  tables:
+# Data payload for your Python code (ready-to-use variables)
+bigquery_json = r\"\"\"{bigquery_json_literal}\"\"\"
+bigquery_preview_json = r\"\"\"{bigquery_preview_literal}\"\"\" 
+alloydb_json = r\"\"\"{alloydb_json_literal}\"\"\" 
 
-    BigQuery results are provided below in JSON format. To load them, use:
+You MUST:
+1) Load BigQuery JSON into a pandas DataFrame:
+   import io, pandas as pd
+   bigquery_df = pd.read_json(io.StringIO(bigquery_json))
+   # If a 'period' or date column exists, use pd.to_datetime and sort values.
 
-        import io
-        import pandas as pd
-        bigquery_df = pd.read_json(io.StringIO(bigquery_json))
+2) Create the requested visualization with matplotlib. Then SAVE the artifact:
+   import matplotlib.pyplot as plt
+   plt.tight_layout()
+   plt.savefig("chart.png", dpi=150, bbox_inches="tight")
+   # Note: The system collects saved files automatically.
 
-    Ensure you convert the `period` column with `pd.to_datetime` and sort it.
+3) Return a short textual RESULT and EXPLANATION. Do NOT print huge tables.
 
-    <BIGQUERY_JSON>
-    {bigquery_data_json or bigquery_data}
-    </BIGQUERY_JSON>
-
-    <BIGQUERY_PREVIEW>
-    {json.dumps(bigquery_preview, default=str) if bigquery_preview else ''}
-    </BIGQUERY_PREVIEW>
-
-  <ALLOYDB>
-  {alloydb_data}
-  </ALLOYDB>
-
-  """
+# Optional preview rows (small sample):
+# bigquery_preview_json is a small sample you may print for debugging if needed.
+"""
 
     logger.debug("Calling analytics agent with data context")
     agent_tool = AgentTool(agent=analytics_agent)
@@ -219,38 +226,30 @@ async def call_analytics_agent(
             args={"request": question_with_data}, tool_context=tool_context
         )
         state_keys_after_run = list(tool_context.state.to_dict().keys())
-        logger.debug(
-            "Analytics agent state keys after run: %s", state_keys_after_run
-        )
+        logger.debug("Analytics agent state keys after run: %s", state_keys_after_run)
         logger.debug(
             "Analytics agent artifact delta after run: %s",
             tool_context.actions.artifact_delta,
         )
-        
+
         if not analytics_agent_output or analytics_agent_output.strip() == "":
             logger.error("Analytics agent returned empty text output")
-            
+
             # Try to extract and display artifacts anyway
             try:
                 artifact_keys = await tool_context.list_artifacts()
                 if artifact_keys:
-                    logger.info(
-                        "Found artifacts despite empty output: %s",
-                        artifact_keys
-                    )
+                    logger.info("Found artifacts despite empty output: %s", artifact_keys)
                     return (
                         "Result: Visualization artifacts created successfully.\n\n"
                         "Explanation:\n"
                         f"- Artifacts: {', '.join(artifact_keys)}\n"
-                        "- The model returned no textual summary; this synthesized message prevents retry loops.\n"
-                        "- Please inspect the charts; you may ask for deeper analysis."
+                        "- The model returned no textual summary; showing artifact names.\n"
+                        "- Open the artifacts panel to view the charts."
                     )
             except Exception as artifact_error:
-                logger.warning(
-                    "Could not list artifacts: %s", artifact_error
-                )
+                logger.warning("Could not list artifacts: %s", artifact_error)
 
-            # Check artifact delta in case artifacts were just created.
             if tool_context.actions.artifact_delta:
                 artifact_keys = sorted(tool_context.actions.artifact_delta)
                 logger.info(
@@ -264,24 +263,19 @@ async def call_analytics_agent(
                     "- Model omitted text; synthetic summary returned.\n"
                     "- Open artifacts panel to view visuals."
                 )
-            
-            # No artifacts and no output - synthesize a minimal but non-empty
-            # response so the root agent can conclude and not retry endlessly.
+
             return (
                 "Result: Analytics execution yielded no output.\n\n"
                 "Explanation:\n"
                 "- No text and no artifacts detected.\n"
-                "- Verify columns ('period','value','main_item') exist and that plt.savefig()+load_artifacts() were invoked.\n"
+                "- Ensure the Python code saves the plot with plt.savefig(...).\n"
                 "- Rephrase request or reduce complexity if this persists."
             )
-        
-        logger.info(
-            "Analytics agent returned output of length: %s",
-            len(analytics_agent_output)
-        )
+
+        logger.info("Analytics agent returned output of length: %s", len(analytics_agent_output))
         tool_context.state["analytics_agent_output"] = analytics_agent_output
         return analytics_agent_output
-        
+
     except Exception as e:
         logger.error("Error calling analytics agent: %s", e, exc_info=True)
         return (

@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import os
 import sys
@@ -55,8 +56,9 @@ def load_env():
     # Check for required environment variables
     required_vars = [
         "GOOGLE_CLOUD_PROJECT",
-        "BQ_DATA_PROJECT_ID", 
-        "BQ_DATASET_ID"
+        "BQ_DATA_PROJECT_ID",
+        "BQ_COMPUTE_PROJECT_ID",
+        "BQ_DATASET_ID",
     ]
     
     missing_vars = [var for var in required_vars if not os.getenv(var)]
@@ -75,13 +77,13 @@ async def run_agent(query: str):
         # Import ADK components
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
-        
+
         # Import our agent
-        from backend.adk.agents.data_science.agent import root_agent
-        
+        from backend.adk.agents.data_science.agent import root_agent  # pylint: disable=import-error
+
         # Create session service
         session_service = InMemorySessionService()
-        
+
         # Create runner
         runner = Runner(
             agent=root_agent,

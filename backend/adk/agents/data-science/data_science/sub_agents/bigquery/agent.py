@@ -23,6 +23,13 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from ...utils.utils import get_env_var, USER_AGENT
+try:
+    from ...._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_llm_model() -> str:
+        return os.getenv("ORKHON_LLM_MODEL") or os.getenv("ROOT_AGENT_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.5-flash"
+    def get_model(profile: str) -> str:
+        return get_llm_model()
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.tools import BaseTool, ToolContext
@@ -127,7 +134,7 @@ class DataScienceBigQueryAgent(LlmAgent):
 
 
 bigquery_agent = DataScienceBigQueryAgent(
-    model=os.getenv("BIGQUERY_AGENT_MODEL", ""),
+    model=os.getenv("BIGQUERY_AGENT_MODEL") or get_model("smart"),
     name="bigquery_agent",
     instruction=return_instructions_bigquery(),
     tools=[

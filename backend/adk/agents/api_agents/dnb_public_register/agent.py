@@ -134,7 +134,15 @@ class DNBBoundaryToolset(ToolboxToolset):
 
 _TOOLBOX_URL = os.getenv("TOOLBOX_SERVER_URL", "http://localhost:5000")
 _TOOLSET_NAME = os.getenv("DNB_PUBLIC_REGISTER_TOOLSET_NAME", "dnb_public_register_tools")
-MODEL = os.getenv("DNB_PUBLIC_REGISTER_MODEL", "gemini-2.0-flash")
+try:
+    from .._common.config import get_llm_model, get_model  # type: ignore
+except Exception:  # pragma: no cover
+    def get_llm_model() -> str:
+        return "gemini-2.5-flash"
+    def get_model(profile: str) -> str:
+        return get_llm_model()
+
+MODEL = os.getenv("DNB_PUBLIC_REGISTER_MODEL") or get_model("fast")
 
 dnb_public_register_agent = Agent(
     name="dnb_public_register_agent",
