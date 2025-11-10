@@ -103,6 +103,25 @@ KPIs:
 
 ## Open Questions for DNB Architecture and Operations
 
+- Organization & Collaboration
+  - Central ownership: Which central team leads Agentic AI (sponsor,
+    product/owner, platform)? Where does it sit organizationally?
+  - Collaboration model: How do we work with supervision domains and IT
+    (cadence, working agreements, Teams channel, decision forum)?
+  - Roles and staffing (pilot → scale): Which roles are needed and at what
+    allocation? (Product Owner, Solution Architect, Agent Engineer(s),
+    Data Engineer, Tool/API owner(s), Security, Compliance/Privacy,
+    Platform/DevOps, Evaluator/QA, Change & Adoption lead,
+    Legal/Procurement liaison).
+  - Capacity & timeline (indicative): Discovery 2–3 weeks; pilot build 6–8
+    weeks; hardening/deployment 2 weeks. Typical availability per role:
+    PO 0.3–0.5 FTE; Eng 2–3 FTE; Data Eng 0.5–1 FTE; Security/Compliance
+    0.2 FTE each; Evaluator 0.3 FTE.
+  - Artifacts: RACI, roadmap/backlog, Definition of Done/acceptance criteria,
+    decision log, risk/mitigation register.
+  - Ways of working: PR‑based change control, weekly demos, design reviews,
+    incident/DR exercises.
+
 - Identity & Access
   - How will agents authenticate to Azure SQL/PostgreSQL (Managed Identity vs user-delegated tokens)? Do we need per-user attribution in downstream query audit trails?
   - What RBAC roles are required per agent and per tool? How will least privilege be enforced and reviewed?

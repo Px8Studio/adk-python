@@ -89,7 +89,7 @@ KPI’s:
 - Identiteitsscopes, dataresidency en retentie.
 - Veiligheidsclassificatie, PII‑afhandeling, auditomvang en reviewcadans.
 - Kanalen en change management (Teams/Copilot, ACA), kostenkader.
-- Hergebruikbare patronen en governance (goedkeuringen, logging, uitrolgates).
+- Herbruikbare patronen en governance (goedkeuringen, logging, uitrolgates).
 
 ## Referenties
 
@@ -98,6 +98,25 @@ KPI’s:
 - Governance: GDPR, NIS2, DORA via identiteit, veiligheid, encryptie en audit.
 
 ## Open vragen voor DNB‑architectuur en ‑operaties
+
+- Organisatie & samenwerking
+  - Centrale eigenaar(s): Wie vormt het centrale team dat Agentic AI leidt
+    (sponsor, product/eigenaar, platform)? Waar landt dit organisatorisch?
+  - Samenwerkingsmodel: Hoe werken we samen met toezicht‑domeinen en IT
+    (cadans, werkafspraken, Teams‑kanaal, besluitvormingsforum)?
+  - Rollen en bezetting (pilot → opschaling): Welke rollen zijn nodig en in
+    welke inzet? (Product Owner, Solution Architect, Agent Engineer(s),
+    Data Engineer, Tool/API‑owner(s), Security, Compliance/Privacy,
+    Platform/DevOps, Evaluator/QA, Change & Adoption lead,
+    Juridisch/Inkoop‑liaison).
+  - Capaciteit & tijdlijn (indicatief): Discovery 2–3 weken; pilot build 6–8
+    weken; hardening/uitrol 2 weken. Beschikbaarheid per rol (gemiddeld):
+    PO 0,3–0,5 FTE; Eng 2–3 FTE; Data Eng 0,5–1 FTE; Security/Compliance
+    0,2 FTE elk; Evaluator 0,3 FTE.
+  - Artefacten: RACI, roadmap/backlog, Definition of Done/acceptatiecriteria,
+    beslislog, risico‑/mitigatie‑register.
+  - Werkwijze: PR‑gebaseerde change control, wekelijkse demo’s, design reviews,
+    incident/DR‑oefeningen.
 
 - Identiteit & Toegang
   - Hoe authenticeren agents naar Azure SQL/PostgreSQL (Managed Identity vs door gebruiker gedelegeerde tokens)? Is per‑gebruiker‑attributie nodig in downstream query‑audittrails?
