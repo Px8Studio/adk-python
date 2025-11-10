@@ -1,17 +1,13 @@
 # Orkhon Backend Architecture - DNB IT Implementation (Planned)
 
-> **Future State Documentation**  
-> This document describes the **planned deployment** within DNB IT infrastructure with Microsoft Azure AI Foundry and Copilot
->
-> **📚 Document Suite**:
-> - **Full Architecture** (this document) - Comprehensive technical details (1,579 lines)
-> - [Quick Reference](./DNB_ARCHITECTURE_QUICK_REFERENCE.md) - One-page summary
-> - [Visual Summary](./DNB_ARCHITECTURE_VISUAL_SUMMARY.md) - Diagrams and flowcharts
-> - [Executive Presentation](./DNB_ARCHITECTURE_EXECUTIVE_SUMMARY.md) - Business case for leadership
+> Future State: Planned deployment within DNB IT using Azure AI Foundry and Copilot  
+> Document Suite:
+> - Full Architecture (this document)
+> - Quick Reference
+> - Visual Summary
+> - Executive Presentation
 
----
-
-## 📖 Table of Contents
+## Table of Contents
 
 - [Vision Overview](#vision-overview)
 - [DNB IT Stack](#dnb-it-stack)
@@ -29,20 +25,18 @@
 - [Migration Path](#migration-path)
 - [Summary](#summary)
 
----
-
 ## Vision Overview
 
-### Future DNB IT Architecture 📋
+### Future DNB IT Architecture
 
 ```mermaid
 graph TB
-    subgraph DNB_Frontend["🖥️ DNB Frontend 📋"]
+    subgraph DNB_Frontend["DNB Frontend"]
         Copilot_UI["Microsoft 365 Copilot<br/>Chat Interface<br/>Teams Integration"]
         Portal["Azure Portal<br/>AI Foundry Studio"]
     end
 
-    subgraph Azure_AI_Foundry["☁️ Azure AI Foundry 📋"]
+    subgraph Azure_AI_Foundry["Azure AI Foundry"]
         direction TB
         
         subgraph Model_Catalog["Model Catalog"]
@@ -60,7 +54,7 @@ graph TB
         end
     end
 
-    subgraph DNB_Agents["🤖 DNB Agent System 📋"]
+    subgraph DNB_Agents["DNB Agent System"]
         direction TB
         Root_DNB["Root Agent<br/>GitHub Copilot<br/>Azure Deployment<br/>System Coordinator"]
         
@@ -88,7 +82,7 @@ graph TB
         end
     end
 
-    subgraph Azure_Services["☁️ Azure Core Services 📋"]
+    subgraph Azure_Services["Azure Core Services"]
         direction TB
         
         subgraph IAM["Identity & Access"]
@@ -119,12 +113,12 @@ graph TB
         end
     end
 
-    subgraph A2A_Protocol["🔄 A2A Protocol 📋"]
+    subgraph A2A_Protocol["A2A Protocol"]
         A2A_Server["A2A JSON-RPC Server<br/>Agent Card Publishing<br/>/.well-known/agent.json"]
         A2A_Registry["DNB Agent Registry<br/>Cross-Org Discovery"]
     end
 
-    subgraph Data_Platform["📊 Data Platform 📋"]
+    subgraph Data_Platform["Data Platform"]
         direction TB
         
         subgraph Microsoft_Fabric["Microsoft Fabric"]
@@ -185,11 +179,9 @@ graph TB
     class A2A_Server,A2A_Registry a2a
 ```
 
----
-
 ## DNB IT Stack
 
-### Required Microsoft Technologies 📋
+### Required Microsoft Technologies
 
 | Component | Microsoft Technology | Purpose |
 |-----------|---------------------|---------|
@@ -205,49 +197,18 @@ graph TB
 | **Registry** | Azure Container Registry | Private container images |
 | **Protocol** | A2A (Agent-to-Agent) | Cross-org communication |
 
----
-
 ## Microsoft AI Foundry Deep Dive
 
-### What is Azure AI Foundry? 📋
+### Overview
+Azure AI Foundry is the enterprise platform for model access, orchestration (Prompt Flow), evaluation, and governed deployment.
 
-**Azure AI Foundry** (formerly Azure AI Studio) is Microsoft's comprehensive platform for building, evaluating, and deploying enterprise AI applications. It provides a unified development experience that combines:
+### Drivers for Selection
+- Compliance: EU residency, audit logging, integrated identity.
+- M365 Integration: Teams, Copilot Studio, SharePoint, Outlook.
+- Low-Code Acceleration: Prompt Flow templates and connectors.
+- Operational Foundations: Auto-scaling, HA, cost telemetry.
 
-- **Model Catalog**: Access to Azure OpenAI models, open-source models, and custom models
-- **Prompt Flow**: Visual orchestration tool for building AI workflows
-- **Evaluation & Testing**: Built-in tools for testing model performance and safety
-- **Deployment Options**: One-click deployment to various Azure compute targets
-- **Enterprise Integration**: Native connection to Azure services, Microsoft 365, and third-party tools
-
-### Why Azure AI Foundry for DNB? 📋
-
-DNB's mandate to use Microsoft AI Foundry stems from several strategic and technical requirements:
-
-#### 1. **Enterprise Compliance & Governance** ✅
-- **Data Residency**: All data processing happens in EU-based Azure regions
-- **Audit Trails**: Complete logging of all AI interactions for regulatory compliance
-- **Access Control**: Integration with DNB's existing Azure Entra ID infrastructure
-- **Content Safety**: Built-in filters for harmful content, PII protection, and compliance checks
-
-#### 2. **Microsoft 365 Ecosystem Integration** ✅
-- **Teams Integration**: Agents accessible directly from Microsoft Teams
-- **Copilot Studio**: Build custom Copilots that extend Microsoft 365 capabilities
-- **SharePoint/OneDrive**: Native file access for document analysis
-- **Outlook**: Email automation and intelligent routing
-
-#### 3. **Low-Code/No-Code Development** ✅
-- **Prompt Flow**: Visual canvas for building agent workflows (reduces development time)
-- **Pre-built Connectors**: 300+ connectors to Azure services and external APIs
-- **Template Library**: DNB-specific templates for common financial workflows
-- **Citizen Developer Friendly**: Business analysts can build simple agents without coding
-
-#### 4. **Enterprise-Grade Infrastructure** ✅
-- **Auto-Scaling**: Container Apps automatically scale based on demand
-- **High Availability**: 99.95% SLA for production workloads
-- **Disaster Recovery**: Multi-region failover capabilities
-- **Cost Management**: Built-in cost tracking and optimization
-
-### Azure AI Foundry Architecture Components 📋
+### Components
 
 ```mermaid
 graph TB
@@ -322,11 +283,11 @@ graph TB
     class AI_Search,Cosmos_DB,Connectors data
 ```
 
-### Prompt Flow vs Code-First Development 📋
+### Prompt Flow vs Code-First Development
 
 Azure AI Foundry supports **two development paradigms**:
 
-#### **Option 1: Prompt Flow (Visual/Low-Code)** - Recommended for DNB 🎯
+#### **Option 1: Prompt Flow (Visual/Low-Code)** - Recommended for DNB
 
 **Characteristics:**
 - Drag-and-drop visual canvas for building agent workflows
@@ -366,7 +327,7 @@ Azure AI Foundry supports **two development paradigms**:
 - Multi-step validation workflows with rollback logic
 - Real-time fraud detection algorithms
 
-### DNB Architectural Choice: Hybrid Approach 📋
+### DNB Architectural Choice: Hybrid Approach
 
 **Recommended Strategy:**
 
@@ -410,39 +371,37 @@ graph LR
 - ✅ **Business analysts** contribute to Prompt Flow agents
 - ✅ **Developers** focus on complex Semantic Kernel agents
 
----
-
 ## Multi-Agent Orchestration Architecture
 
-### DNB Multi-Agent System Overview 📋
+### DNB Multi-Agent System Overview
 
 The DNB multi-agent system is designed as a **hierarchical orchestration pattern** with three distinct layers:
 
 ```mermaid
 graph TB
-    subgraph Layer1["🌐 Layer 1: System Root"]
+    subgraph Layer1["Layer 1: System Root"]
         Root["Root Agent<br/><b>Role:</b> Entry Point & System Coordinator<br/><b>Model:</b> GitHub Copilot (GPT-4)<br/><b>Deployment:</b> Azure Container Apps"]
     end
     
-    subgraph Layer2["🎯 Layer 2: Domain Coordinators"]
+    subgraph Layer2["Layer 2: Domain Coordinators"]
         Internal_Coord["Internal Services Coordinator<br/><b>Domain:</b> DataLoop + ATM + MEGA<br/><b>Auth:</b> Managed Identity + IAM"]
         External_Coord["External API Coordinator<br/><b>Domain:</b> DNB Public APIs<br/><b>Auth:</b> API Keys"]
         Data_Coord["Data Science Coordinator<br/><b>Domain:</b> Analytics + Reporting<br/><b>Tools:</b> Fabric + Power BI"]
     end
     
-    subgraph Layer3_Internal["🔧 Layer 3A: Internal Service Specialists"]
+    subgraph Layer3_Internal["Layer 3A: Internal Service Specialists"]
         DataLoop["DataLoop Agent<br/><b>Database:</b> Azure SQL<br/><b>Purpose:</b> Report Status Queries"]
         ATM["ATM Agent<br/><b>Database:</b> PostgreSQL<br/><b>Purpose:</b> Model Metadata"]
         MEGA["MEGA Agent<br/><b>Database:</b> Azure SQL<br/><b>Purpose:</b> Validation Rules"]
     end
     
-    subgraph Layer3_External["🔧 Layer 3B: External API Specialists"]
+    subgraph Layer3_External["Layer 3B: External API Specialists"]
         Echo["Echo Agent<br/><b>API:</b> DNB Echo API<br/><b>Tools:</b> 3 endpoints"]
         Stats["Statistics Agent<br/><b>API:</b> DNB Statistics API<br/><b>Tools:</b> 79 endpoints"]
         PR["Public Register Agent<br/><b>API:</b> DNB Public Register API<br/><b>Tools:</b> 5 endpoints"]
     end
     
-    subgraph Layer3_Data["🔧 Layer 3C: Data Science Specialists"]
+    subgraph Layer3_Data["Layer 3C: Data Science Specialists"]
         BigQuery["Fabric Lakehouse Agent<br/><b>Tool:</b> SQL Query Engine<br/><b>Purpose:</b> Historical Analytics"]
         Analytics["Analytics Agent<br/><b>Tool:</b> Python Code Interpreter<br/><b>Purpose:</b> Custom Calculations"]
         PowerBI["Power BI Agent<br/><b>Tool:</b> DAX Query Engine<br/><b>Purpose:</b> Dashboard Generation"]
@@ -473,7 +432,7 @@ graph TB
     class DataLoop,ATM,MEGA,Echo,Stats,PR,BigQuery,Analytics,PowerBI specialist
 ```
 
-### Agent Communication Patterns 📋
+### Agent Communication Patterns
 
 #### Pattern 1: Sequential Delegation (Most Common)
 
@@ -585,7 +544,7 @@ sequenceDiagram
 - ✅ Server-Sent Events (SSE) for real-time updates
 - ✅ OAuth 2.0 / Azure Entra ID for cross-org auth
 
-### Agent State Management 📋
+### Agent State Management
 
 **Challenge**: Maintaining conversation context across multiple agents in a hierarchy
 
@@ -674,15 +633,13 @@ graph LR
 - ✅ Root agent tracks entire conversation flow for synthesis
 - ✅ Cosmos DB provides global distribution and low latency
 
----
-
 ## Framework Migration Strategy
 
-### From Google ADK to Azure AI Foundry 📋
+### From Google ADK to Azure AI Foundry
 
 DNB's current prototype uses **Google ADK (Agent Development Kit)**, but production deployment must use **Azure AI Foundry**. This section explains the migration path.
 
-### Architecture Mapping: ADK → Azure AI Foundry 📋
+### Architecture Mapping: ADK → Azure AI Foundry
 
 ```mermaid
 graph LR
@@ -715,7 +672,7 @@ graph LR
     class AZ_PromptFlow,AZ_Orchestration,AZ_Connectors,AZ_Cosmos,AZ_Copilot azure
 ```
 
-### Component-by-Component Migration Guide 📋
+### Component-by-Component Migration Guide
 
 #### 1. **Agent Definitions** (ADK → Prompt Flow)
 
@@ -891,19 +848,14 @@ graph LR
     
     Input --> Intent
     Intent --> Router
-    Router -->|"internal_query"| Internal
-    Router -->|"api_query"| External
-    Router -->|"analytics_query"| Data
-    Internal --> Merge
-    External --> Merge
-    Data --> Merge
-    Merge --> Output
+    Router --> Tools
+    Tools --> Output
 
-    classDef node fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef route fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef foundry fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef flow fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     
-    class Input,Intent,Router,Merge,Output node
-    class Internal,External,Data route
+    class Canvas,Nodes foundry
+    class Input,LLM,Router,Merge,Output flow
 ```
 
 **Prompt Flow Configuration:**
@@ -944,54 +896,31 @@ nodes:
       return {"combined": results}
 ```
 
-### Migration Effort Estimation 📋
-
-| Component | ADK Lines of Code | Effort (Days) | Complexity | Notes |
-|-----------|-------------------|---------------|------------|-------|
-| **Root Agent** | 50 | 2 | Low | Direct mapping to Prompt Flow |
-| **Coordinators (3)** | 150 | 4 | Low | Simple routing logic |
-| **Internal Specialists (3)** | 300 | 10 | Medium | SQL tools → Azure SQL connector |
-| **External Specialists (3)** | 200 | 6 | Low | REST API → Azure connector |
-| **Data Specialists (2)** | 250 | 8 | Medium | Fabric Lakehouse integration |
-| **Session Management** | 100 | 3 | Low | Cosmos DB auto-config |
-| **Authentication** | 0 → 200 | 5 | High | New IAM + Managed Identity |
-| **Testing & Validation** | N/A | 10 | High | End-to-end testing |
-| **Documentation** | N/A | 3 | Low | Architecture + user guides |
-| **Total** | ~1,050 | **51 days** | | ~2.5 months (1 FTE) |
-
-**Timeline Assumptions:**
-- 1 full-time developer (experienced with Azure)
-- Includes time for learning Azure AI Foundry
-- Includes deployment and production setup
-- Does not include data migration or infrastructure provisioning
-
----
-
 ## Security & Compliance Architecture
 
-### DNB Security Requirements 📋
+### DNB Security Requirements
 
 As a financial regulatory authority, DNB has stringent security requirements that must be met:
 
-#### 1. **Identity & Access Management (IAM)** 🔐
+#### 1. **Identity & Access Management (IAM)**
 
 ```mermaid
 graph TB
-    subgraph User_Layer["👤 User Layer"]
+    subgraph User_Layer["User Layer"]
         DNB_User["DNB Employee<br/>Azure Entra ID Account"]
         External_User["External Partner<br/>Guest Account"]
     end
     
-    subgraph Authentication["🔐 Authentication Layer"]
+    subgraph Authentication["Authentication Layer"]
         Entra_ID["Azure Entra ID<br/>Multi-Factor Auth (MFA)<br/>Conditional Access"]
         RBAC["Role-Based Access Control<br/>• Agent Admin<br/>• Agent User<br/>• Read-Only"]
     end
     
-    subgraph Agent_Layer["🤖 Agent Layer"]
+    subgraph Agent_Layer["Agent Layer"]
         Agent_Identity["Agent Managed Identity<br/>Service Principal<br/>No passwords/keys"]
     end
     
-    subgraph Resource_Layer["💾 Resource Layer"]
+    subgraph Resource_Layer["Resource Layer"]
         SQL_IAM["Azure SQL<br/>IAM Authentication"]
         Postgres_IAM["PostgreSQL<br/>Azure AD Integration"]
         KeyVault["Azure Key Vault<br/>Secrets Management"]
@@ -1023,31 +952,31 @@ graph TB
 - ✅ **No Secrets in Code**: All credentials in Key Vault or Managed Identity
 - ✅ **Audit Trails**: All access logged to Log Analytics
 
-#### 2. **Data Protection & Privacy** 🛡️
+#### 2. **Data Protection & Privacy**
 
 ```mermaid
 graph TB
-    subgraph Input["📥 Data Input"]
+    subgraph Input["Data Input"]
         User_Query["User Query<br/>(May contain PII)"]
     end
     
-    subgraph Safety_Layer["🛡️ Content Safety Layer"]
+    subgraph Safety_Layer["Content Safety Layer"]
         PII_Detection["PII Detection<br/>Azure AI Content Safety"]
         Jailbreak["Jailbreak Detection<br/>Prompt Injection Filter"]
         Hate_Speech["Hate Speech Filter<br/>Harmful Content"]
     end
     
-    subgraph Processing["⚙️ Processing Layer"]
+    subgraph Processing["Processing Layer"]
         Agent_LLM["Agent + LLM<br/>Copilot Processing"]
         Encryption["Encryption at Rest<br/>TLS 1.3 in Transit"]
     end
     
-    subgraph Storage["💾 Storage Layer"]
+    subgraph Storage["Storage Layer"]
         Cosmos_Encrypted["Cosmos DB<br/>Customer-Managed Keys (CMK)"]
         Logs_Masked["Log Analytics<br/>PII Masking"]
     end
     
-    subgraph Output["📤 Data Output"]
+    subgraph Output["Data Output"]
         Response["User Response<br/>(PII Redacted)"]
     end
     
@@ -1080,27 +1009,27 @@ graph TB
 - ✅ **Data Residency**: All data stays in EU-West region
 - ✅ **Retention Policies**: Automatic data deletion after 90 days
 
-#### 3. **Audit & Compliance** 📊
+#### 3. **Audit & Compliance**
 
 ```mermaid
 graph LR
-    subgraph Events["📋 Audit Events"]
+    subgraph Events["Audit Events"]
         User_Action["User Actions<br/>• Login<br/>• Query<br/>• Export"]
         Agent_Action["Agent Actions<br/>• Tool Calls<br/>• DB Queries<br/>• API Calls"]
         System_Event["System Events<br/>• Deployments<br/>• Config Changes<br/>• Errors"]
     end
     
-    subgraph Collection["📦 Collection Layer"]
+    subgraph Collection["Collection Layer"]
         AppInsights["Application Insights<br/>Real-time Telemetry"]
         LogAnalytics["Log Analytics<br/>Centralized Logs"]
     end
     
-    subgraph Analysis["🔍 Analysis Layer"]
+    subgraph Analysis["Analysis Layer"]
         Queries["KQL Queries<br/>Security Investigations"]
         Alerts["Azure Monitor Alerts<br/>Anomaly Detection"]
     end
     
-    subgraph Reporting["📊 Reporting Layer"]
+    subgraph Reporting["Reporting Layer"]
         Dashboards["Azure Dashboards<br/>Real-time Metrics"]
         Compliance_Reports["Compliance Reports<br/>GDPR, NIS2, DORA"]
     end
@@ -1133,11 +1062,9 @@ graph LR
 - ✅ **Real-time Alerts**: Suspicious activity triggers alerts
 - ✅ **Compliance Reports**: Automated GDPR/NIS2/DORA reporting
 
----
-
 ## Azure AI Foundry Integration
 
-### Prompt Flow Agent Design 📋
+### Prompt Flow Agent Design
 
 ```mermaid
 graph LR
@@ -1173,18 +1100,9 @@ graph LR
     class Input,LLM,Router,DB_Tool,API_Tool,A2A_Tool,Output flow
 ```
 
-**Prompt Flow Benefits:**
-- ✅ Low-code/no-code agent design
-- ✅ Visual debugging and tracing
-- ✅ Built-in version control
-- ✅ Azure integration out-of-the-box
-- ✅ Compliance and governance
-
----
-
 ## Internal Service Integration
 
-### Database-First Access Pattern 📋
+### Database-First Access Pattern
 
 ```mermaid
 sequenceDiagram
@@ -1218,11 +1136,9 @@ sequenceDiagram
 - 📋 Token refresh and caching
 - 📋 Connection pooling for performance
 
----
-
 ## A2A Protocol Implementation
 
-### Agent Card System 📋
+### Agent Card System
 
 ```mermaid
 graph TB
@@ -1290,11 +1206,9 @@ graph TB
 }
 ```
 
----
-
 ## Data Science Platform
 
-### Microsoft Fabric Integration 📋
+### Microsoft Fabric Integration
 
 ```mermaid
 graph TB
@@ -1348,11 +1262,9 @@ graph TB
     class PowerBI,Exports report
 ```
 
----
-
 ## Deployment Architecture
 
-### Azure Container Apps Deployment 📋
+### Azure Container Apps Deployment
 
 ```mermaid
 graph TB
@@ -1431,15 +1343,13 @@ identity:
   type: SystemAssigned
 ```
 
----
-
 ## Technical Decision Matrix
 
-### Why These Technologies? Detailed Rationale 📋
+### Why These Technologies? Detailed Rationale
 
 This section explains **why each Microsoft technology was chosen** and what alternatives were considered.
 
-#### 1. **Model: GitHub Copilot vs Azure OpenAI** 🤖
+#### 1. **Model: GitHub Copilot vs Azure OpenAI**
 
 | Criterion | GitHub Copilot | Azure OpenAI | Winner |
 |-----------|----------------|--------------|--------|
@@ -1459,7 +1369,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - Cost savings: Copilot is included in existing M365 licenses
 - Teams integration: Copilot works natively in Microsoft Teams
 
-#### 2. **Orchestration: Prompt Flow vs Semantic Kernel vs LangChain** ⚙️
+#### 2. **Orchestration: Prompt Flow vs Semantic Kernel vs LangChain**
 
 | Criterion | Prompt Flow | Semantic Kernel | LangChain | Winner |
 |-----------|-------------|-----------------|-----------|--------|
@@ -1479,7 +1389,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - Semantic Kernel provides escape hatch for complex business logic
 - LangChain excluded due to lack of enterprise support
 
-#### 3. **Compute: Container Apps vs Kubernetes vs Azure Functions** 💻
+#### 3. **Compute: Container Apps vs Kubernetes vs Azure Functions**
 
 | Criterion | Container Apps | AKS (Kubernetes) | Azure Functions | Winner |
 |-----------|----------------|------------------|-----------------|--------|
@@ -1501,7 +1411,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - Managed ingress and TLS certificates
 - DNB operations team can manage without specialized K8s training
 
-#### 4. **Database: Azure SQL vs PostgreSQL vs Cosmos DB** 🗄️
+#### 4. **Database: Azure SQL vs PostgreSQL vs Cosmos DB**
 
 | Database | Use Case | Rationale |
 |----------|----------|-----------|
@@ -1517,7 +1427,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - Cosmos DB is optimized for agent conversation state (JSON documents, low latency)
 - Azure AI Search provides vector database for future RAG use cases
 
-#### 5. **Data Platform: Microsoft Fabric vs Databricks vs Synapse** 📊
+#### 5. **Data Platform: Microsoft Fabric vs Databricks vs Synapse**
 
 | Criterion | Microsoft Fabric | Databricks | Azure Synapse | Winner |
 |-----------|------------------|------------|---------------|--------|
@@ -1537,7 +1447,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - Power BI integration is seamless (no ETL needed)
 - Lower learning curve than Databricks (familiar SQL and Power BI skills)
 
-#### 6. **Observability: Application Insights vs Prometheus vs Jaeger** 📈
+#### 6. **Observability: Application Insights vs Prometheus vs Jaeger**
 
 | Criterion | Application Insights | Prometheus + Grafana | Jaeger | Winner |
 |-----------|---------------------|---------------------|--------|--------|
@@ -1557,7 +1467,7 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - DNB operations team already uses Application Insights
 - No need to manage Prometheus/Grafana infrastructure
 
-#### 7. **Agent Protocol: A2A vs OpenAPI vs gRPC** 🔄
+#### 7. **Agent Protocol: A2A vs OpenAPI vs gRPC**
 
 | Criterion | A2A (Google) | OpenAPI 3.0 | gRPC | Winner |
 |-----------|--------------|-------------|------|--------|
@@ -1577,21 +1487,21 @@ This section explains **why each Microsoft technology was chosen** and what alte
 - SSE streaming enables real-time updates (better UX than polling)
 - OpenAPI used as fallback for legacy systems that don't support A2A
 
-### Decision Summary Table 📋
+### Decision Summary Table
 
 | Component | Technology Chosen | Primary Reason | Alternative Considered |
 |-----------|-------------------|----------------|------------------------|
 | **Model** | GitHub Copilot | DNB standard, M365 included | Azure OpenAI (fallback) |
 | **Orchestration** | Prompt Flow | Low-code, visual debugging | Semantic Kernel (complex logic) |
-| **Compute** | Container Apps | Scale-to-zero, easy management | AKS (too complex), Functions (limited) |
+| **Compute** | Container Apps | Scale-to-zero, easy management, no K8s complexity | AKS (too complex), Functions (limited) |
 | **Databases** | Azure SQL + PostgreSQL + Cosmos | Existing systems + new state | No migration (too risky) |
 | **Data Platform** | Microsoft Fabric | DNB standard, unified platform | Databricks (too expensive), Synapse (phased out) |
 | **Observability** | Application Insights | Azure native, DNB standard | Prometheus (manual setup) |
-| **Agent Protocol** | A2A | Agent discovery, cross-org | OpenAPI (fallback) |
+| **Agent Protocol** | A2A (Agent-to-Agent) JSON-RPC | Cross-org discovery and communication | OpenAPI (fallback) |
 | **Authentication** | Azure Entra ID + Managed Identity | DNB standard, no secrets | API keys (insecure) |
-| **Reporting** | Power BI | DNB standard, Fabric native | Tableau (not DNB standard) |
+| **Reporting** | Power BI | DNB standard, native Fabric integration | Tableau (not DNB standard) |
 
-### Non-Functional Requirements Mapping 📋
+### Non-Functional Requirements Mapping
 
 | Requirement | Solution | Technology |
 |-------------|----------|------------|
@@ -1603,8 +1513,6 @@ This section explains **why each Microsoft technology was chosen** and what alte
 | **Auto-Scaling** | Scale 0→100 based on demand | Container Apps auto-scale rules |
 | **Cost Optimization** | Scale to zero off-hours | Container Apps consumption plan |
 | **Developer Productivity** | Low-code + version control | Prompt Flow + Git integration |
-
----
 
 ## Comparison: Current vs Future
 
@@ -1622,11 +1530,9 @@ This section explains **why each Microsoft technology was chosen** and what alte
 | **Agent Protocol** | None | A2A (Agent-to-Agent) JSON-RPC |
 | **CI/CD** | Manual scripts | Azure DevOps pipelines |
 
----
-
 ## Migration Path
 
-### From Current to Future 📋
+### From Current to Future
 
 ```mermaid
 flowchart LR
@@ -1662,15 +1568,13 @@ flowchart LR
     class P1_1,P1_2,P1_3,P2_1,P2_2,P2_3,P3_1,P3_2,P3_3,P4_1,P4_2,P4_3 phase
 ```
 
----
-
 ## Summary
 
-### Future DNB IT Implementation: Executive Overview 📋
+### Future DNB IT Implementation: Executive Overview
 
 This document provides a comprehensive blueprint for migrating the Orkhon multi-agent system from the current **Google ADK prototype** to the production-ready **Microsoft Azure AI Foundry** platform required by DNB IT.
 
-#### **Multi-Agent Architecture** 🤖
+#### **Multi-Agent Architecture**
 
 The DNB system implements a **hierarchical three-layer architecture**:
 
@@ -1683,7 +1587,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 - **Parallel Fan-Out** (multi-source): Root spawns multiple coordinators simultaneously
 - **A2A Cross-Organization** (future): Agent-to-agent communication across DNB departments
 
-#### **Microsoft AI Foundry Stack** ☁️
+#### **Microsoft AI Foundry Stack**
 
 | Component | Technology | Why Chosen |
 |-----------|-----------|------------|
@@ -1697,7 +1601,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 | **Agent Protocol** | A2A (Agent-to-Agent) JSON-RPC | Cross-org discovery and communication |
 | **Reporting** | Power BI | DNB standard, native Fabric integration |
 
-#### **Migration Effort** 🔄
+#### **Migration Effort**
 
 **Estimated Timeline**: **2.5 months** (51 developer-days, 1 FTE)
 
@@ -1714,7 +1618,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 - ADK `InMemorySessionService` → Cosmos DB (auto-managed by Prompt Flow)
 - Gemini 2.5-flash → GitHub Copilot (GPT-4)
 
-#### **Security & Compliance** 🔐
+#### **Security & Compliance**
 
 **DNB-Specific Requirements Met**:
 - ✅ **Zero Trust Architecture**: Every request authenticated via Azure Entra ID
@@ -1732,7 +1636,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 4. **Encryption**: AES-256 at rest (customer-managed keys), TLS 1.3 in transit
 5. **Network Isolation**: Private endpoints, VNET integration, no public internet access
 
-#### **Key Architectural Decisions** 🎯
+#### **Key Architectural Decisions**
 
 **Why Prompt Flow instead of pure code?**
 - Enables business analysts to build 80% of agents without coding
@@ -1758,7 +1662,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 - JSON-RPC 2.0 task management (not just request/response)
 - SSE streaming for real-time updates (better UX than polling)
 
-#### **Business Benefits** 💼
+#### **Business Benefits**
 
 **For DNB Employees:**
 - ✅ Access agents via **Microsoft Teams** (no new tools to learn)
@@ -1784,7 +1688,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 - ✅ **Version control** (Git integration out-of-the-box)
 - ✅ **Production deployment** (one-click to Container Apps)
 
-#### **Cost Optimization** 💰
+#### **Cost Optimization**
 
 **Savings vs Traditional Infrastructure:**
 
@@ -1800,7 +1704,7 @@ The DNB system implements a **hierarchical three-layer architecture**:
 
 **Note**: Savings assume agents are idle 80% of time (nights/weekends) and scale to zero.
 
-#### **Next Steps** 🚀
+#### **Next Steps**
 
 **Immediate Actions (Week 1-2):**
 1. Request Azure AI Foundry subscription from DNB IT
@@ -1829,11 +1733,11 @@ The DNB system implements a **hierarchical three-layer architecture**:
 ---
 
 **Document Metadata:**
-- **Last Updated**: November 3, 2025
-- **Version**: 2.0 (Expanded Multi-Agent Architecture)
-- **Status**: Future State (Production Deployment Planned)
-- **Owner**: DNB IT Architecture Team
-- **Contributors**: Data Science Team, Security Team, Operations Team
+- Last Updated: November 3, 2025
+- Version: 2.0
+- Status: Future State (Planned)
+- Owner: DNB IT Architecture
+- Contributors: Data Science, Security, Operations
 
 **Related Documents:**
 - [Current Implementation](./ARCHITECTURE_CURRENT.md) - Local development setup with Google ADK
