@@ -77,13 +77,13 @@ async def run_agent(query: str):
         # Import ADK components
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
-        
+
         # Import our agent
-    from backend.adk.agents.data_science.agent import root_agent  # pylint: disable=import-error
-        
+        from backend.adk.agents.data_science.agent import root_agent  # pylint: disable=import-error
+
         # Create session service
         session_service = InMemorySessionService()
-        
+
         # Create runner
         runner = Runner(
             agent=root_agent,

@@ -176,6 +176,17 @@ set up the data sources to be used with the agent.
     Check the logs for the Vertex Extension ID and provide the value in your
     environment variables for future runs to avoid creating multiple extensions.
 
+    Note about regions:
+    - Vertex AI “Extensions” (Code Interpreter) are not available in all regions.
+      If your GOOGLE_CLOUD_LOCATION is europe-west4, the extension cannot be
+      created there and you will see:
+      “Extension service is not available in region: europe-west4.”
+    - Options:
+      - Provide a us-central1 extension in CODE_INTERPRETER_EXTENSION_NAME, e.g.:
+        projects/<PROJECT>/locations/us-central1/extensions/<ID>
+      - Or leave CODE_INTERPRETER_EXTENSION_NAME empty; the executor will attempt
+        the current region and automatically fallback to us-central1 if needed.
+      - You do not need to move your project; models can stay in europe-west4.
 
 1. **NL2SQL Configuration:**
 
