@@ -712,17 +712,17 @@ tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
 name = "db-dtypes"
-version = "1.4.3"
+version = "1.4.4"
 description = "Pandas Data Types for SQL systems (BigQuery, Spanner)"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "db_dtypes-1.4.3-py3-none-any.whl", hash = "sha256:a1c92b819af947fae1701d80a71f2a0eac08f825ca52cf0c68aeba80577ae966"},
-    {file = "db_dtypes-1.4.3.tar.gz", hash = "sha256:d3cb08c32939d24e05501f17694be8c1c54cfb4620d61fb56fb311e8c3d8885e"},
+    {file = "db_dtypes-1.4.4-py3-none-any.whl", hash = "sha256:32c13039982656a8598a0835f25f0e07e34c9a423e471ee60c2553240b7fcf1e"},
+    {file = "db_dtypes-1.4.4.tar.gz", hash = "sha256:26f53db5df1acd746b88c5647913a1b20f731c0af1b11abcb6bec5365f31098a"},
 ]
 
 [package.dependencies]
-numpy = ">=1.24.0"
+numpy = {version = ">=1.24.0", markers = "python_version != \"3.10\""}
 packaging = ">=24.2.0"
 pandas = ">=1.5.3"
 pyarrow = ">=13.0.0"
