@@ -18,11 +18,15 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 - Maturity: Microsoft Agent Framework integrates planning (Semantic Kernel) and multi‑agent patterns (AutoGen).
 - Fit: Supervisory workflows (cross-database reconciliation, regulatory change impact, document analysis) require tool use plus policy controls.
 - Platform: Azure AI Foundry supplies orchestration, evaluation, deployment, identity integration.
+- Multi‑agent system: When your application has multiple agents working together
+  autonomously and together as required to cater to its larger purpose, with
+  each agent independently knowledgeable and responsible for a specific focus
+  area, then your application becomes a multi‑agent system.
 
 ### Component-Level vs System-Level
 
 - AI agent (single actor): Bounded task, minimal planning, local state.
-- Agentic AI (system): Goal-driven orchestration, branching, retries, verification, shared session state, centralized policies.
+- Agentic AI (system): Goal-driven orchestration, branching, retries, verification, shared session state, centralized policies. This is a multi‑agent system.
 - Example difference:
   - Single agent: “Query DataLoop for report X.”
   - System: “Compare FI X status across DataLoop/MEGA/ATM, reconcile differences, draft cited brief.”
