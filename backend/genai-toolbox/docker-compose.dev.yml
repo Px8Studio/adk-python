@@ -5,8 +5,9 @@ services:
   # GenAI Toolbox - MCP Server (Google's Implementation)
   # ===========================================================================
   genai-toolbox-mcp:
-    image: genai-toolbox:latest  # Use local image
-    # container_name: orkhon-genai-toolbox-mcp  # removed to avoid global name conflicts
+    # Use official upstream image instead of local build
+    image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest  # Use your custom build
+    # container_name: orkhon-genai-toolbox-mcp  # Add explicit container name
     # Let the image's ENTRYPOINT run the binary; only pass flags here
     command:
       - --tools-folder
@@ -55,6 +56,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     # container_name: orkhon-jaeger  # keep removed
+    container_name: orkhon-jaeger  # Explicit name
     ports:
       - "16686:16686"
       - "4318:4318"
