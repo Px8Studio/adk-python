@@ -54,3 +54,24 @@ It draws inspiration from real-world collaborative teams, making it easier to de
 It is intuitive for developers, as it mirrors common software development patterns.
 It provides greater control over the flow of information and task delegation within the system, making it easier to understand possible pathways and debug the system. For example, if a system has two report-generation agents at different parts of its flow with similar descriptions, the tree structure makes it easier to ensure that the correct one is invoked.
 The structure always begins with the agent defined in the root_agent variable (although it may have a different user-facing name to identify itself). The root_agent may act as a parent to one or more sub-agents. Each sub-agent agent may have its own sub-agents.
+
+Workflow Agents
+Parent to sub-agent transfers are ideal when you have multiple specialist sub-agents, and you want the user to interact with each of them.
+
+However, if you would like agents to act one-after-another without waiting for a turn from the user, you can use workflow agents. Some example scenarios when you might use workflow agents include when you would like your agents to:
+
+Plan and Execute: When you want to have one agent prepare a list of items, and then have other agents use that list to perform follow-up tasks, for example writing sections of a document
+Research and Write: When you want to have one agent call functions to collect contextual information from Google Search or other data sources, then another agent use that information to produce some output.
+Draft and Revise: When you want to have one agent prepare a draft of a document, and then have other agents check the work and iterate on it
+To accomplish these kinds of tasks, workflow agents have sub-agents and guarantee that each of their sub-agents acts. Agent Development Kit provides three built-in workflow agents and the opportunity to define your own:
+
+SequentialAgent
+LoopAgent
+ParallelAgent
+Throughout the rest of this lab, you will build a multi-agent system that uses multiple LLM agents, workflow agents, and tools to help control the flow of the agent.
+
+Specifically, you will build an agent that will develop a pitch document for a new hit movie: a biographical film based on the life of a historical character. Your sub-agents will handle the research, an iterative writing loop with a screenwriter and a critic, and finally some additional sub-agents will help brainstorm casting ideas and use historical box office data to make some predictions about box office results.
+
+In the end, your multi-agent system will look like this (you can click on the image to see it larger):
+
+![alt text](image-2.png)
