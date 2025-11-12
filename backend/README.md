@@ -285,7 +285,7 @@ When contributing to the backend:
 
 **Current Agent Count:**
 - **System Root:** 1 (`root_agent`)
-- **Domain Coordinators:** 2 (`dnb_coordinator`, `data_science_coordinator`)
+- **Domain Coordinators:** 2 (`dnb_coordinator`, `data_science_root_agent`)
 - **Specialists (Leaf):** 5 (3 DNB API + 2 Data Science)
 - **Adoptable:** 20+ from [adk-samples](https://github.com/google/adk-samples)
 - **Total: 8 active agents in 3-level hierarchy** ✅
@@ -297,7 +297,7 @@ root_agent (L1: System Root)
 │   ├── dnb_echo_agent (L3: Specialist)
 │   ├── dnb_statistics_agent (L3: Specialist)
 │   └── dnb_public_register_agent (L3: Specialist)
-├── data_science_coordinator (L2: Domain Coordinator - Orkhon custom)
+├── data_science_root_agent (L2: Domain Coordinator - Orkhon custom)
 │   ├── bigquery_agent (L3: Specialist)
 │   └── analytics_agent (L3: Specialist)
 └── {adopted_sample} (L2/L3: From adk-samples via git subtree)

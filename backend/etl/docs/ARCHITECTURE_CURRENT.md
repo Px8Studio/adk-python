@@ -119,7 +119,7 @@ graph TB
 
     subgraph Domain_Coordinators["🎯 Domain Coordinators"]
         DNB_Coord["dnb_coordinator<br/>DNB API domain"]
-        Data_Coord["data_science_coordinator<br/>Analytics domain"]
+    Data_Coord["data_science_root_agent<br/>Analytics domain"]
     end
 
     subgraph DNB_Specialists["🔧 DNB Specialists<br/>(Leaf Agents with Tools)"]

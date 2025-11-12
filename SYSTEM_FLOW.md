@@ -154,7 +154,7 @@ Once running, a typical request flows through the system as follows:
 │   │  root_agent                                   │   │
 │   │  ├─ dnb_coordinator (MCP Toolbox)            │   │
 │   │  ├─ dnb_openapi_coordinator (Runtime)        │   │
-│   │  └─ data_science_coordinator                 │   │
+│   │  └─ data_science_root_agent                  │   │
 │   │     ├─ bigquery_agent (NL2SQL)               │   │
 │   │     └─ analytics_agent (NL2Py)               │   │
 │   └─────────────────────────────────────────────┘   │
@@ -198,7 +198,7 @@ The root agent intelligently routes requests based on intent:
 - "Find pension fund statistics"
 - "Search DNB licenses"
 
-**Data Science Operations** → `data_science_coordinator`
+**Data Science Operations** → `data_science_root_agent`
 - "What data do you have?"
 - "Show me pension fund trends over time"
 - "Analyze interest rates and create a visualization"
@@ -209,7 +209,7 @@ The root agent intelligently routes requests based on intent:
 **Multi-domain Workflows** → Sequential coordination
 - Example: "Get latest statistics from DNB API and analyze trends"
   1. Root agent → dnb_coordinator (fetch data)
-  2. Root agent → data_science_coordinator → analytics_agent (analyze)
+        2. Root agent → data_science_root_agent → analytics_agent (analyze)
 
 ## 🎛️ Health Check Mechanism
 

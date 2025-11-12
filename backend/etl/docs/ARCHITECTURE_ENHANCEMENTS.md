@@ -480,8 +480,8 @@ All diagrams follow these conventions:
 - ✅ **Data Science MVP**: BigQuery + Analytics agents fully implemented
 
 ### Implementation Progress (Oct 24, 2025)
-- ✅ **Data Science Root Coordinator**: Renamed to `data_science_coordinator` for clarity
-- ✅ **System Root Agent**: Updated to include data_science_coordinator as sub-agent
+- ✅ **Data Science Root Coordinator**: Renamed to `data_science_root_agent` for clarity
+- ✅ **System Root Agent**: Updated to include `data_science_root_agent` as sub-agent
 - ✅ **BigQuery Agent**: NL2SQL with schema-aware query generation
 - ✅ **Analytics Agent**: NL2Py with Vertex AI Code Interpreter
 - ✅ **Configuration System**: JSON-based dataset definitions
@@ -492,7 +492,7 @@ All diagrams follow these conventions:
 
 ```
 backend/adk/agents/data_science/
-├── __init__.py                           # Module exports (data_science_coordinator)
+├── __init__.py                           # Module exports (data_science_root_agent)
 ├── agent.py                              # Data science coordinator (140 lines)
 ├── prompts.py                            # Coordinator instructions (80 lines)
 ├── tools.py                              # Coordination tools (30 lines)

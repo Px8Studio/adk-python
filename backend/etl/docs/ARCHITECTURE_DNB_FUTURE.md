@@ -766,7 +766,7 @@ from google.adk import Agent, Runner
 
 root_agent = Agent(
     name="root_agent",
-    sub_agents=[dnb_coordinator, data_science_coordinator]
+    sub_agents=[dnb_coordinator, data_science_root_agent]
 )
 
 runner = Runner()
