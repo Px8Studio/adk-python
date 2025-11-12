@@ -1,110 +1,1117 @@
 {
   "version": "2.0.0",
   "tasks": [
+    // ============================================================
+    // Quick Start - Full Stack
+    // ============================================================
+    {
+      "label": "🚀 Quick Start: Full Orkhon Stack (PowerShell)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/quick-start.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_agent (env-driven)",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/Scripts/python.exe",
+      "args": [
+        "backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_echo",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='echo'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_statistics",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='statistics'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "ADK: Smoke Test dnb_openapi_public-register",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "$env:DNB_OPENAPI_API='public-register'; ${workspaceFolder}/.venv/Scripts/python.exe backend/adk/run_dnb_openapi_agent.py"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ETL - DNB Statistics
+    // ============================================================
+    {
+      "label": "ETL: DNB Statistics - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "ETL: DNB Statistics - List Endpoints",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_statistics.orchestrator",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ETL - DNB Public Register
+    // ============================================================
+    {
+      "label": "ETL: DNB Public Register - Extract All",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.etl.dnb_public_register.orchestrator",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    // ============================================================
+    // GCP Infrastructure Management
+    // ============================================================
+    {
+      "label": "☁️ GCP: Setup All Infrastructure",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.setup",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      }
+    },
+    {
+      "label": "☁️ GCP: Setup Storage Only",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.setup",
+        "--bucket"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "☁️ GCP: Setup BigQuery Only",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.setup",
+        "--dataset"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "☁️ GCP: Validate Setup",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.setup",
+        "--validate"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // BigQuery Upload - Generic (Multi-Datasource Support)
+    // ============================================================
+    {
+      "label": "📊 BigQuery: Upload All DNB Statistics",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_statistics",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Category (Insurance & Pensions)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_statistics",
+        "--category",
+        "insurance_pensions"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Category (Market Data)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_statistics",
+        "--category",
+        "market_data"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: List Available Files",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_statistics",
+        "--all",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Dry Run (Preview Upload)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_statistics",
+        "--all",
+        "--dry-run"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // BigQuery Upload - DNB Public Register
+    // ============================================================
+    {
+      "label": "📊 BigQuery: Upload All DNB Public Register",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true,
+        "focus": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Metadata (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "metadata"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Entities (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "entities"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Upload Publications (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--category",
+        "publications"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: List Available Files (DNB Public Register)",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all",
+        "--list"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "📊 BigQuery: Dry Run DNB Public Register",
+      "type": "shell",
+      "command": "poetry",
+      "args": [
+        "run",
+        "python",
+        "-m",
+        "backend.gcp.upload_parquet",
+        "--datasource",
+        "dnb_public_register",
+        "--all",
+        "--dry-run"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "🌐 Open: BigQuery Console",
+      "type": "shell",
+      "command": "Start-Process",
+      "args": [
+        "'https://console.cloud.google.com/bigquery'"
+      ],
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "DNB PR: Invoke publications_search (OK)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"RegisterCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB PR: Invoke publications_search (Bad: wrong param case)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb_public_register_api_publicregister_publications_search/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{\"languageCode\":\"NL\",\"registerCode\":\"WFTAF\",\"page\":1,\"pageSize\":5}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: Start (Dev Compose)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml up -d",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Toolbox: Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    
+    {
+      "label": "ADK: Start Web Server Only (PowerShell)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/start-adk-web.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "isBackground": false,
+      "group": "build"
+    },
+    {
+      "label": "🌐 Open: ADK Web UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:8000'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🌐 Open: Toolbox UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:5000/ui/'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🌐 Open: Jaeger Tracing UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:16686'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": false,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 Diagnostics: Check System Status",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/diagnose-setup.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "group": "test"
+    },
+    // ============================================================
+    // Git - Upstream Sync
+    // ============================================================
+    {
+      "label": "🔄 Git: Sync All Upstream Repos",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/sync-upstream-repos.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 Git: Sync All Upstream Repos (Dry Run)",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/sync-upstream-repos.ps1",
+      "args": ["-DryRun"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    // ============================================================
+    // ADK Samples - Data Science Agent Sync
+    // ============================================================
+    {
+      "label": "🔄 ADK: Pull data-science Agent Updates",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-pull-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "🔍 ADK: Check data-science Agent Upstream Changes",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-check-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    {
+      "label": "📋 ADK: Compare data-science with Upstream",
+      "type": "shell",
+      "command": "${workspaceFolder}/backend/scripts/adk-compare-data-science-upstream.ps1",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "group": "none"
+    },
+    // ============================================================
+    // Server Management - Development
+    // ============================================================
     {
       "label": "MCP: Start Dev Server",
       "type": "shell",
       "command": "docker-compose -f docker-compose.dev.yml up -d",
       "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
-      }
-    },
-    {
-      "label": "MCP: Start Prod Server",
-      "type": "shell",
-      "command": "docker-compose -f docker-compose.prod.yml up -d",
-      "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "panel": "shared",
+        "clear": true,
+        "close": false
       },
-      "problemMatcher": []
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
     },
     {
       "label": "MCP: Stop Dev Server",
       "type": "shell",
       "command": "docker-compose -f docker-compose.dev.yml down",
       "options": {
-        "cwd": "${workspaceFolder}/backend/genai-mcp-toolbox"
+        "cwd": "${workspaceFolder}/backend/toolbox"
       },
-      "problemMatcher": []
-    },
-    {
-      "label": "MCP: Test DNB Echo API",
-      "type": "shell",
-      "command": "curl -i https://api.dnb.nl/echo-api/helloworld",
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "shared",
+        "clear": true,
+        "close": false
       }
     },
     {
-      "label": "MCP: Test DNB Echo API (via Toolbox)",
+      "label": "MCP: Restart Dev Server",
       "type": "shell",
-      "command": "curl.exe",
+      "command": "docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      }
+    },
+    {
+      "label": "MCP: Rebuild & Start Dev Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      }
+    },
+    // ============================================================
+    // Server Management - Production
+    // ============================================================
+    {
+      "label": "MCP: Start Prod Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.prod.yml up -d",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: Stop Prod Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.prod.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Monitoring & Debugging
+    // ============================================================
+    {
+      "label": "MCP: View Dev Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: View All Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "MCP: Check Container Status",
+      "type": "shell",
+      "command": "docker ps --filter name=orkhon-toolbox",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Jaeger Tracing Management
+    // ============================================================
+    {
+      "label": "Jaeger: Restart Container",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: View Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Check Health Status",
+      "type": "shell",
+      "command": "docker inspect orkhon-toolbox-dev-jaeger-1 --format='{{.State.Health.Status}}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Test OTLP Endpoint",
+      "type": "shell",
+      "command": "curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:4318/v1/traces -H 'Content-Type: application/json' -d '{\"resourceSpans\":[]}'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Jaeger: Clear All Traces (Restart Container)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart jaeger",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // Web UI Shortcuts
+    // ============================================================
+    // ============================================================
+    // Web UI Shortcuts
+    // ============================================================
+    {
+      "label": "MCP: Open Toolbox Web UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:5000/ui/'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Jaeger Tracing UI",
+      "type": "shell",
+      "command": "Start-Process 'http://localhost:16686'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "MCP: Open Statistics OpenAPI Spec",
+      "type": "shell",
+      "command": "code",
       "args": [
-        "-X", "POST",
-        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
-        "-H", "Content-Type: application/json",
-        "-d", "\"{}\"",
-        "-v"
+        "--open-url",
+        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml"
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "always",
-        "panel": "new"
+        "reveal": "never",
+        "panel": "shared"
       }
     },
     {
-      "label": "MCP: Test DNB Echo API (via Toolbox - PowerShell)",
+      "label": "MCP: Open Public Register OpenAPI Spec",
       "type": "shell",
-      "command": "Invoke-WebRequest",
+      "command": "code",
       "args": [
-        "-Uri", "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
-        "-Method", "POST",
-        "-ContentType", "application/json",
-        "-Body", "'{}'",
-        "-UseBasicParsing"
+        "--open-url",
+        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/openapi3_publicdatav1.yaml"
       ],
       "problemMatcher": [],
       "presentation": {
-        "reveal": "always",
-        "panel": "new"
+        "reveal": "never",
+        "panel": "shared"
       }
     },
-    {
-      "label": "MCP: Test DNB Echo API (via Toolbox - File)",
-      "type": "shell",
-      "command": "curl.exe",
-      "args": [
-        "-X", "POST",
-        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
-        "-H", "Content-Type: application/json",
-        "--data-raw", "{}",
-        "-w", "\\n%{http_code}\\n"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "new"
-      }
-    },
+    // ============================================================
+    // API Testing
+    // ============================================================
+    // ============================================================
+    // API Testing
+    // ============================================================
     {
       "label": "DNB: Test Echo API (Direct)",
       "type": "shell",
       "command": "curl",
       "args": [
-        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-i",
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
         "https://api.dnb.nl/echo-api/helloworld"
       ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "DNB: Test Echo API (via Toolbox)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/tool/dnb-echo-helloworld/invoke",
+        "-Method",
+        "POST",
+        "-ContentType",
+        "application/json",
+        "-Body",
+        "'{}'",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
       }
     },
     {
@@ -112,39 +1119,234 @@
       "type": "shell",
       "command": "curl",
       "args": [
-        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
-        "-H", "Accept: application/json",
-        "https://api.dnb.nl/statistics/v2024100101/metadata"
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-H",
+        "Accept: application/json",
+        "https://api.dnb.nl/statistics/v2024100101/metadata",
+        "|",
+        "jq",
+        "."
       ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "shared",
+        "clear": true
       }
     },
     {
-      "label": "DNB: Query Statistics (Sample)",
+      "label": "DNB: Query Statistics Sample",
       "type": "shell",
       "command": "curl",
       "args": [
-        "-H", "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
-        "https://api.dnb.nl/statistics/v2024100101/data?limit=5"
+        "-H",
+        "Ocp-Apim-Subscription-Key: ${env:DNB_SUBSCRIPTION_KEY_DEV}",
+        "-H",
+        "Accept: application/json",
+        "https://api.dnb.nl/statistics/v2024100101/data?limit=5",
+        "|",
+        "jq",
+        "."
       ],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",
-        "panel": "new"
+        "panel": "shared",
+        "clear": true
       }
     },
     {
-      "label": "MCP: Open API Explorer (OpenAPI UI)",
+      "label": "Toolbox: List All Tools",
       "type": "shell",
-      "command": "code",
+      "command": "Invoke-RestMethod",
       "args": [
-        "--open-url",
-        "openapi://c:/Users/rjjaf/_Projects/orkhon/backend/apis/dnb/specs/statistics-api-v2024100101.yaml"
+        "-Uri",
+        "http://localhost:5000/api/toolset/",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
       ],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Statistics)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_statistics_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Echo)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_echo_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "Toolbox: List Toolset (Public Register)",
+      "type": "shell",
+      "command": "Invoke-RestMethod",
+      "args": [
+        "-Uri",
+        "http://localhost:5000/api/toolset/dnb_public_register_tools",
+        "|",
+        "ConvertTo-Json",
+        "-Depth",
+        "10"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    // ============================================================
+    // ============================================================
+    // OpenAPI Conversion
+    // ============================================================
+    {
+      "label": "OpenAPI: Convert All APIs to Toolbox Format",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "openapi_to_toolbox.py",
+        "convert",
+        "--all"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/agentbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "OpenAPI: Convert Single API to Toolbox Format",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "openapi_to_toolbox.py",
+        "convert",
+        "--spec",
+        "${input:openApiSpec}",
+        "--output",
+        "${input:outputFile}",
+        "--source",
+        "${input:sourceName}",
+        "--name",
+        "${input:apiName}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/backend/agentbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true,
+        "close": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    // ============================================================
+    // Quick Actions
+    // ============================================================
+    {
+      "label": "🚀 Full Restart: Stop → Start → Open UI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "MCP: Stop Dev Server",
+        "MCP: Start Dev Server",
+        "MCP: Open Toolbox Web UI"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "🔄 Convert & Restart: Convert APIs → Restart Server → Open UI",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "OpenAPI: Convert All APIs to Toolbox Format",
+        "MCP: Restart Dev Server",
+        "MCP: Open Toolbox Web UI"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "openApiSpec",
+      "type": "promptString",
+      "description": "Path to OpenAPI spec file (relative to backend/agentbox)",
+      "default": "../apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml"
+    },
+    {
+      "id": "outputFile",
+      "type": "promptString",
+      "description": "Output YAML file path (relative to backend/agentbox)",
+      "default": "../toolbox/config/dev/20-dnb-statistics.generated.yaml"
+    },
+    {
+      "id": "sourceName",
+      "type": "promptString",
+      "description": "Source name for the API",
+      "default": "dnb-api-statistics"
+    },
+    {
+      "id": "apiName",
+      "type": "promptString",
+      "description": "Human-readable API name",
+      "default": "DNB Statistics API"
     }
   ]
 }

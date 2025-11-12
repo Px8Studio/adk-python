@@ -1,0 +1,239 @@
+sources:
+  public_register_api:
+    kind: http
+    baseUrl: https://api.dnb.nl/publicdata/v1
+    headers:
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+    timeout: 30s
+tools:
+  dnb_public_register_api_publicregister_organizations:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations
+    description: 'Retrieve latest organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
+    queryParams:
+    - name: relationNumbers
+      type: string
+      description: The relation numbers. Duplicates and empty values are ignored.
+        Maximum of 25 relation numbers can be provided.
+      required: false
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The language code.
+      required: true
+    - name: registerCode
+      type: string
+      description: The register code.
+      required: true
+  dnb_public_register_api_publicregister_organizations_hi_f7af5e88:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Organizations/historicalrecord/{{.date}}
+    description: 'Retrieve historical organizations for relation numbers.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode,
+      relationNumbers'
+    queryParams:
+    - name: relationNumbers
+      type: string
+      description: The relation numbers. Duplicates and empty values are ignored.
+        Maximum of 25 relation numbers can be provided.
+      required: false
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The language code.
+      required: true
+    - name: registerCode
+      type: string
+      description: The register code.
+      required: true
+    - name: date
+      type: string
+      description: The date of when the publication was published.
+      required: true
+  dnb_public_register_api_publicregister_publications:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}
+    description: 'Retrieve latest publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. Where 1 indicates the first page. Defaults to
+        the first page.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The amount of records one page contains. Defaults to 10 records.
+        Maximum of 25 records is allowed.
+      required: false
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The publication in the specified language.
+      required: true
+    - name: registerCode
+      type: string
+      description: The publication in the specified register.
+      required: true
+  dnb_public_register_api_publicregister_publications_his_eb7c434e:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/Publications/{{.registerCode}}/historicalrecord/{{.date}}
+    description: 'Retrieve historical publication.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, pageSize,
+      registerCode'
+    queryParams:
+    - name: page
+      type: integer
+      description: The page number. Where 1 indicates the first page. Defaults to
+        the first page.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The amount of records one page contains. Defaults to 10 records.
+        Maximum of 25 records is allowed.
+      required: false
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The publication in the specified language.
+      required: true
+    - name: registerCode
+      type: string
+      description: The publication in the specified register.
+      required: true
+    - name: date
+      type: string
+      description: The date of when the publication was published.
+      required: true
+  dnb_public_register_api_publicregister_publications_search:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/Publications/search
+    description: 'Search publications.
+
+      Note: parameter names are case-sensitive. Send exact names: ActArticleName,
+      OrganizationName, RegisterCode, languageCode, pageSize'
+    queryParams:
+    - name: RegisterCode
+      type: string
+      description: (Required) Search within a specific register.
+      required: true
+    - name: OrganizationName
+      type: string
+      description: (Optional) The name of the organization. Used as a wild cart search
+        on the trade, statutory, and official names.
+      required: false
+    - name: ActArticleName
+      type: string
+      description: (Optional) Search registrations based on the act article name.
+      required: false
+    - name: page
+      type: integer
+      description: The page number. Where 1 indicates the first page. Defaults to
+        the first page.
+      required: false
+    - name: pageSize
+      type: integer
+      description: The amount of records one page contains. Defaults to 10 records.
+        Maximum of 25 records is allowed.
+      required: false
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The publication in the specified language.
+      required: true
+  dnb_public_register_api_publicregister_registerarticles:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/RegisterArticles
+    description: 'Retrieve latest act articles.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
+    pathParams:
+    - name: languageCode
+      type: string
+      description: 'Parameter: languageCode'
+      required: true
+    - name: registerCode
+      type: string
+      description: 'Parameter: registerCode'
+      required: true
+  dnb_public_register_api_publicregister_registers:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/Registers
+    description: Retrieve all registers.
+  dnb_public_register_api_publicregister_registrations_ac_b783ee42:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames
+    description: 'Retrieve latest act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The language code.
+      required: true
+    - name: registerCode
+      type: string
+      description: The register code.
+      required: true
+  dnb_public_register_api_publicregister_registrations_ac_b7ab4fa7:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/{{.languageCode}}/{{.registerCode}}/Registrations/ActArticleNames/historicalrecord/{{.date}}
+    description: 'Retrieve historical act article names.
+
+      Note: parameter names are case-sensitive. Send exact names: languageCode, registerCode'
+    pathParams:
+    - name: languageCode
+      type: string
+      description: The language code.
+      required: true
+    - name: registerCode
+      type: string
+      description: The register code.
+      required: true
+    - name: date
+      type: string
+      description: The date of when the publication was published.
+      required: true
+  dnb_public_register_api_publicregister_supportedlanguages:
+    kind: http
+    source: public_register_api
+    method: GET
+    path: /api/publicregister/SupportedLanguages
+    description: Retrieve languages.
+toolsets:
+  dnb_public_register_tools:
+  - dnb_public_register_api_publicregister_organizations
+  - dnb_public_register_api_publicregister_organizations_hi_f7af5e88
+  - dnb_public_register_api_publicregister_publications
+  - dnb_public_register_api_publicregister_publications_his_eb7c434e
+  - dnb_public_register_api_publicregister_publications_search
+  - dnb_public_register_api_publicregister_registerarticles
+  - dnb_public_register_api_publicregister_registers
+  - dnb_public_register_api_publicregister_registrations_ac_b783ee42
+  - dnb_public_register_api_publicregister_registrations_ac_b7ab4fa7
+  - dnb_public_register_api_publicregister_supportedlanguages

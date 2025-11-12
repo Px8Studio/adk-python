@@ -1,11 +1,12 @@
 .env
+.env.local
+.env.*.local
 
-# Service account and sensitive credentials
+# Google Cloud Service Account Keys (CRITICAL: Never commit these!)
 service-account-key.json
-*.json
-
-# Temporary/Auto-generated folders
-backend/genai-mcp-toolbox/
+*-service-account*.json
+credentials.json
+key.json
 
 # Python
 __pycache__/
@@ -17,6 +18,10 @@ env/
 venv/
 ENV/
 .venv
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
 
 # IDEs
 .vscode/
@@ -29,5 +34,5 @@ ENV/
 .DS_Store
 Thumbs.db
 
+backend/data
 frontend/node_modules/
-backend/data/
