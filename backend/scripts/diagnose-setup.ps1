@@ -7,7 +7,8 @@
 #>
 
 param(
-  [switch]$SkipDiagnostics
+  [switch]$SkipDiagnostics,
+  [string]$ProjectRoot  # NEW: allow caller to pass the real project root
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,9 +22,10 @@ if ($SkipDiagnostics) {
 
 try {
   # Determine project root based on script location if not provided
-  if (-not $script:ProjectRoot) {
+  if (-not $ProjectRoot) {
     $scriptDir = Split-Path -Parent $PSCommandPath
-    $ProjectRoot = Resolve-Path (Join-Path $scriptDir '.')
+    # backend\scripts -> project root (two levels up)
+    $ProjectRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
   }
   Write-Host "[INFO] Project root: $ProjectRoot" -ForegroundColor Yellow
 
