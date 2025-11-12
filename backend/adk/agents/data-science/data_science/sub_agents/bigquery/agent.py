@@ -24,7 +24,7 @@ from typing import Any, Dict, Optional
 
 from ...utils.utils import get_env_var, USER_AGENT
 try:
-    from ...._common.config import get_llm_model, get_model  # type: ignore
+    from _common.config import get_llm_model, get_model  # type: ignore
 except Exception:  # pragma: no cover
     def get_llm_model() -> str:
         return os.getenv("ORKHON_LLM_MODEL") or os.getenv("ROOT_AGENT_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.5-flash"

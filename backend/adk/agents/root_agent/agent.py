@@ -21,81 +21,83 @@ coordinator based on the user's intent.
 
 from __future__ import annotations
 
-import os
+import importlib
+import importlib.util
+import importlib.machinery
+import logging
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+import types as _pytypes
 
 from google.adk.agents import Agent
-from google.genai import types
+
 from _common.config import get_model
+from api_coordinators.dnb_coordinator.agent import (
+  get_dnb_coordinator_agent,
+)
 
+def _try_import_data_science_agent() -> Optional[object]:
+  """Import the adopted data-science agent using a relative import.
 
-# Patch ToolboxToolset.close to await the underlying async client close
+  This follows the official ADK agent discovery pattern and avoids sys.path hacks.
+  """
+  try:
+    # Adopted sample lives under: backend/adk/agents/data_science/agent.py
+    from ..data_science import agent as ds_agent  # type: ignore
+    return ds_agent
+  except Exception:
+    logging.exception("Data-science coordinator unavailable; continuing without it")
+    return None
+
+# Build root agent / app the standard way.
+# If your existing file already defines an app/root_agent, keep that and only
+# replace the loader above. Example pattern below if you need it:
+
 try:
-  import inspect
-  from google.adk.tools.toolbox_toolset import ToolboxToolset  # type: ignore
+  from google.adk.agents import Agent as LlmAgent  # public API import
+  from google.adk.apps import App
+except Exception as _e:
+  logging.exception("Failed to import ADK core")
+  raise
 
-  async def _patched_toolbox_close(self) -> None:
-    client = getattr(self, "_toolbox_client", None)
-    if client:
-      maybe = client.close()
-      if inspect.isawaitable(maybe):
-        await maybe
-
-  # Apply patch only once
-  if not getattr(ToolboxToolset.close, "__patched__", False):  # type: ignore[attr-defined]
-    ToolboxToolset.close = _patched_toolbox_close  # type: ignore[assignment]
-    setattr(ToolboxToolset.close, "__patched__", True)  # type: ignore[attr-defined]
-except Exception:
-  # Best-effort patch; ignore if ToolboxToolset not used
-  pass
-
+# Example: compose your root agent and app. Adjust to your current design.
+# If you already have root_agent/app defined, keep them and only ensure the DS
+# module is obtained via _try_import_data_science_agent().
+_ds = _try_import_data_science_agent()
 
 def get_root_agent() -> Agent:
-  """Creates the root agent with sub-agents for API coordination.
+  """Create the root agent with sub-agents for API coordination."""
 
-  Returns:
-      The root agent configured with coordinator sub-agents.
-  """
-  # Import coordinator agents at runtime to avoid module loading issues
-  # Add the parent agents directory to sys.path for sibling package imports
-  agents_dir = Path(__file__).parent.parent
-  agents_dir_str = str(agents_dir)
-  
-  if agents_dir_str not in sys.path:
-    sys.path.insert(0, agents_dir_str)
-
-  # Also add the data-science directory so `data_science` package is importable.
-  data_science_dir = agents_dir / "data-science"
-  data_science_dir_str = str(data_science_dir)
-  if data_science_dir.exists() and data_science_dir_str not in sys.path:
-    sys.path.insert(0, data_science_dir_str)
-  
-  try:
-    # Import from sibling packages
-    from api_coordinators.dnb_coordinator.agent import get_dnb_coordinator_agent  # type: ignore
-    from data_science.agent import (  # type: ignore
-        get_root_agent as get_data_science_coordinator,
-    )
-  except ImportError as e:
-    agents_dir_str = str(agents_dir.resolve()) if "agents_dir" in locals() else "<unknown>"
-    data_science_dir_str = str(data_science_dir.resolve()) if "data_science_dir" in locals() else "<unknown>"
-    raise ImportError(
-        f"Failed to import coordinators. "
-        f"Agents directory: {agents_dir_str}, "
-        f"added data_science dir: {data_science_dir_str}, "
-        f"sys.path: {sys.path[:3]}..."
-    ) from e
-
-  # Get coordinator agents
   dnb_coordinator = get_dnb_coordinator_agent()
-  data_science_coordinator = get_data_science_coordinator()  # fresh instance
 
-  # Model configuration (profile-based)
+  data_science_module = _ds
+  data_science_coordinator: Optional[Agent] = None
+  if data_science_module is not None:
+    getter = getattr(data_science_module, "get_root_agent", None)
+    if callable(getter):
+      try:
+        data_science_coordinator = getter()
+      except Exception:  # pragma: no cover
+        logging.exception(
+            "Failed to instantiate data science coordinator agent"
+        )
+    else:
+      logging.warning(
+          "Data science agent module at %s is missing get_root_agent",
+          data_science_module,
+      )
+
+  sub_agents: list[Agent] = [dnb_coordinator]
+  if data_science_coordinator is not None:
+    sub_agents.append(data_science_coordinator)
+  else:
+    logging.warning(
+        "Data science coordinator unavailable; continuing without it"
+    )
+
   model_name = get_model("fast")
 
-  # Build the root agent with ONLY the two domain coordinators
   root = Agent(
       model=model_name,
       name="root_agent",
@@ -107,13 +109,66 @@ Your role is to:
    - dnb_coordinator: For DNB API queries (Echo, Statistics, Public Register)
    - data_science_coordinator: For analytics and data science workflows
 """,
-      sub_agents=[  # Ensure each sub-agent instance is unique per load
-        dnb_coordinator,
-        data_science_coordinator,
-      ],
+      sub_agents=sub_agents,
   )
   return root
 
 
-# Create the root agent instance for ADK to discover
 root_agent = get_root_agent()
+
+
+# filepath: c:\Users\rjjaf\_Projects\orkhon\backend\adk\adk_patch.py
+from typing import Iterable
+
+# Add: guard against closed Toolbox aiohttp sessions (remove once deps updated)
+def _patch_toolbox_reopen_closed_session() -> None:
+  """Reopen a closed aiohttp session in ToolboxClient right before requests.
+
+  This mirrors the intended lifecycle in newer releases and prevents
+  RuntimeError: Session is closed during multi-step runs.
+  """
+  try:
+    import aiohttp  # type: ignore
+    from toolbox_core.client import ToolboxClient  # type: ignore
+
+    # Prefer using a dedicated helper if it exists; otherwise access the common names.
+    def _ensure_open_session(self) -> None:
+      # Known private names in toolbox_core
+      cand_names = ("_session", "__session", "_ToolboxClient__session")
+      sess = None
+      for name in cand_names:
+        if hasattr(self, name):
+          sess = getattr(self, name)
+          break
+      if sess is None or getattr(sess, "closed", True):
+        new_sess = aiohttp.ClientSession()
+        # set back on the first found name or default to _session
+        if sess is None:
+          setattr(self, "_session", new_sess)
+        else:
+          setattr(self, name, new_sess)
+
+    # Wrap selected HTTP-entry methods to ensure an open session.
+    for method_name in ("load_toolset", "list_tools", "get_tool", "call_tool"):
+      if hasattr(ToolboxClient, method_name):
+        _orig = getattr(ToolboxClient, method_name)
+        if getattr(_orig, "__patched_reopen__", False):
+          continue
+
+        async def _wrap(self, *args, __orig=_orig, **kwargs):  # type: ignore[no-redef]
+          _ensure_open_session(self)
+          return await __orig(self, *args, **kwargs)
+
+        setattr(_wrap, "__patched_reopen__", True)
+        setattr(ToolboxClient, method_name, _wrap)
+
+  except Exception:
+    # Best-effort patch; safe to ignore if toolbox_core not installed/used.
+    pass
+
+def apply_runtime_patches() -> None:
+  """Apply all runtime patches safely (idempotent)."""
+  # existing patches
+  # ...existing code...
+  _patch_toolbox_reopen_closed_session()
+  # ...existing code...

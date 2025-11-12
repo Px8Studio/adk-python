@@ -29,7 +29,7 @@ import os
 from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
 try:
-  from .._common.config import get_llm_model, get_model  # type: ignore
+  from _common.config import get_llm_model, get_model  # type: ignore
 except Exception:  # pragma: no cover
   def get_llm_model() -> str:
     return "gemini-2.5-flash"

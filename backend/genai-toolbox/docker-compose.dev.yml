@@ -1,14 +1,19 @@
-name: orkhon-toolbox-dev
+name: orkhon
 
 services:
   # ===========================================================================
-  # GenAI Toolbox - MCP Server (Google's Implementation)
+  # GenAI Toolbox - MCP Server (Custom Build)
   # ===========================================================================
-  genai-toolbox-mcp:
-    # Use official upstream image instead of local build
-    image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest  # Use your custom build
-    # container_name: orkhon-genai-toolbox-mcp  # Add explicit container name
-    # Let the image's ENTRYPOINT run the binary; only pass flags here
+  genai-toolbox:
+    # ✅ Build from local Dockerfile
+    build:
+      context: ../../../genai-toolbox
+      dockerfile: Dockerfile
+    image: genai-toolbox:dev  # Tag for local builds
+    
+    # Explicit container name (matches upstream docs)
+    container_name: genai-toolbox
+    
     command:
       - --tools-folder
       - /config/${DNB_ENVIRONMENT:-dev}
@@ -18,58 +23,61 @@ services:
       - "5000"
       - --ui
       - --telemetry-otlp
-      # NOTE: endpoint must be host:port (no scheme). e.g., "jaeger:4318"
-      # Use a dedicated var to avoid accidentally passing "http://..."
-      - ${OTEL_COLLECTOR_HOSTPORT:-jaeger:4318}
+      - jaeger:4318
       - --telemetry-service-name
-      - ${OTEL_SERVICE_NAME}
-      - --log-level
-      - debug
+      - orkhon-mcp-toolbox
+    
     ports:
       - "5000:5000"
+    
     volumes:
       - ./config:/config:ro
-    restart: unless-stopped
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    
     env_file:
       - .env
+    
     environment:
+      # ✅ FIX: Use environment-specific keys based on DNB_ENVIRONMENT
       - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-dev}
-      - DNB_SUBSCRIPTION_KEY_DEV=${DNB_SUBSCRIPTION_KEY_DEV}
-      - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
-      - DNB_SUBSCRIPTION_NAME_DEV=${DNB_SUBSCRIPTION_NAME_DEV}
-      - DNB_SUBSCRIPTION_NAME_PROD=${DNB_SUBSCRIPTION_NAME_PROD}
-      # Ensure no scheme in this value (jaeger:4318). Used only for the flag above.
-      - OTEL_COLLECTOR_HOSTPORT=${OTEL_COLLECTOR_HOSTPORT:-jaeger:4318}
-      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
+      # Map to the generic variables the toolbox expects
+      - DNB_SUBSCRIPTION_KEY=${DNB_SUBSCRIPTION_KEY_DEV}
+      - DNB_SUBSCRIPTION_KEY_SECONDARY=${DNB_SUBSCRIPTION_KEY_SECONDARY:-}
+      - DNB_SUBSCRIPTION_NAME=${DNB_SUBSCRIPTION_NAME_DEV}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-orkhon-mcp-toolbox}
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
-      - OTEL_METRICS_EXPORTER=none  # Already set ✅
-      - OTEL_LOGS_EXPORTER=none
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    
     networks:
       - orkhon-net
-    depends_on:
-      jaeger:
-        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ===========================================================================
-  # Jaeger - Distributed Tracing (OpenTelemetry Backend)
+  # Jaeger - Distributed Tracing Backend
   # ===========================================================================
   jaeger:
     image: jaegertracing/all-in-one:latest
-    # container_name: orkhon-jaeger  # keep removed
-    container_name: orkhon-jaeger  # Explicit name
+    container_name: jaeger
     ports:
-      - "16686:16686"
-      - "4318:4318"
+      - "16686:16686"  # UI
+      - "4318:4318"    # OTLP HTTP
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
       - orkhon-net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:16686/"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 5s
 
 networks:
   orkhon-net:

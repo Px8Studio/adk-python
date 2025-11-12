@@ -16,8 +16,11 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$ProjectRoot = "C:\Users\rjjaf\_Projects\orkhon"
-$ToolboxPath = Join-Path $ProjectRoot "backend\toolbox"
+$ScriptRoot = $PSScriptRoot
+$ProjectRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
+$ToolboxPath = Join-Path $ProjectRoot "backend\genai-toolbox"
+$AdkAgentsPath = Join-Path $ProjectRoot "backend\adk\agents"
+
 $VenvActivate = Join-Path $ProjectRoot ".venv\Scripts\Activate.ps1"
 $DotEnv = Join-Path $ProjectRoot ".env"
 
@@ -72,8 +75,7 @@ function Test-ToolboxReady {
 
   $probes = @(
     "health",
-    "api/toolsets",   # preferred (plural)
-    "api/toolset/",   # legacy path (singular)
+    "api/toolset",    # Correct endpoint (singular)
     "ui/"
   )
 
@@ -181,122 +183,112 @@ try {
   exit 1
 }
 
-# Step 3: Start GenAI Toolbox Stack (Toolbox + Jaeger + PostgreSQL if configured)
-Show-Step "Step 3/6: Starting GenAI Toolbox Stack (Docker)..."
+# Step 3: Start GenAI Toolbox Stack
+Show-Step "Step 3/6: Starting Google GenAI Toolbox MCP Server (Docker)..."
 try {
   Set-Location $ToolboxPath
   
   # Check if containers are already running
-  $runningContainers = & docker ps --filter "name=orkhon-" --format "{{.Names}}" 2>&1
+  $runningContainers = & docker ps --filter "name=genai-toolbox" --format "{{.Names}}" 2>&1
   
   # Always restart to ensure latest configuration is loaded
   if ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
-    Show-Info "MCP Toolbox containers found. Restarting to load latest configuration..."
-    & docker-compose -f docker-compose.dev.yml restart
-    if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
-    Show-Ok "Containers restarted with latest configuration"
-  }
-  elseif ($ForceRecreate) {
-    Show-Info "Force recreating containers..."
-    & docker-compose -f docker-compose.dev.yml down
-    & docker-compose -f docker-compose.dev.yml up -d --force-recreate
-    if ($LASTEXITCODE -ne 0) { throw "Failed to recreate containers" }
-    Show-Ok "Containers recreated successfully"
-  }
-  else {
-    Show-Info "Starting fresh containers..."
-    & docker-compose -f docker-compose.dev.yml up -d
-    if ($LASTEXITCODE -ne 0) { throw "Failed to start containers" }
-    Show-Ok "Containers started successfully"
-  }
-
-  # Display running containers
-  Show-Info "Checking container status..."
-  $containers = & docker ps --filter "name=orkhon-" --format "table {{.Names}}\t{{.Status}}" 2>&1
-  Write-Host $containers -ForegroundColor Yellow
-
-  # Comprehensive readiness check for multiple services
-  Show-Info "Waiting for services to be ready (up to $WaitSeconds seconds)..."
-  
-  $services = @{
-    "Toolbox" = @{
-      Url = "http://localhost:5000"
-      Probes = @("health", "api/toolsets", "api/toolset/", "ui/")
-      Ready = $false
-    }
-    "Jaeger" = @{
-      Url = "http://localhost:16686"
-      Probes = @("", "search")  # Root and search endpoint
-      Ready = $false
-    }
-  }
-
-  $elapsed = 0
-  $allReady = $false
-  
-  while ($elapsed -lt $WaitSeconds -and -not $allReady) {
-    $allReady = $true
-    
-    foreach ($serviceName in $services.Keys) {
-      if (-not $services[$serviceName].Ready) {
-        $base = $services[$serviceName].Url
-        $probes = $services[$serviceName].Probes
-        
-        foreach ($rel in $probes) {
-          try {
-            $url = if ($rel) { Join-HttpUrl -Base $base -Relative $rel } else { $base }
-            $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 2 -ErrorAction Stop
-            if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
-              $services[$serviceName].Ready = $true
-              Show-Ok "$serviceName is ready at: $url"
-              break
-            }
-          } catch {
-            # Service not ready yet, continue checking
-          }
-        }
-        
-        if (-not $services[$serviceName].Ready) {
-          $allReady = $false
-        }
-      }
-    }
-    
-    if (-not $allReady) {
-      Start-Sleep -Seconds 3
-      $elapsed += 3
-      Write-Host "." -NoNewline
-    }
-  }
-
-  Write-Host ""  # New line after dots
-  
-  # Report final status
-  $anyFailed = $false
-  foreach ($serviceName in $services.Keys) {
-    if (-not $services[$serviceName].Ready) {
-      Show-Err "$serviceName did not become ready after $WaitSeconds seconds"
-      Show-Info "Check logs: docker-compose -f docker-compose.dev.yml logs $serviceName"
-      $anyFailed = $true
-    }
-  }
-  
-  if ($anyFailed) {
-    Show-Info "Some services may still be starting. Container logs:"
-    Write-Host "  docker-compose -f docker-compose.dev.yml logs --tail=50" -ForegroundColor Yellow
-    $continue = Read-Host "`nContinue anyway? (y/n)"
-    if ($continue -ne "y") { exit 1 }
+    Show-Info "GenAI Toolbox container found. Restarting to load latest configuration..."
+    & docker-compose -f docker-compose.dev.yml restart genai-toolbox  # ✅ Correct service name
+    if ($LASTEXITCODE -ne 0) { throw "Restart failed" }
   } else {
-    Show-Ok "All services are ready!"
+    Show-Info "Starting GenAI Toolbox stack for the first time..."
+    & docker-compose -f docker-compose.dev.yml up -d
+    if ($LASTEXITCODE -ne 0) { throw "Docker Compose up failed" }
   }
   
+  Show-Ok "GenAI Toolbox MCP Server started successfully"
 } catch {
-  Show-Err "Failed to start GenAI Toolbox Stack: $($_.Exception.Message)"
-  Show-Info "Check Docker Desktop is running"
-  Show-Info "Try: docker-compose -f docker-compose.dev.yml logs"
+  Show-Err "Failed to start GenAI Toolbox: $($_.Exception.Message)"
+  Show-Info "Hint: Check docker-compose.dev.yml configuration and Docker Desktop status"
   exit 1
 }
 
+# Display running containers
+Show-Info "Checking container status..."
+$containers = & docker ps --filter "name=orkhon-" --format "table {{.Names}}\t{{.Status}}" 2>&1
+Write-Host $containers -ForegroundColor Yellow
+
+# Comprehensive readiness check for multiple services
+Show-Info "Waiting for services to be ready (up to $WaitSeconds seconds)..."
+  
+$services = @{
+  "Toolbox" = @{
+    Url = "http://localhost:5000"
+    Probes = @("health", "api/toolsets", "api/toolset/", "ui/")
+    Ready = $false
+  }
+  "Jaeger" = @{
+    Url = "http://localhost:16686"
+    Probes = @("", "search")  # Root and search endpoint
+    Ready = $false
+  }
+}
+
+$elapsed = 0
+$allReady = $false
+  
+while ($elapsed -lt $WaitSeconds -and -not $allReady) {
+  $allReady = $true
+    
+  foreach ($serviceName in $services.Keys) {
+    if (-not $services[$serviceName].Ready) {
+      $base = $services[$serviceName].Url
+      $probes = $services[$serviceName].Probes
+        
+      foreach ($rel in $probes) {
+        try {
+          $url = if ($rel) { Join-HttpUrl -Base $base -Relative $rel } else { $base }
+          $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 2 -ErrorAction Stop
+          if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
+            $services[$serviceName].Ready = $true
+            Show-Ok "$serviceName is ready at: $url"
+            break
+          }
+        } catch {
+          # Service not ready yet, continue checking
+        }
+      }
+        
+      if (-not $services[$serviceName].Ready) {
+        $allReady = $false
+      }
+    }
+  }
+    
+  if (-not $allReady) {
+    Start-Sleep -Seconds 3
+    $elapsed += 3
+    Write-Host "." -NoNewline
+  }
+}
+
+Write-Host ""  # New line after dots
+  
+# Report final status
+$anyFailed = $false
+foreach ($serviceName in $services.Keys) {
+  if (-not $services[$serviceName].Ready) {
+    Show-Err "$serviceName did not become ready after $WaitSeconds seconds"
+    Show-Info "Check logs: docker-compose -f docker-compose.dev.yml logs $serviceName"
+    $anyFailed = $true
+  }
+}
+  
+if ($anyFailed) {
+  Show-Info "Some services may still be starting. Container logs:"
+  Write-Host "  docker-compose -f docker-compose.dev.yml logs --tail=50" -ForegroundColor Yellow
+  $continue = Read-Host "`nContinue anyway? (y/n)"
+  if ($continue -ne "y") { exit 1 }
+} else {
+  Show-Ok "All services are ready!"
+}
+  
 # Step 4: Open Web UIs
 if ($OpenUIs) {
   Show-Step "Step 4/6: Opening Web UIs..."
@@ -455,8 +447,8 @@ Write-Host "  • GenAI Toolbox: http://localhost:5000/ui/" -ForegroundColor Yel
 Write-Host "  • Jaeger:        http://localhost:16686" -ForegroundColor Yellow
 Write-Host ""
 Show-Info "To stop all services:"
-Write-Host "  cd backend\toolbox" -ForegroundColor Cyan
+Write-Host "  cd backend\genai-toolbox" -ForegroundColor Cyan
 Write-Host "  docker-compose -f docker-compose.dev.yml down" -ForegroundColor Cyan
 Write-Host ""
 Show-Info "To stop Docker services only:"
-Write-Host "  docker stop orkhon-genai-toolbox-mcp orkhon-jaeger" -ForegroundColor Cyan
+Write-Host "  docker stop genai-toolbox jaeger" -ForegroundColor Cyan

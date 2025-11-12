@@ -6,12 +6,12 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-if (-not $ProjectRoot) { $ProjectRoot = "$PSScriptRoot" }
+$ScriptRoot = $PSScriptRoot
+$ProjectRoot = (Resolve-Path (Join-Path $ScriptRoot "..\..")).Path
 
-$VenvActivate = Join-Path $ProjectRoot ".venv/Scripts/Activate.ps1"
+$VenvActivate = Join-Path $ProjectRoot ".venv\Scripts\Activate.ps1"
 $DotEnv      = Join-Path $ProjectRoot ".env"
-$AgentsPath  = Join-Path $ProjectRoot "backend/adk/agents"
+$AgentsPath  = Join-Path $ProjectRoot "backend\adk\agents"
 
 function Show-Info { param([string]$m) Write-Host "[INFO] $m" -ForegroundColor Yellow }
 function Show-Ok   { param([string]$m) Write-Host "[OK]  $m" -ForegroundColor Green }

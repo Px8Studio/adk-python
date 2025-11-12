@@ -1321,32 +1321,150 @@
         "reveal": "always",
         "panel": "shared"
       }
-    }
-  ],
-  "inputs": [
-    {
-      "id": "openApiSpec",
-      "type": "promptString",
-      "description": "Path to OpenAPI spec file (relative to backend/agentbox)",
-      "default": "../apis/dnb/specs/openapi3_statisticsdatav2024100101.yaml"
     },
     {
-      "id": "outputFile",
-      "type": "promptString",
-      "description": "Output YAML file path (relative to backend/agentbox)",
-      "default": "../toolbox/config/dev/20-dnb-statistics.generated.yaml"
+      "label": "🔄 Toolbox: Rebuild from Source",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy", "Bypass",
+        "-File", "${workspaceFolder}/backend/scripts/rebuild-toolbox.ps1"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      },
+      "group": "build"
     },
     {
-      "id": "sourceName",
-      "type": "promptString",
-      "description": "Source name for the API",
-      "default": "dnb-api-statistics"
+      "label": "⬆️ Toolbox: Update to Latest Upstream",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy", "Bypass",
+        "-Command",
+        "cd ${workspaceFolder}/backend/genai-toolbox; docker-compose -f docker-compose.dev.yml pull genai-toolbox; docker-compose -f docker-compose.dev.yml up -d --force-recreate genai-toolbox"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
     },
     {
-      "id": "apiName",
-      "type": "promptString",
-      "description": "Human-readable API name",
-      "default": "DNB Statistics API"
+      "label": "🔍 Toolbox: Check Version",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "exec",
+        "genai-toolbox",  // ✅ Correct container name
+        "/toolbox",
+        "--version"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "📊 Toolbox: View Logs",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy", "Bypass",
+        "-Command",
+        "cd ${workspaceFolder}/backend/genai-toolbox; docker-compose -f docker-compose.dev.yml logs -f genai-toolbox"  // ✅ Correct service name
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "🔄 Toolbox: Restart Container",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy", "Bypass",
+        "-Command",
+        "cd ${workspaceFolder}/backend/genai-toolbox; docker-compose -f docker-compose.dev.yml restart genai-toolbox"  // ✅ Correct service name
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "🚀 Google GenAI Toolbox: Start Dev Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml up -d",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/genai-toolbox"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
+    },
+    {
+      "label": "🛑 Google GenAI Toolbox: Stop Dev Server",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml down",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/genai-toolbox"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "📊 Google GenAI Toolbox: View Logs (Live)",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml logs -f genai-toolbox",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/genai-toolbox"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "🔄 Google GenAI Toolbox: Restart Container",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml restart genai-toolbox",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/genai-toolbox"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "⬆️ Google GenAI Toolbox: Update to Latest Version",
+      "type": "shell",
+      "command": "docker-compose -f docker-compose.dev.yml pull genai-toolbox; docker-compose -f docker-compose.dev.yml up -d --force-recreate genai-toolbox",
+      "options": {
+        "cwd": "${workspaceFolder}/backend/genai-toolbox"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🔍 Google GenAI Toolbox: Check Version",
+      "type": "shell",
+      "command": "docker exec genai-toolbox /toolbox --version",
+      "problemMatcher": []
     }
   ]
 }

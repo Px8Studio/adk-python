@@ -23,7 +23,7 @@ try {
   # Determine project root based on script location if not provided
   if (-not $script:ProjectRoot) {
     $scriptDir = Split-Path -Parent $PSCommandPath
-    $ProjectRoot = Resolve-Path (Join-Path $scriptDir '.')
+  $ProjectRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
   }
   Write-Host "[INFO] Project root: $ProjectRoot" -ForegroundColor Yellow
 
@@ -41,7 +41,7 @@ try {
   }
 
   # 2) Check Docker Compose file exists
-  $composeFile = Join-Path $ProjectRoot 'backend\toolbox\docker-compose.dev.yml'
+  $composeFile = Join-Path $ProjectRoot 'backend\genai-toolbox\docker-compose.dev.yml'
   if (Test-Path $composeFile) {
     Write-Host "[OK]  Found docker-compose.dev.yml" -ForegroundColor Green
   } else {

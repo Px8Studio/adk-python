@@ -1,82 +1,51 @@
 services:
   # ===========================================================================
-  # GenAI Toolbox - MCP Server (Google's Implementation)
+  # GenAI Toolbox - MCP Server (Google Cloud Official Implementation)
   # ===========================================================================
-  genai-toolbox-mcp:
-    image: genai-toolbox:latest
-    container_name: orkhon-genai-toolbox-mcp
+  genai-toolbox:
+    image: us-central1-docker.pkg.dev/database-toolbox/toolbox/toolbox:latest
+    container_name: genai-toolbox
+    
     command: 
-      - "--tools-folder"
-      - "/config/${DNB_ENVIRONMENT:-prod}"
-      - "--port"
+      - --tools-folder
+      - /config/${DNB_ENVIRONMENT:-prod}
+      - --port
       - "5000"
-      - "--ui"
-      - "--telemetry-otlp"
-      - "${OTEL_EXPORTER_OTLP_ENDPOINT}"
-      - "--telemetry-service-name"
-      - "${OTEL_SERVICE_NAME}"
+      - --ui
+      - --telemetry-otlp
+      - ${OTEL_EXPORTER_OTLP_ENDPOINT}
+      - --telemetry-service-name
+      - ${OTEL_SERVICE_NAME}
+    
     ports:
       - "5000:5000"
+    
     volumes:
-      - ./config:/config:ro   # Read-only for security
+      - ./config:/config:ro
+    
     restart: unless-stopped
     
-    # Load environment variables from local .env file
     env_file:
       - .env
     
-    # Simplified: Pass all variables, let tools.yaml handle selection
     environment:
-      - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-dev}
-      - DNB_SUBSCRIPTION_KEY_DEV=${DNB_SUBSCRIPTION_KEY_DEV}
-      - DNB_SUBSCRIPTION_KEY_PROD=${DNB_SUBSCRIPTION_KEY_PROD}
-      - DNB_SUBSCRIPTION_NAME_DEV=${DNB_SUBSCRIPTION_NAME_DEV}
-      - DNB_SUBSCRIPTION_NAME_PROD=${DNB_SUBSCRIPTION_NAME_PROD}
-      
-      # OpenTelemetry configuration
+      # ✅ FIX: Use PROD keys when DNB_ENVIRONMENT=prod
+      - DNB_ENVIRONMENT=${DNB_ENVIRONMENT:-prod}
+      - DNB_SUBSCRIPTION_KEY=${DNB_SUBSCRIPTION_KEY_PROD}
+      - DNB_SUBSCRIPTION_NAME=${DNB_SUBSCRIPTION_NAME_PROD}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
       - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
       - OTEL_TRACES_EXPORTER=${OTEL_TRACES_EXPORTER:-otlp}
       - OTEL_METRICS_EXPORTER=${OTEL_METRICS_EXPORTER:-otlp}
       - OTEL_LOGS_EXPORTER=${OTEL_LOGS_EXPORTER:-otlp}
-      
-            # Logging
       - LOG_LEVEL=${LOG_LEVEL:-info}
     
     networks:
       - orkhon-net
     
-    # Health check for MCP server
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    
-    depends_on:
-      jaeger:
-        condition: service_healthy
-
-  # ===========================================================================
-  # Jaeger - Distributed Tracing (OpenTelemetry Backend)
-  # ===========================================================================
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: orkhon-jaeger
-    ports:
-      - "16686:16686"  # Jaeger UI
-      - "4318:4318"    # OTLP HTTP receiver
-      - "4317:4317"    # OTLP gRPC receiver
-      - "14269:14269"  # Health check endpoint
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      - LOG_LEVEL=info
-    networks:
-      - orkhon-net
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:14269/"]
-      interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from google.adk.agents import LlmAgent as Agent
 from google.adk.tools.toolbox_toolset import ToolboxToolset
-from .._common.config import get_model  # type: ignore
+from _common.config import get_model  # type: ignore
 
 # Future implementation
 google_search_agent = Agent(

@@ -49,10 +49,11 @@ cd C:\Users\rjjaf\_Projects\orkhon
 
 ## 📦 Manual Start
 
-### Toolbox (First)
+### Google GenAI Toolbox (First) - **Custom Build**
 ```powershell
-cd C:\Users\rjjaf\_Projects\orkhon\backend\toolbox
-docker-compose -f docker-compose.dev.yml up -d
+cd C:\Users\rjjaf\_Projects\orkhon\backend\genai-toolbox
+# Build from sibling clone: C:\Users\rjjaf\_Projects\genai-toolbox
+docker-compose -f docker-compose.dev.yml up -d --build
 ```
 
 ### ADK Web (Second)
@@ -67,167 +68,53 @@ adk web --reload_agents --host=0.0.0.0 --port=8000 backend\adk\agents
 # Stop ADK Web: Ctrl+C in its terminal
 
 # Stop all Docker services:
-cd backend\toolbox
+cd backend\genai-toolbox
 docker-compose -f docker-compose.dev.yml down
 
 # Or stop individual containers:
-docker stop orkhon-genai-toolbox-mcp orkhon-jaeger
+docker stop genai-toolbox jaeger
+```
+
+## 📦 Toolbox Version Management (Custom Build)
+
+```powershell
+# Rebuild custom toolbox image
+cd backend\genai-toolbox
+docker-compose -f docker-compose.dev.yml build genai-toolbox
+
+# Restart with fresh build
+docker-compose -f docker-compose.dev.yml up -d --build genai-toolbox
 ```
 
 ## 🔍 Check Status
+
 ```powershell
-# Check all Orkhon containers
-docker ps --filter "name=orkhon-"
-
-# Check container logs
-cd backend\toolbox
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Check specific service logs
-docker logs orkhon-genai-toolbox-mcp --tail=50
-docker logs orkhon-jaeger --tail=50
+# List running containers
+docker ps --filter "name=genai-toolbox" --filter "name=jaeger"
 
 # Check Toolbox health
-Invoke-WebRequest http://localhost:5000/health
+Invoke-WebRequest http://localhost:5000/api/toolset  # ✅ Correct endpoint
 
-# Restart Toolbox to reload configurations
-cd backend\toolbox
-docker-compose -f docker-compose.dev.yml restart genai-toolbox
+# View Toolbox logs
+cd backend\genai-toolbox
+docker-compose -f docker-compose.dev.yml logs -f genai-toolbox
 
-# Check ADK Web (when running)
-Invoke-WebRequest http://localhost:8000
-
-# Run diagnostics
-.\backend\scripts\diagnose-setup.ps1
+# View Jaeger UI
+Start-Process http://localhost:16686
 ```
-
-## 📝 Test Queries for Multi-Agent System
-```
-"What tools do you have available?"
-"What data do you have access to?"
-"Get the hello world message from DNB"
-"Show me available exchange rates"
-"List pension fund statistics"
-"Search for financial institutions in the public register"
-"Analyze pension fund data trends over time"
-"Visualize any available data (analytics smoke test)"
-```
-
-Run with:
-```powershell
-# For data science queries
-python backend\adk\run_data_science_agent.py --query "What data do you have?"
-
-# For DNB API queries
-python backend\adk\run_dnb_openapi_agent.py
-
-# For full multi-agent system (integrated)
-# Start ADK Web and use the UI
-.\backend\scripts\quick-start.ps1
-```
-
-## 📚 Documentation
-- **[Current Architecture](backend/etl/docs/ARCHITECTURE_CURRENT.md)** - What we built (8 agents, 87 tools)
-- **[Future Architecture](backend/etl/docs/ARCHITECTURE_DNB_FUTURE.md)** - DNB IT deployment (Azure)
-- **ETL:** Runs locally; data already in BigQuery. No cloud ETL components.
-- **[System Flow](SYSTEM_FLOW.md)** - Complete startup sequence
-- **[Backend README](backend/README.md)** - Component overview
-- **[Toolbox Config](backend/toolbox/config/QUICK_ANSWER.md)** - Tool setup guide
-- **[Data Science Agent](backend/adk/agents/data_science/README.md)** - BigQuery + Analytics setup
-
-### LLM Model Profiles (Simple Policy)
-
-We use a small set of semantic profiles to simplify model choice and costs:
-
-- fast → gemini-2.5-flash (cheap/low-latency; routing, tool-calls)
-- smart → gemini-2.5-pro (better reasoning; code/analytics/NL2SQL)
-- lite → gemini-1.5-flash (ultra low cost fallback)
-- embed → text-embedding-005 (embeddings)
-
-How to override (highest wins):
-
-1) Per-agent env var (kept for specialization), e.g.
-
-	- ANALYTICS_AGENT_MODEL
-	- DNB_STATISTICS_MODEL
-
-2) Per-profile env var (recommended):
-
-	- ORKHON_MODEL_FAST
-	- ORKHON_MODEL_SMART
-	- ORKHON_MODEL_LITE
-	- ORKHON_MODEL_EMBED
-
-3) Global cascade:
-
-	ORKHON_LLM_MODEL > ROOT_AGENT_MODEL > GOOGLE_GEMINI_MODEL > defaults
-
-Defaults are defined in `backend/adk/agents/_common/config.py`. Agents call
-`get_model("fast")` or `get_model("smart")` instead of hard-coded strings.
 
 ## 🆘 Common Issues
 
-### Missing Google AI/Vertex credentials
-If you see an error like:
-
-> Missing key inputs argument! To use the Google AI API, provide (api_key). To use the Google Cloud API, provide (vertexai, project & location).
-
-Set one of the following in a local .env file (copy .env.example to .env):
-
-Option A: Google AI API key
-
-```powershell
-# .env
-GOOGLE_API_KEY=your_api_key_here
-```
-
-Option B: Vertex AI (Application Default Credentials)
-
-```powershell
-# .env
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-
-# Authenticate once in a terminal
-gcloud auth application-default login
-```
-
-Option B (service account file):
-
-```powershell
-# .env
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_LOCATION=us-central1
-GOOGLE_APPLICATION_CREDENTIALS=C:\path\to\service-account.json
-```
-
-Then re-run Quick Start or the ADK Web task.
-
-### Port 8000 in use
-```powershell
-netstat -ano | findstr :8000
-taskkill /PID <PID> /F
-```
-
 ### Toolbox not responding
 ```powershell
-cd backend\toolbox
-docker-compose -f docker-compose.dev.yml restart genai-toolbox-mcp
+cd backend\genai-toolbox
+docker-compose -f docker-compose.dev.yml restart genai-toolbox
 ```
 
 ### View logs
 ```powershell
-docker-compose -f docker-compose.dev.yml logs -f genai-toolbox-mcp
+docker-compose -f docker-compose.dev.yml logs -f genai-toolbox
 ```
-
-### Analytics visualization fails intermittently
-Set a persistent Code Interpreter extension to avoid re-creating it on each run:
-```powershell
-# .env (data-science agent)
-CODE_INTERPRETER_EXTENSION_NAME=projects/<PROJECT>/locations/<LOCATION>/extensions/<EXT_ID>
-GOOGLE_CLOUD_LOCATION=<LOCATION>  # match the extension location
-```
-If a chart still doesn’t render, open the Artifacts panel; if empty, relax filters or try a different table.
 
 ---
 

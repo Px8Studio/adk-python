@@ -3,7 +3,7 @@ sources:
     kind: http
     baseUrl: https://api.dnb.nl/statisticsdata/v2024100101
     headers:
-      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY_DEV}
+      Ocp-Apim-Subscription-Key: ${DNB_SUBSCRIPTION_KEY}  # ✅ Use generic var
     timeout: 30s
 tools:
   dnb_statistics_exchange_rates_of_the_euro_and_gold_price_day:
@@ -2426,6 +2426,21 @@ tools:
       description: Specifies the default sort direction. If omitted, default to ascending
         (asc). The value of sortDirection is overridden if the sort direction is already
         specified in the 'sort' parameter.
+      required: false
+  dnb_statistics_metadata:
+    kind: http
+    source: statistics_api
+    method: GET
+    path: /metadata
+    description: 'Retrieve dataset metadata'
+    queryParams:
+    - name: language
+      type: string
+      description: Language code for the metadata response.
+      allowedValues:
+      - EN
+      - NL
+      default: NL
       required: false
 toolsets:
   dnb_statistics_tools:
