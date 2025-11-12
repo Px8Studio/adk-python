@@ -13,6 +13,10 @@
     {
       "name": "dnb_coordinator_agent",
       "description": "DNB API operations coordinator"
+    },
+    {
+      "name": "data_science_root_agent",
+      "description": "Data Science multi-agent root (BigQuery/AlloyDB analytics)"
     }
   ],
   "metadata": {

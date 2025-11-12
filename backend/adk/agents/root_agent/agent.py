@@ -21,7 +21,6 @@ coordinator based on the user's intent.
 
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import importlib.machinery
 import logging
@@ -38,17 +37,56 @@ from api_coordinators.dnb_coordinator.agent import (
 )
 
 def _try_import_data_science_agent() -> Optional[object]:
-  """Import the adopted data-science agent using a relative import.
+  """Load the data-science agent as a proper package import.
 
-  This follows the official ADK agent discovery pattern and avoids sys.path hacks.
+  Why: The sample lives under "agents/data-science/data_science/agent.py" and
+  uses relative imports like "from .prompts import ...". Loading by file path
+  breaks those. Instead, temporarily add the outer folder to sys.path and
+  import "data_science.agent" so Python resolves relatives correctly.
   """
   try:
-    # Adopted sample lives under: backend/adk/agents/data_science/agent.py
-    from ..data_science import agent as ds_agent  # type: ignore
-    return ds_agent
+    here = Path(__file__).resolve()
+    outer_dir = here.parent.parent / "data-science"
+    inner_pkg = outer_dir / "data_science"
+    agent_file = inner_pkg / "agent.py"
+
+    if not agent_file.exists():
+      logging.error("Data-science agent file not found at %s", agent_file)
+      return None
+
+    # Ensure dataset config has a sane default if not provided by env/CLI
+    # This avoids fatal logs inside the data_science module during import.
+    os_env = sys.modules.get('os')
+    import os as _os  # local import to avoid polluting module scope
+    if not _os.getenv("DATASET_CONFIG_FILE"):
+      # Prefer a DNB-oriented config if present, else fall back to flights.
+      default_cfg = "dnb_dataset_config.json"
+      if not (outer_dir / default_cfg).exists():
+        default_cfg = "flights_dataset_config.json"
+      _os.environ.setdefault("DATASET_CONFIG_FILE", default_cfg)
+
+    # Add the outer folder so that "import data_science.agent" works
+    outer_str = str(outer_dir)
+    if outer_str not in sys.path:
+      sys.path.insert(0, outer_str)
+
+    import importlib as _il
+    module = _il.import_module("data_science.agent")
+
+    getter = getattr(module, "get_root_agent", None)
+    if callable(getter):
+      return getter()
+    agent_obj = getattr(module, "root_agent", None)
+    if agent_obj is not None:
+      return agent_obj
+    logging.warning(
+        "Data-science module loaded but missing get_root_agent/root_agent"
+    )
   except Exception:
-    logging.exception("Data-science coordinator unavailable; continuing without it")
-    return None
+    logging.exception(
+        "Data-science root agent unavailable; continuing without it"
+    )
+  return None
 
 # Build root agent / app the standard way.
 # If your existing file already defines an app/root_agent, keep that and only
@@ -68,32 +106,17 @@ _ds = _try_import_data_science_agent()
 
 def get_root_agent() -> Agent:
   """Create the root agent with sub-agents for API coordination."""
-
   dnb_coordinator = get_dnb_coordinator_agent()
 
-  data_science_module = _ds
-  data_science_coordinator: Optional[Agent] = None
-  if data_science_module is not None:
-    getter = getattr(data_science_module, "get_root_agent", None)
-    if callable(getter):
-      try:
-        data_science_coordinator = getter()
-      except Exception:  # pragma: no cover
-        logging.exception(
-            "Failed to instantiate data science coordinator agent"
-        )
-    else:
-      logging.warning(
-          "Data science agent module at %s is missing get_root_agent",
-          data_science_module,
-      )
+  # Instantiate data science root agent directly
+  data_science_root = _try_import_data_science_agent()
 
   sub_agents: list[Agent] = [dnb_coordinator]
-  if data_science_coordinator is not None:
-    sub_agents.append(data_science_coordinator)
+  if data_science_root is not None:
+    sub_agents.append(data_science_root)
   else:
     logging.warning(
-        "Data science coordinator unavailable; continuing without it"
+        "Data-science root agent unavailable; continuing without it"
     )
 
   model_name = get_model("fast")
@@ -102,12 +125,12 @@ def get_root_agent() -> Agent:
       model=model_name,
       name="root_agent",
       instruction="""You are the Root Orchestrator for the Orkhon system.
-          
-Your role is to:
-1. Understand the user's query and intent
-2. Delegate to the appropriate coordinator agent:
-   - dnb_coordinator: For DNB API queries (Echo, Statistics, Public Register)
-   - data_science_coordinator: For analytics and data science workflows
+
+Your role:
+1. Understand the user's intent
+2. Delegate to the correct sub-agent:
+  - dnb_coordinator_agent: DNB API (Echo, Statistics, Public Register)
+  - data_science_root_agent: Analytics / NL2SQL / NL2Py workflows
 """,
       sub_agents=sub_agents,
   )

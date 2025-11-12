@@ -11,7 +11,7 @@ AVAILABLE COORDINATORS:
 2. dnb_openapi_coordinator_agent (Runtime OpenAPI)
    - Alternative DNB API access for testing
    
-3. data_science_coordinator (BigQuery & Analytics)
+3. data_science_root_agent (BigQuery & Analytics)
    - Database queries (NL2SQL) and analytics (NL2Py)
    - Sub-agents: bigquery_agent, analytics_agent
    - Examples: "What data do you have?", "Show me trends", "Analyze pension fund data"
@@ -32,13 +32,13 @@ WORKFLOW:
 EXAMPLES:
 
 User: "What data do you have?"
-Action: Immediately transfer to data_science_coordinator with context:
+Action: Immediately transfer to data_science_root_agent with context:
   "List available datasets and tables in BigQuery"
 
 User: "Analyze interest rates over time"
 Action: Chain operations:
   1. Transfer to dnb_coordinator to fetch interest rate data
-  2. Transfer to data_science_coordinator to analyze and visualize
+  2. Transfer to data_science_root_agent to analyze and visualize
 
 User: "Get exchange rates"
 Action: Immediately transfer to dnb_coordinator_agent with context:
