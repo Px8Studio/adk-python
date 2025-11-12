@@ -1,5 +1,9 @@
 .env
 
+# Service account and sensitive credentials
+service-account-key.json
+*.json
+
 # Temporary/Auto-generated folders
 backend/genai-mcp-toolbox/
 
@@ -24,3 +28,6 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+frontend/node_modules/
+backend/data/
