@@ -17,7 +17,8 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 Write-Host "📥 Fetching from adk-samples remote..." -ForegroundColor Cyan
-git fetch adk-samples
+# Narrow fetch to main only, prune, no tags
+git fetch --prune --no-tags adk-samples "+refs/heads/main:refs/remotes/adk-samples/main"
 
 Write-Host ""
 Write-Host "📊 File differences between local and upstream:" -ForegroundColor Cyan

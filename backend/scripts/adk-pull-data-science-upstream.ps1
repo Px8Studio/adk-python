@@ -18,7 +18,8 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 Write-Host "[>] Fetching from adk-samples remote..." -ForegroundColor Cyan
-git fetch adk-samples
+# Fetch only main to prevent all branches from being tracked
+git fetch --prune --no-tags adk-samples "+refs/heads/main:refs/remotes/adk-samples/main"
 
 Write-Host ""
 Write-Host "[~] Pulling updates for data-science agent..." -ForegroundColor Cyan

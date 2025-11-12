@@ -96,13 +96,14 @@ if ($remotes -notcontains $ADK_SAMPLES_REMOTE) {
   
   Write-Host "Fetching from remote..." -ForegroundColor White
   if (-not $DryRun) {
-    git fetch $ADK_SAMPLES_REMOTE
+    # Limit to main only to avoid tracking all branches
+    git fetch --prune --no-tags $ADK_SAMPLES_REMOTE "+refs/heads/$UPSTREAM_BRANCH:refs/remotes/$ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH"
     if ($LASTEXITCODE -ne 0) {
       Write-Host "Failed to fetch from remote" -ForegroundColor Red
       exit 1
     }
   } else {
-    Write-Host "[DRY RUN] Would execute: git fetch $ADK_SAMPLES_REMOTE" -ForegroundColor Gray
+    Write-Host "[DRY RUN] Would execute: git fetch --prune --no-tags $ADK_SAMPLES_REMOTE '+refs/heads/$UPSTREAM_BRANCH:refs/remotes/$ADK_SAMPLES_REMOTE/$UPSTREAM_BRANCH'" -ForegroundColor Gray
   }
   
   Write-Host "Remote added successfully" -ForegroundColor Green

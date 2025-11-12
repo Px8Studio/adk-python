@@ -16,8 +16,15 @@
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+# Enforce single-branch tracking for 'adk-samples' to avoid noisy branches
+git config --unset-all remote.adk-samples.fetch 2>$null
+git config --add remote.adk-samples.fetch "+refs/heads/main:refs/remotes/adk-samples/main"
+git config remote.adk-samples.tagOpt "--no-tags"
+git config remote.adk-samples.prune "true"
+
 Write-Host "📥 Fetching from adk-samples remote..." -ForegroundColor Cyan
-git fetch adk-samples
+# Fetch only main to prevent all branches from being tracked
+git fetch --prune --no-tags adk-samples "+refs/heads/main:refs/remotes/adk-samples/main"
 
 Write-Host ""
 Write-Host "📊 Changes in upstream data-science agent:" -ForegroundColor Cyan
@@ -32,3 +39,6 @@ if ($changes) {
 } else {
   Write-Host "✅ No upstream changes found - you are up to date!" -ForegroundColor Green
 }
+
+# Example comparison remains on main-only tracking
+git diff --stat HEAD adk-samples/main -- python/agents/data-science

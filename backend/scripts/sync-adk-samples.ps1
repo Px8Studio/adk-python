@@ -24,7 +24,8 @@ if ($remotes -notmatch "adk-samples") {
 }
 
 Write-Host "📥 Fetching latest from adk-samples..." -ForegroundColor Yellow
-git fetch adk-samples
+# Limit fetch to main only, prune, no tags
+git fetch --prune --no-tags adk-samples "+refs/heads/main:refs/remotes/adk-samples/main"
 
 # List of adopted samples (update this as you adopt more)
 $adoptedSamples = @(

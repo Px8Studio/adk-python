@@ -99,136 +99,48 @@ $successCount = 0
 $skipCount = 0
 $errorCount = 0
 
+# When fetching each upstream repo, only fetch default branch to avoid tracking all branches
+$TimeoutSeconds = 120
 foreach ($repo in $repos) {
-  Write-Host "----------------------------------------------------------------" -ForegroundColor Gray
-  Write-Host "Processing: $($repo.Name)" -ForegroundColor Cyan
-  Write-Host "   Path: $($repo.Path)" -ForegroundColor DarkGray
-  
-  # Check if directory exists
+  Write-Host "▶ $($repo.Name)" -ForegroundColor Cyan
   if (-not (Test-Path $repo.Path)) {
-    Write-Host "   ERROR: Directory does not exist - SKIPPING" -ForegroundColor Red
-    $skipCount++
-    Write-Host ""
+    Write-Host "   Skipped (path not found): $($repo.Path)" -ForegroundColor Yellow
     continue
   }
 
   Push-Location $repo.Path
-  
   try {
-    # Check if it's a git repository
-    $isGitRepo = Test-Path ".git"
-    if (-not $isGitRepo) {
-      Write-Host "   ERROR: Not a git repository - SKIPPING" -ForegroundColor Red
-      $skipCount++
-      Pop-Location
-      Write-Host ""
-      continue
-    }
-
-    # Get current branch
-    $currentBranch = git rev-parse --abbrev-ref HEAD 2>$null
-    Write-Host "   Current branch: $currentBranch" -ForegroundColor DarkGray
-
-    # Check for uncommitted changes
-    $status = git status --porcelain 2>$null
-    if ($status) {
-      Write-Host "   WARNING: Uncommitted changes detected - SKIPPING" -ForegroundColor Yellow
-      Write-Host "   Please commit or stash your changes first" -ForegroundColor Yellow
-      $skipCount++
-      Pop-Location
-      Write-Host ""
-      continue
-    }
-
-    # Check if upstream remote exists
-    $upstreamExists = git remote | Select-String -Pattern "^upstream$" -Quiet
-    
-    if (-not $upstreamExists) {
-      if ($DryRun) {
-        Write-Host "   [DRY RUN] Would add upstream remote: $($repo.Upstream)" -ForegroundColor Yellow
-      } else {
-        Write-Host "   Adding upstream remote..." -ForegroundColor Blue
-        git remote add upstream $repo.Upstream
-        if ($LASTEXITCODE -ne 0) {
-          throw "Failed to add upstream remote"
-        }
-      }
+    Write-Host "   Ensuring 'upstream' remote exists..." -NoNewline
+    if (-not (git remote | Select-String "^upstream$" -Quiet)) {
+      git remote add upstream $($repo.Upstream)
+      Write-Host " added" -ForegroundColor Green
     } else {
-      Write-Host "   OK: Upstream remote already exists" -ForegroundColor Green
+      Write-Host " ok" -ForegroundColor Green
     }
 
-    # Modify the fetch section
-    Write-Host "   Fetching from upstream (timeout: ${TimeoutSeconds}s)..." -NoNewline
+    # Restrict remote fetch to branch only; no tags; prune
+    git config --unset-all remote.upstream.fetch 2>$null
+    git config --add remote.upstream.fetch "+refs/heads/$($repo.Branch):refs/remotes/upstream/$($repo.Branch)"
+    git config remote.upstream.tagOpt "--no-tags"
+    git config remote.upstream.prune "true"
 
+    Write-Host "   Fetching $($repo.Branch) from upstream..." -NoNewline
     $fetchJob = Start-Job -ScriptBlock {
-      param($path)
+      param($path, $branch)
       Set-Location $path
-      git fetch upstream 2>&1
-    } -ArgumentList $repo.Path
+      git fetch --prune --no-tags upstream "+refs/heads/$branch:refs/remotes/upstream/$branch" 2>&1
+    } -ArgumentList $repo.Path, $repo.Branch
 
-    $completed = Wait-Job $fetchJob -Timeout $TimeoutSeconds
-
-    if ($completed) {
-      $output = Receive-Job $fetchJob
-      if ($fetchJob.State -eq 'Completed') {
-        Write-Host " Done" -ForegroundColor Green
-      } else {
-        Write-Host " Failed" -ForegroundColor Red
-        Write-Host "   Error: $output"
-      }
+    Wait-Job $fetchJob | Out-Null
+    $output = Receive-Job $fetchJob
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "`n$output" -ForegroundColor Red
+      throw "Fetch failed"
     } else {
-      Stop-Job $fetchJob
-      Write-Host " TIMEOUT" -ForegroundColor Yellow
-      Write-Host "   Fetch took longer than ${TimeoutSeconds} seconds"
-      Write-Host "   You may need to fetch manually for this repository"
+      Write-Host " done" -ForegroundColor Green
     }
-
-    Remove-Job $fetchJob -Force
-
-    # Switch to target branch if not already on it
-    if ($currentBranch -ne $repo.Branch) {
-      if ($DryRun) {
-        Write-Host "   [DRY RUN] Would checkout branch: $($repo.Branch)" -ForegroundColor Yellow
-      } else {
-        Write-Host "   Checking out $($repo.Branch)..." -ForegroundColor Blue
-        git checkout $repo.Branch 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-          throw "Failed to checkout $($repo.Branch)"
-        }
-      }
-    }
-
-    # Check if merge is needed
-    $behindCount = git rev-list --count HEAD..upstream/$($repo.Branch) 2>$null
-    if ($behindCount -and $behindCount -gt 0) {
-      if ($DryRun) {
-        Write-Host "   [DRY RUN] Would merge $behindCount commit(s) from upstream/$($repo.Branch)" -ForegroundColor Yellow
-      } else {
-        Write-Host "   Merging $behindCount commit(s) from upstream/$($repo.Branch)..." -ForegroundColor Blue
-        git merge upstream/$($repo.Branch) --no-edit 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) {
-          throw "Failed to merge from upstream"
-        }
-        Write-Host "   SUCCESS: Synced with upstream" -ForegroundColor Green
-      }
-    } else {
-      Write-Host "   OK: Already up to date with upstream" -ForegroundColor Green
-    }
-
-    # Return to original branch if we switched
-    if ($currentBranch -ne $repo.Branch -and -not $DryRun) {
-      Write-Host "   Returning to branch: $currentBranch" -ForegroundColor Blue
-      git checkout $currentBranch 2>&1 | Out-Null
-    }
-
-    $successCount++
-    
-  } catch {
-    Write-Host "   ERROR: $_" -ForegroundColor Red
-    $errorCount++
   } finally {
     Pop-Location
-    Write-Host ""
   }
 }
 
