@@ -1,6 +1,68 @@
 {
   "version": "2.0.0",
   "tasks": [
+    {
+      "label": "Orkhon: Quick Start",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend\\scripts",
+        "env": {
+          "COMPOSE_PROJECT_NAME": "orkhon"
+        }
+      },
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        ".\\quick-start.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Orkhon: Toolbox Up",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend\\toolbox",
+        "env": {
+          "COMPOSE_PROJECT_NAME": "orkhon"
+        }
+      },
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "orkhon",
+        "-f",
+        "docker-compose.dev.yml", // CHANGED: use dev compose file
+        "up",
+        "-d",
+        "--remove-orphans"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Orkhon: Toolbox Down (clean)",
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}\\backend\\toolbox",
+        "env": {
+          "COMPOSE_PROJECT_NAME": "orkhon"
+        }
+      },
+      "command": "docker",
+      "args": [
+        "compose",
+        "-p",
+        "orkhon",
+        "-f",
+        "docker-compose.dev.yml", // CHANGED: ensure down references dev file
+        "down",
+        "-v"
+      ],
+      "problemMatcher": []
+    },
     // ============================================================
     // Quick Start - Full Stack
     // ============================================================

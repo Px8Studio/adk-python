@@ -7,7 +7,8 @@
 #>
 
 param(
-  [switch]$SkipDiagnostics
+  [switch]$SkipDiagnostics,
+  [string]$ProjectRoot  # NEW: allow caller to pass the real project root
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,9 +22,10 @@ if ($SkipDiagnostics) {
 
 try {
   # Determine project root based on script location if not provided
-  if (-not $script:ProjectRoot) {
+  if (-not $ProjectRoot) {
     $scriptDir = Split-Path -Parent $PSCommandPath
-  $ProjectRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
+    # backend\scripts -> project root (two levels up)
+    $ProjectRoot = (Resolve-Path (Join-Path $scriptDir '..\..')).Path
   }
   Write-Host "[INFO] Project root: $ProjectRoot" -ForegroundColor Yellow
 
@@ -123,3 +125,23 @@ try {
   Write-Host "[ERR] Diagnostics failed: $($_.Exception.Message)" -ForegroundColor Red
   exit 1
 }
+
+# Ensure there is no stray '-Wait' token executed as a command.
+# If you previously had something like:
+#   & "$PSScriptRoot\some-check.ps1"
+#   -Wait
+# remove the '-Wait' line entirely, or use Start-Process with -Wait properly:
+# Example pattern:
+
+function Invoke-Check {
+  param(
+    [Parameter(Mandatory=$true)][string]$ScriptPath
+  )
+  if (-not (Test-Path $ScriptPath)) { return }
+  # Run synchronously (PowerShell waits for scripts by default)
+  & $ScriptPath
+}
+
+# Invoke checks
+Invoke-Check -ScriptPath (Join-Path $PSScriptRoot "checks\docker.ps1")
+Invoke-Check -ScriptPath (Join-Path $PSScriptRoot "checks\ports.ps1")
