@@ -5,25 +5,59 @@ A two-part brief for non-technical and technical readers.
 - Part 1 – Meet Solven (plain-language)
 - Part 2 – Technical Appendix (deep-dive, architecture, governance)
 
+---
+
+## Table of Contents
+
+- Part 1 – Meet Solven
+  - Why Solven Exists
+  - How Solven Helps Us
+  - The Team Behind Solven: Three Specialist Sub‑Agents
+  - FAQ
+  - Engagement and Support
+- Part 2 – Technical Appendix
+  - Appendix A – Vision Overview
+  - Microsoft-First Architecture Enablers
+  - Why Azure AI Foundry and not Copilot Studio?
+    - At-a-Glance Benefits
+    - Feature Comparison Matrix
+    - Pros and Cons
+    - Coexistence Pattern
+  - Agent Catalog
+  - Representative Use Cases
+  - KPIs
+  - Risks & Mitigations
+  - Readiness Checklist (Pre-Build)
+  - References
+  - Open Questions for Architecture and Operations
+  - Appendix B – Multi‑Agent Orchestration Architecture
+  - Appendix C – Data Source Connectivity Matrix
+  - Appendix D – Conversation Journey (Mermaid)
+  - Appendix E – Agent Mesh Topology (Mermaid)
+  - Appendix F – Bridging and Related Docs
+  - Appendix G – Comparison Tables (CSV for Excel)
+
+---
+
 ## Part 1 – Meet Solven
 
 ### Why Solven Exists
-Solven is our digital colleague that answers supervision questions by talking to the same governed data sources we use. Think of it as a concierge who knows the DNB house rules and can fetch the right dossier in seconds.
+Solven is our digital colleague that answers supervision questions by talking to the same governed data sources we use. Think of it as a concierge who knows the house rules and can fetch the right dossier in seconds.
 
-- Live URL: https://solven-ai.web.app
 - Goal: Faster, cited answers; less time chasing data; more time for judgment.
+- Pilot sponsor: ECDAP (initial deployment; designed for broader DNB adoption).
 
 ### How Solven Helps Us
-- Colleagues will ask Solven in plain language. Example: “What’s the latest reported solvency ratio for FI X, and how does it compare quarter-over-quarter?”
+- Colleagues will ask in plain language. Example: “What’s the latest reported solvency ratio for FI X, and how does it compare quarter-over-quarter?”
 - Solven looks into:
-  - DNB public datasets and registers
+  - Public datasets and registers
   - Internal sources such as Synapse/Fabric lakehouse and Azure parquet archives
   - Approved APIs exposed with managed identity
 - The team receives a cited answer with links to sources and a short reasoning trail.
 
 What stays the same
 - Experts remain in control. Solven proposes; reviewers approve.
-- Sensitive actions follow our established approval flows.
+- Sensitive actions follow established approval flows.
 - Data access respects existing RBAC and least‑privilege rules.
 
 ### The Team Behind Solven: Three Specialist Sub‑Agents
@@ -51,7 +85,7 @@ Analogy
   - Open a ticket in the team channel or contact the product owner/security liaison listed below.
 
 ### Engagement and Support
-- Access will be provided during pilot via the standard app catalog entry (Solven – DNB).
+- Access will be provided during pilot via the standard app catalog entry.
 - Requirements: Entra ID account, RBAC aligned to governed sources.
 - Support: Product Owner, Solution Architect, Security/Privacy contact.
 - See Appendix C for the deployment and rollout plan in Azure AI Foundry.
@@ -64,11 +98,11 @@ Analogy
 <!-- Previous full document content begins here, now nested under Appendix A.
      Keep the text unchanged except for heading levels as needed. -->
 
-# Why Agentic AI at DNB – Management Brief
+# Why Agentic AI – Management Brief
 
-Purpose: Recommend adoption of agentic AI aligned with Microsoft-first strategy; outline value, risks, and fit for DNB, with an initial focus on Insurance and Pension funds.
+Purpose: Recommend adoption of agentic AI aligned with Microsoft-first strategy; outline value, risks, and fit, with an initial focus on Insurance and Pension funds.
 
-Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
+Audience: Leadership, IT, Security, Supervision, Data & Analytics.
 
 ## Executive Summary
 
@@ -81,9 +115,9 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 - Definition: An agent is a governed software component using large language
   model (LLM) reasoning to plan, invoke tools/APIs, and coordinate tasks.
-- Maturity: Microsoft Agent Framework integrates planning (Semantic Kernel) and multi‑agent patterns (AutoGen).
+- Maturity: Microsoft agentic frameworks integrate planning (Semantic Kernel “agents”) and multi‑agent patterns (AutoGen).
 - Fit: Supervisory workflows (cross-database reconciliation, regulatory change impact, document analysis) require tool use plus policy controls.
-- Platform: Azure AI Foundry supplies orchestration, evaluation, deployment, identity integration.
+- Platform: Azure AI Foundry supplies orchestration, evaluation, deployment, and identity integration.
 
 ### Component-Level vs System-Level
 
@@ -113,42 +147,65 @@ Audience: DNB leadership, IT, Security, Supervision, Data & Analytics.
 
 - TL;DR: Use Copilot Studio for lightweight, M365-first experiences and citizen-development. Use Azure AI Foundry for governed, multi-agent, tool-heavy backends that require private networking, managed identity, evaluation gates, and CI/CD.
 
-Key differences
-- Scope and target:
-  - Copilot Studio: Rapid M365-centric copilots, plugins, actions, and connectors inside the Microsoft 365 runtime.
-  - AI Foundry: Engineering platform for agentic backends (Prompt Flow/Semantic Kernel), any channel (incl. Teams), any model/provider, custom tools/APIs.
-- Identity, networking, and data perimeter:
-  - Copilot Studio: Strong for user-delegated access to M365 and Power Platform connectors.
-  - AI Foundry: End-to-end Entra ID with Managed Identities, Key Vault, private networking/VNet, private endpoints across LLM, APIs, and databases.
-- Orchestration and multi-agent:
-  - Copilot Studio: Prompts, plugins, and actions; limited branching/planning for complex tool use.
-  - AI Foundry: First-class orchestration (Prompt Flow, SK), retries/branching, multi-agent patterns, evaluation gates before sensitive actions.
-- Tools and internal APIs:
-  - Copilot Studio: Connector-first; custom connectors via Power Platform/Dataverse.
-  - AI Foundry: Direct SDK/OpenAPI/MCP tools, database access with MI, standardized tool schemas, reuse across agents/services.
-- Evaluation, safety, and observability:
-  - Copilot Studio: Responsible AI features for M365 experiences.
-  - AI Foundry: Offline/online evaluations (groundedness/relevance), policy gates, lineage and tracing (App Insights/Log Analytics), A/B, canary, rollbacks.
-- DevOps and portability:
-  - Copilot Studio: ALM via Power Platform solutions.
-  - AI Foundry: Projects/Hubs, infra-as-code (Bicep/Terraform), versioned flows, multi-environment CI/CD, model/provider portability.
-- Cost and scaling:
-  - Copilot Studio: Fast time-to-value for M365 scenarios; simpler cost model.
-  - AI Foundry: More control for data/compute-heavy backends, explicit cost attribution, scale-out patterns.
+### At-a-Glance: Benefits of Azure AI Foundry vs Copilot Studio
+| Benefit | Azure AI Foundry | Copilot Studio |
+|---|---|---|
+| Private networking and data perimeter (VNets, Private Endpoints) | First-class (Hub/Project, PE across LLM/data) | Limited; primarily M365 runtime |
+| End-to-end identity (Entra ID, Managed Identity for tools/DBs) | Native MI + Key Vault, service-to-service | Strong for user-delegated M365; MI limited for custom backends |
+| Multi-agent orchestration (branching, retries, tool-first) | Prompt Flow + Semantic Kernel; AutoGen patterns | Actions/plugins; limited complex orchestration |
+| Evaluation gates (groundedness/relevance) before actions | Built-in offline/online eval; gating patterns | Responsible AI features; limited pre-action gates |
+| Observability and audit (App Insights/Log Analytics) | Full tracing with correlation IDs | Runtime telemetry focused on M365 experiences |
+| CI/CD, versioning, multi-env (dev/test/prod) | Projects/Hubs, IaC (Bicep/Terraform), rollouts | ALM via Power Platform solutions |
+| Model/provider portability | Any model/provider via SDK/endpoints | Primarily M365/Copilot context |
+| Internal APIs/tools (OpenAPI, SDK, DB with MI) | Direct integration, standardized tool schemas | Connector-first; custom connectors via Power Platform |
+| Cost control and scale-out | Explicit attribution, autoscale patterns | Simpler, tied to M365 usage and connectors |
 
-When to use which
-- Choose Copilot Studio when:
-  - The experience is primarily in M365 (Teams/Outlook/SharePoint) with user-delegated access and simple actions.
-  - Citizen developers maintain the solution and connector breadth is sufficient.
-- Choose AI Foundry when:
-  - Workflows invoke internal APIs/databases under Managed Identity with private networking and audit needs.
-  - You need multi-agent orchestration, evaluation gates, rollouts, and platform-level observability/traceability.
-  - Model/provider portability or non-M365 channels are in scope.
+### Feature comparison matrix (multi-agent development focus)
+| Area | Azure AI Foundry | Copilot Studio |
+|---|---|---|
+| Orchestration runtime | Prompt Flow, Semantic Kernel (SK); DAGs, retries, tool-first planning | Prompts + actions/plugins; simpler branching |
+| Multi-agent patterns | SK agents/planners; AutoGen; agent-to-agent via APIs | Single copilot with actions; basic composition |
+| Tooling for internal systems | OpenAPI/MCP/SDK tools; MI to DBs/APIs; private networking | Power Platform connectors; custom connectors; limited MI |
+| Identity | Managed Identity, Entra ID, Key Vault; service principals | User-delegated auth; strong for M365 |
+| Evaluations | Groundedness/relevance evals; offline/online; gates in flows | Responsible AI/testing; fewer gated eval flows |
+| Observability | App Insights, Log Analytics, KQL, correlation IDs | M365-centric telemetry |
+| DevX/SDKs | Python/.NET SDKs, CLI, local dev; Prompt Flow authoring | Low-code studio, solution export |
+| CI/CD | Hub/Project promotion; IaC; canary/rollback | Power Platform ALM |
+| Data residency/perimeter | EU regions, PE to LLM + data, VNet | M365 runtime perimeter |
+| Teams/Copilot integration | Expose secure backend APIs as plugins/actions | Native copilot in M365; fastest UX delivery |
 
-Coexistence pattern (recommended)
+### Pros and cons
+| Platform | Pros | Cons |
+|---|---|---|
+| Azure AI Foundry | Maximum control; MI + PE; multi-agent orchestration; eval gates; observability; portability; CI/CD | Higher engineering lift; more infra to manage; steeper learning curve |
+| Copilot Studio | Fastest time-to-value in M365; low-code; user-delegated access; simple ALM | Limited for complex multi-agent and MI-backed internal APIs; less perimeter control |
+
+### Coexistence pattern (recommended)
 - Frontend: Copilot/Teams (Copilot Studio for UX where helpful).
 - Backend: Agentic services in AI Foundry (Prompt Flow/SK) with tools, evaluations, and governance.
 - Integration: Expose backend APIs to Copilot via secure plugins/actions; keep Teams UX while centralizing orchestration, identity, and audit in Foundry.
+
+Mermaid diagram – Coexistence (frontend/backends)
+```mermaid
+flowchart LR
+  U[User in Teams/Copilot] -->|Prompts| C(Copilot Studio Frontend)
+  C -->|Plugin/Action| B[Secure Backend API]
+  subgraph Azure AI Foundry
+    B --> PF[Prompt Flow Orchestration]
+    PF --> SK[Semantic Kernel Agents]
+    SK --> T1[Tool: OpenAPI/SDK]
+    SK --> T2[Tool: DB w/ Managed Identity]
+    SK --> T3[Tool: MCP]
+    PF --> Eval[Groundedness/Relevance Eval Gates]
+  end
+  subgraph Governance
+    Sec[Content Safety]:::g -.-> PF
+    KV[Key Vault]:::g -.-> T1
+    MI[Managed Identity]:::g -.-> T2
+    PE[Private Endpoints]:::g -.-> T2
+  end
+  classDef g fill:#f7f7f7,stroke:#666,stroke-width:1px;
+```
 
 ## Agent Catalog (Initial Focus: Insurance & Pension)
 
@@ -189,7 +246,7 @@ KPIs:
 ## Risks & Mitigations
 
 - Incorrect actions: Tool‑first prompting, verification steps, HITL for sensitive flows.
-- Data leakage / PII: Safety gating, redaction, private networking, no training on DNB data.
+- Data leakage / PII: Safety gating, redaction, private networking, no training on sensitive data.
 - Access control gaps: Role‑based access, least privilege, approvals.
 - Drift: Versioned flows, canary rollout, telemetry and feedback loops.
 
@@ -207,86 +264,86 @@ KPIs:
 - Azure AI Foundry (orchestration, evaluation, deployment).
 - Microsoft Copilot (end‑user channel).
 - Governance: GDPR, NIS2, DORA via identity, safety, encryption, and audit.
+- Local repositories (capabilities and samples used in this design):
+  - C:\Users\rjjaf\_Projects\agent-framework
+  - C:\Users\rjjaf\_Projects\foundry-samples
+  - C:\Users\rjjaf\_Projects\mcp-foundry
+- Public, authoritative repos:
+  - Semantic Kernel (agents, planning): https://github.com/microsoft/semantic-kernel
+  - AutoGen (multi-agent patterns): https://github.com/microsoft/autogen
+  - Azure AI Foundry Samples (Prompt Flow, Agents, evals): https://github.com/Azure/azureai-samples
 
-## Open Questions for DNB Architecture and Operations
+## Open Questions for Architecture and Operations
 
 - Organization & Collaboration
   - Central ownership: Which central team leads Agentic AI (sponsor,
-    product/owner, platform)? Where does it sit organizationally?
-  - Collaboration model: How do we work with supervision domains and IT
-    (cadence, working agreements, Teams channel, decision forum)?
-  - Roles and staffing (pilot → scale): Which roles are needed and at what
-    allocation? (Product Owner, Solution Architect, Agent Engineer(s),
-    Data Engineer, Tool/API owner(s), Security, Compliance/Privacy,
-    Platform/DevOps, Evaluator/QA, Change & Adoption lead,
-    Legal/Procurement liaison).
-  - Capacity & timeline (indicative): Discovery 2–3 weeks; pilot build 6–8
-    weeks; hardening/deployment 2 weeks. Typical availability per role:
-    PO 0.3–0.5 FTE; Eng 2–3 FTE; Data Eng 0.5–1 FTE; Security/Compliance
-    0.2 FTE each; Evaluator 0.3 FTE.
-  - Artifacts: RACI, roadmap/backlog, Definition of Done/acceptance criteria,
-    decision log, risk/mitigation register.
+    product/owner, platform)?
+  - Collaboration model with supervision domains and IT (cadence,
+    working agreements, decision forum)?
+  - Roles and staffing (pilot → scale).
+  - Capacity & timeline (indicative).
+  - Artifacts: RACI, roadmap/backlog, DoD/acceptance criteria, decision log.
   - Ways of working: PR‑based change control, weekly demos, design reviews,
     incident/DR exercises.
 
 - Identity & Access
-  - How will agents authenticate to Azure SQL/PostgreSQL (Managed Identity vs user-delegated tokens)? Do we need per-user attribution in downstream query audit trails?
-  - What RBAC roles are required per agent and per tool? How will least privilege be enforced and reviewed?
-  - How will cross-tenant or guest access be handled, if needed, for inter-agency collaboration?
+  - Authentication to Azure SQL/PostgreSQL (Managed Identity vs user-delegated)?
+  - RBAC per agent and per tool; least privilege reviews?
+  - Cross-tenant or guest access for inter-agency collaboration?
 
 - Data Residency, Retention, and Privacy
-  - Confirm EU region(s), customer-managed keys (CMK), and encryption posture for all services (Cosmos DB, Log Analytics, AI services).
-  - What retention and deletion policies apply to chats, event logs, artifacts, and intermediate data? How will PII redaction be applied to logs?
+  - EU region(s), CMK, encryption posture for services.
+  - Retention/deletion policies for chats, event logs, artifacts; PII redaction.
 
 - Networking & Connectivity
-  - Which services require private endpoints/VNet integration (ACA, databases, Key Vault, OpenAI endpoints)? Any egress restrictions or proxy requirements?
-  - DNS, firewall rules, and IP allowlists for internal APIs and databases.
+  - Private endpoints/VNet (ACA, databases, Key Vault, OpenAI endpoints).
+  - DNS, firewall rules, allowlists for internal APIs and databases.
 
 - Secrets, Keys, and Credentials
-  - Can we operate fully with Managed Identities, or are any secrets required? How will rotation and access reviews be enforced via Key Vault?
+  - MI-first posture; secrets rotation and access reviews via Key Vault.
 
 - Safety & Compliance
-  - What Content Safety thresholds (PII, jailbreak, hate/abuse) should gate tool execution? Where are human-in-the-loop approvals required?
-  - How do we record safety decisions without storing sensitive payloads?
+  - Content Safety thresholds; HITL approvals.
+  - Recording safety decisions without storing sensitive payloads.
 
 - Observability & Audit
-  - What App Insights/Log Analytics schema, sampling, and correlation IDs will we adopt for end-to-end tracing (user → agent → tool → DB/API)?
-  - Which KQL queries and dashboards are needed for security investigations and compliance reporting?
+  - App Insights/Log Analytics schema, sampling, correlation IDs.
+  - KQL queries/dashboards for security and compliance.
 
 - Models & Orchestration
-  - Baseline model choice (Azure OpenAI GPT-4/Copilot) and fallbacks. What evaluation metrics (groundedness, relevance) define acceptable quality?
-  - Criteria for selecting Prompt Flow vs Semantic Kernel for specific agents. How will versions and rollouts be controlled?
+  - Baseline model choice and fallbacks; evaluation metrics.
+  - Prompt Flow vs Semantic Kernel selection; versioning and rollouts.
 
 - Tools & Internal APIs
-  - Inventory of authoritative APIs with OpenAPI specs. Are rate limits, pagination, and error contracts consistent?
-  - How will tool schemas (inputs/outputs) be standardized and reused across agents?
+  - Authoritative APIs with OpenAPI specs; rate limit and error contracts.
+  - Standardized tool schemas across agents.
 
 - Databases & Data Warehouse
-  - Catalog of governed datasets (DataLoop, MEGA, ATM, Synapse/Fabric). What row-level security and masking policies apply?
-  - Do we need query cost controls, caching, or synthesized datasets for evaluations/smoke tests?
+  - Catalog of governed datasets; RLS/masking policies.
+  - Query cost controls, caching, synthetic datasets for evals/smoke tests.
 
 - Teams/Copilot Integration
-  - Which channels (Teams bot, message extensions, Copilot plugins) are in scope? How will user identity and authorization be enforced per request?
+  - Channels (bot, message extensions, plugins) and per-request authorization.
 
 - Agent-to-Agent (A2A) Interactions
-  - Do we need A2A now or later? What is the agent card format, registry location, and auth model for cross-department calls?
-  - How will we audit and rate-limit cross-org calls?
+  - Agent card format, registry location, auth model for cross-department calls.
+  - Audit and rate-limit cross-org calls.
 
 - Cost & Operations
-  - Cost attribution tags, budgets, and alerts. Expected concurrency, autoscaling thresholds, and cold start mitigation for ACA.
+  - Cost tags, budgets, autoscaling thresholds, cold start mitigation for ACA.
   - Quota management for model and data services.
 
 - Change Management & Governance
-  - PR-based change control for prompts, tools, and flows; required reviewers; canary and rollback strategies.
-  - Incident response runbooks, DR strategy (RTO/RPO), and backup/restore coverage.
+  - PR-based change control for prompts, tools, and flows; reviewers; canary/rollback.
+  - Incident response runbooks, DR (RTO/RPO), backup/restore.
 
 - Legal & Procurement
-  - Data Processing Agreements and EU data boundary requirements for model providers.
-  - Licensing constraints for connectors, SDKs, and any third-party components.
+  - Data Processing Agreements and EU data boundary requirements.
+  - Licensing for connectors, SDKs, and third-party components.
 
 ### Appendix B – Multi‑Agent Orchestration Architecture
 - Orchestration pattern
-  - Root agent (Solven) plans and delegates to specialists via tool-first prompting and retries.
+  - Root agent plans and delegates to specialists via tool-first prompting and retries.
   - Multi-agent coordination follows Semantic Kernel/Prompt Flow patterns with evaluation gates.
   - Identity: End-to-end Entra ID; managed identities for databases/APIs; Key Vault for secrets.
 - Sub-agent responsibilities and contracts
@@ -295,7 +352,7 @@ KPIs:
     - Contract: Validation DSL (rule_id, predicate, severity, remediation_hint).
     - Outputs: issues[], coverage metrics, provenance.
   - Taxonomy Guide
-    - Inputs: datapoint id/version, filing period, domain (insurance/pension).
+    - Inputs: datapoint id/version, filing period, domain.
     - Contract: Taxonomy metadata (concept, lineage, deprecation, mapping candidates).
     - Outputs: version deltas, migration hints, confidence, citations.
   - Data Navigator
@@ -312,36 +369,115 @@ KPIs:
 - Observability
   - Tracing via App Insights and Log Analytics with correlation IDs (user → agent → tool → DB).
 
-References
-- Azure AI Foundry (Prompt Flow, evaluation), Semantic Kernel orchestration, and multi-agent patterns aligned with Microsoft’s evolving agent frameworks.
+Mermaid diagram – Backend orchestration
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant R as Root Orchestrator
+  participant V as Validation Specialist
+  participant X as Taxonomy Guide
+  participant D as Data Navigator
+  participant DB as Data Sources (Synapse/Fabric/Parquet)
+  participant E as Eval Gates
+  participant S as Content Safety
+
+  U->>R: Natural-language question
+  R->>S: Safety check (input)
+  S-->>R: OK / Block
+  R->>E: Plan evaluation (relevance/groundedness)
+  alt Complex query or freshness uncertainty
+    R->>D: Resolve source + query plan
+    D->>DB: Fetch with MI/PE
+    DB-->>D: Data slice
+    D-->>R: Resolved plan + data
+  end
+  opt KPI or high-risk answer
+    R->>V: Run validation profile
+    V-->>R: Issues + coverage
+  end
+  opt Historical/datapoint change
+    R->>X: Taxonomy lineage/deltas
+    X-->>R: Deltas + mapping hints
+  end
+  R-->>U: Cited answer + reasoning + validations
+```
 
 ### Appendix C – Data Source Connectivity Matrix
-| Agent            | DNB Public APIs | Synapse (SQL/Spark) | Fabric Lakehouse | Azure Parquet Containers | Auth Method            | Scope         |
-|------------------|-----------------|---------------------|------------------|--------------------------|------------------------|---------------|
-| Solven (Root)    | Read            | Read                | Read             | Read                     | Entra ID (user), MI    | Read-only     |
-| Validation Spec. | Optional Read   | Read                | Read             | Read                     | Managed Identity (MI)  | Read-only     |
-| Taxonomy Guide   | Read            | Optional Read       | Optional Read    | Optional Read            | MI + Key Vault if any  | Read-only     |
-| Data Navigator   | Read            | Read                | Read             | Read                     | MI + Private Endpoints | Read-only     |
+| Agent            | Public APIs | Synapse (SQL/Spark) | Fabric Lakehouse | Azure Parquet Containers | Auth Method            | Scope         |
+|------------------|------------|---------------------|------------------|--------------------------|------------------------|---------------|
+| Root Orchestrator| Read       | Read                | Read             | Read                     | Entra ID (user), MI    | Read-only     |
+| Validation Spec. | Optional   | Read                | Read             | Read                     | Managed Identity (MI)  | Read-only     |
+| Taxonomy Guide   | Read       | Optional Read       | Optional Read    | Optional Read            | MI + Key Vault if any  | Read-only     |
+| Data Navigator   | Read       | Read                | Read             | Read                     | MI + Private Endpoints | Read-only     |
 
 Notes
 - No write operations in pilot phase.
 - Private networking and PE on LLM endpoints and data stores where required.
 - RBAC at source level; row-level security enforced by source.
 
-### Appendix D – Conversation Journey (Diagram)
-- Diagram placeholder: images/conversation_journey.png
-  - Swimlane: User → Solven → Specialist Agent(s) → Data Source(s) → Solven → User
-  - Checkpoints: Safety gate, plan preview (optional), validation, citations.
+### Appendix D – Conversation Journey (Mermaid)
+```mermaid
+flowchart LR
+  U[User] -->|Ask| A[Assistant (Root)]
+  A -->|Plan| P{Needs specialist?}
+  P -->|Validation| V[Validation Specialist]
+  P -->|Taxonomy| X[Taxonomy Guide]
+  P -->|Data| D[Data Navigator]
+  D -->|MI/PE| S[(Synapse/Fabric/Parquet)]
+  V --> A
+  X --> A
+  S --> D --> A
+  A -->|Citations + reasoning| U
+  classDef d fill:#eef7ff,stroke:#5b8,stroke-width:1px;
+  classDef s fill:#fff7e6,stroke:#fb3,stroke-width:1px;
+  class D,S d
+  class A,V,X s
+```
 
-### Appendix E – Agent Mesh Topology (Diagram)
-- Diagram placeholder: images/agent_mesh_topology.png
-  - Layers: Channels (Teams/Copilot) → Orchestration (Prompt Flow/SK) → Agents/Tools → Data Sources
-  - Boundaries: Entra ID, Managed Identities, Key Vault, Private Endpoints.
+### Appendix E – Agent Mesh Topology (Mermaid)
+```mermaid
+graph TD
+  subgraph Channels
+    T[Teams/Copilot]
+  end
+  subgraph Orchestration[Orchestration (Prompt Flow + SK)]
+    R[Root Orchestrator]
+    V[Validation Specialist]
+    X[Taxonomy Guide]
+    N[Data Navigator]
+  end
+  subgraph Tools[Tools]
+    O[OpenAPI/SDK]
+    Q[SQL/Spark]
+    M[MCP Tools]
+  end
+  subgraph Data[Data Sources]
+    SY[Synapse]
+    FB[Fabric Lakehouse]
+    PQ[Parquet]
+  end
+  subgraph Controls[Controls]
+    MI[Managed Identity]
+    KV[Key Vault]
+    PE[Private Endpoints]
+    CS[Content Safety]
+    EV[Eval Gates]
+  end
 
-### Appendix F – Bridging and Related Docs
-- See Appendix B for orchestration and security details referenced in Part 1.
-- Dutch-language use cases: backend/etl/docs/ECDAP_AGENTIC_AI_USE_CASE_NL.md
-- Future additions: deployment runbooks, CI/CD (bicep/terraform), canary strategy.
-
-<!-- End of Appendix. -->
-
+  T --> R
+  R --> V
+  R --> X
+  R --> N
+  V --> O
+  X --> O
+  N --> Q
+  N --> O
+  Q --> SY
+  Q --> FB
+  O --> PQ
+  MI -.-> Q
+  PE -.-> SY
+  KV -.-> O
+  CS -.-> R
+  EV -.-> R
+```
