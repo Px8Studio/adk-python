@@ -36,13 +36,15 @@ A two-part brief for non-technical and technical readers.
   - Appendix E – Agent Mesh Topology (Mermaid)
   - Appendix F – Bridging and Related Docs
   - Appendix G – Comparison Tables (CSV for Excel)
+  - Appendix H – Deployment Modes and Data Boundary (Mermaid)
+  - Appendix I – Centralized Knowledge Corpus (Mermaid)
 
 ---
 
 ## Part 1 – Meet Solven
 
 ### Why Solven Exists
-Solven is our digital colleague that answers supervision questions by talking to the same governed data sources we use. Think of it as a concierge who knows the house rules and can fetch the right dossier in seconds.
+Solven is our digital colleague that answers supervision questions by talking to the same governed data sources we use. Think of it as a supervision control tower: it watches multiple information “flight paths” at once, applies the house procedures, and directs the right specialist to land a well‑cited answer safely and on time.
 
 - Goal: Faster, cited answers; less time chasing data; more time for judgment.
 - Pilot sponsor: ECDAP (initial deployment; designed for broader DNB adoption).
@@ -60,16 +62,22 @@ What stays the same
 - Sensitive actions follow established approval flows.
 - Data access respects existing RBAC and least‑privilege rules.
 
+### Centralized knowledge, shared across DNB (no more duplicated “mini agents”)
+- Single governed corpus: Taxonomy metadata, validation rules, schemas, and canonical dataset locations live once and are reused by all agents and teams.
+- Versioned and auditable: Changes to rules/taxonomy are reviewed, versioned, and rolled out consistently (no drift across departments).
+- Fewer silos: Instead of each team building one‑off copilots and copying knowledge, Solven exposes shared capabilities via tools/APIs and Teams/Copilot.
+- Faster onboarding: New use cases plug into the same corpus and policies, reducing time‑to‑value.
+
 ### The Team Behind Solven: Three Specialist Sub‑Agents
 - Validation Specialist
   - Plain-English: Our spell‑checker for insurance and pension data quality.
-  - Focus: DataLoop/MEGA/ATM validations, common quality rules, missing/late filings.
+  - Focus (DNB context): QRT completeness/timeliness checks, cross‑table consistency, common EIOPA validation rules, late/missing filings, supervisory materiality thresholds.
 - Taxonomy Guide
   - Plain-English: Tracks taxonomy evolutions and explains how a data point changed over time.
-  - Focus: Insurance/pension data point models, historical versions, mapping suggestions during change.
+  - Focus (DNB context): EIOPA taxonomy lineage and deprecations, mapping candidates for KPI continuity, impact analysis for historical comparisons and methodology changes.
 - Data Navigator
   - Plain-English: Knows where each dataset lives—Synapse, Fabric, parquet—and fetches the freshest numbers.
-  - Focus: Source selection, freshness checks, and row‑level filters based on assigned access.
+  - Focus (DNB context): Source resolution across governed stores, freshness/SLA checks, row‑level security alignment to user roles, cost/fan‑out hints for complex queries.
 
 Analogy
 - Imagine an orchestra: Solven is the conductor. It cues the right section (Validation, Taxonomy, Data Navigation), keeps tempo (policies and approvals), and produces a reliable performance (cited answers).
@@ -418,7 +426,7 @@ Notes
 ### Appendix D – Conversation Journey (Mermaid)
 ```mermaid
 flowchart LR
-  U[User] -->|Ask| A[Assistant (Root)]
+  U[User] -->|Ask| A[Assistant - Root]
   A -->|Plan| P{Needs specialist?}
   P -->|Validation| V[Validation Specialist]
   P -->|Taxonomy| X[Taxonomy Guide]
@@ -440,7 +448,7 @@ graph TD
   subgraph Channels
     T[Teams/Copilot]
   end
-  subgraph Orchestration[Orchestration (Prompt Flow + SK)]
+  subgraph Orchestration[Orchestration - Prompt Flow + SK]
     R[Root Orchestrator]
     V[Validation Specialist]
     X[Taxonomy Guide]
@@ -481,3 +489,94 @@ graph TD
   CS -.-> R
   EV -.-> R
 ```
+
+### Appendix F – Bridging and Related Docs
+- [Azure AI Foundry documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/)
+- [Semantic Kernel documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
+- [AutoGen documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/agentic-ai-autogen)
+- [DNB Data Governance](https://dnb.sharepoint.com/sites/DataGovernance)
+
+### Appendix G – Comparison Tables (CSV for Excel)
+- [Download comparison tables](https://github.com/Azure/azureai-samples/blob/main/AgenticAI/Comparison%20Tables/)
+
+### Appendix H – Deployment Modes and Data Boundary (Mermaid)
+```mermaid
+flowchart LR
+  subgraph Channels
+    PU[Public User]:::p
+    DU[DNB Staff]:::i
+  end
+
+  PU --> C1[Channel: Web/Teams]
+  DU --> C2[Teams/Copilot]
+
+  subgraph Backend[Solven Backend - Azure AI Foundry]
+    ORCH[Root Orchestrator]
+    TOOLS[Tools: Taxonomy, Validation, Data Navigator]
+  end
+
+  C1 --> ORCH
+  C2 --> ORCH
+  ORCH --> TOOLS
+
+  subgraph DataLayers
+    PD[(Public Datasets & Registers)]
+    QRT[(QRT Submissions - Sensitive)]
+  end
+
+  TOOLS --> PD
+  TOOLS -. Hybrid/Internal only .-> QRT
+
+  subgraph Controls[Controls]
+    RBAC[RBAC]
+    MI[Managed Identity]
+    PE[Private Endpoints]
+    CS[Content Safety]
+  end
+
+  RBAC -.-> ORCH
+  MI -.-> QRT
+  PE -.-> QRT
+  CS -.-> ORCH
+
+  classDef p fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px;
+  classDef i fill:#e3f2fd,stroke:#1565c0,stroke-width:1px;
+  classDef q fill:#ffecec,stroke:#d32f2f,stroke-width:1px;
+  class QRT q
+```
+
+### Appendix I – Centralized Knowledge Corpus (Mermaid)
+```mermaid
+graph TB
+  subgraph Corpus[Centralized Knowledge Corpus]
+    TK[Taxonomy Metadata - EIOPA lineage and versions]
+    VR[Validation Rules Library - versioned]
+    DC[Data Catalog & Schemas - Synapse/Fabric/Parquet]
+    PR[Prompt/Tool Registry & Policies]
+  end
+
+  subgraph Agents
+    R[Root Orchestrator]
+    V[Validation Specialist]
+    X[Taxonomy Guide]
+    N[Data Navigator]
+  end
+
+  TK --> X
+  VR --> V
+  DC --> N
+  PR --> R
+  PR --> V
+  PR --> X
+  PR --> N
+
+  note1[[Benefits: one source of truth, audited changes, no duplication, faster onboarding, DNB-wide reuse]]
+```
+
+## Part 1 – Meet Solven
+
+### Benefits for the ECDAP pilot (plain-language)
+- Single source of truth: Everyone uses the same taxonomy and validation rules.
+- Faster answers with citations: Less time locating data, more time for supervisory judgment.
+- Safer by design: RBAC + Managed Identity + Private Endpoints; QRT access remains internal.
+- Easy to expand: Add new agents/tools without duplicating knowledge or policies.
