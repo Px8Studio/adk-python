@@ -183,24 +183,24 @@ Audience: Leadership, IT, Security, Supervision, Data & Analytics.
 - Governed data connections (e.g., search/vector indexes) rather than ad hoc connectors.
 
 ### Practical, phased approach
-1) Start with public/OSS components (no internal data)
-  - Use `adk-python` locally (uv venv, `adk web`/`adk run`). Build 2–3 minimal agents:
-    - Retrieval‑augmented Q&A on public docs.
-    - Tool‑using “Ops helper” (e.g., call a public API).
-    - Simple multi‑agent workflow showing handoffs.
-  - Use mock LLMs or open model backends (LiteLLM/Ollama) to avoid secrets while prototyping.
-  - Add unit tests and evaluations to create the quality baseline.
+1) Start in an Azure AI Foundry sandbox (public data only)
+  - Create a project/workspace with budgeted quota and EU region.
+  - Build 2–3 minimal assistants using Semantic Kernel and Prompt Flow:
+    - Retrieval‑augmented Q&A over public documentation.
+    - Tool‑using “Ops helper” via an approved OpenAPI action.
+    - Simple multi‑agent workflow that shows hand‑offs and retries.
+  - Use managed model endpoints in your tenant; store secrets in Key Vault via Managed Identity.
+  - Add basic unit tests and Prompt Flow evaluations to set the quality baseline.
 
-2) Stand up a Foundry sandbox (licensed, low‑risk)
-  - Create a Foundry project/workspace with budgeted quota.
-  - Deploy baseline model endpoints; store `AZURE_OPENAI_*` env vars via Key Vault/Managed Identity (consistent with env‑var patterns in the C# samples).
-  - Enable safety filters and observability; wire tracing to central monitoring.
-  - Re‑run the same agents against managed endpoints; collect evaluation and cost/latency baselines.
+2) Harden the sandbox for enterprise use
+  - Enable Content Safety, tracing to Application Insights/Log Analytics, and cost dashboards.
+  - Apply private networking/Private Endpoints where needed; confirm RBAC and least privilege.
+  - Re‑run evaluations and capture latency/cost baselines.
 
-3) Build the central agentic layer
-  - Shared tool registry (governed connectors, MCP/OpenAPI tools), shared memory/session services, and a policy pack (prompt templates, RAI settings).
-  - CI with evaluation gates; versioning and changelogs; sample repos and templates for inner‑sourcing.
-  - Gradually onboard departmental agents by migrating their tools and prompts into the central registry and memory.
+3) Establish the central agentic layer
+  - Shared tool registry (OpenAPI/SDK/SQL with MI), shared memory/session services, and a policy pack (prompt templates, safety settings).
+  - CI with evaluation gates; versioning and changelogs; inner‑source templates for teams.
+  - Onboard departmental agents by migrating tools and prompts into the central registry and shared memory.
 
 ## Why Azure AI Foundry and not Copilot Studio?
 
