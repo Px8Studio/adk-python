@@ -8,54 +8,34 @@
 param(
   [switch]$SkipDiagnostics,
   [switch]$RestartToolbox,
-  [bool]$OpenUIs = $true,    # Automatically open web UIs
-  [int]$WaitSeconds = 60,     # Increased default wait time
-  [switch]$ForceRecreate      # Force recreate containers
+  [bool]$OpenUIs = $true,
+  [int]$WaitSeconds = 60,
+  [switch]$ForceRecreate
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+# Paths and environment
 $ProjectRoot = "C:\Users\rjjaf\_Projects\orkhon"
 $ToolboxPath = Join-Path $ProjectRoot "backend\toolbox"
+$DiagnosticsScript = Join-Path $ProjectRoot "backend\scripts\diagnose-setup.ps1"
 $VenvActivate = Join-Path $ProjectRoot ".venv\Scripts\Activate.ps1"
 $DotEnv = Join-Path $ProjectRoot ".env"
+$ProjectName = "orkhon"
+$env:COMPOSE_PROJECT_NAME = $ProjectName
 
-# Console output helpers (ASCII-only, avoid conflicts with built-ins)
-function Show-Step {
-  param([string]$Message)
-  Write-Host "`n==> $Message" -ForegroundColor Cyan
-}
+# Console helpers
+function Show-Step { param([string]$Message) Write-Host "`n==> $Message" -ForegroundColor Cyan }
+function Show-Ok { param([string]$Message) Write-Host "  [OK]  $Message" -ForegroundColor Green }
+function Show-Err { param([string]$Message) Write-Host "  [ERR] $Message" -ForegroundColor Red }
+function Show-Info { param([string]$Message) Write-Host "  [INFO] $Message" -ForegroundColor Yellow }
 
-function Show-Ok {
-  param([string]$Message)
-  Write-Host "  [OK]  $Message" -ForegroundColor Green
-}
-
-function Show-Err {
-  param([string]$Message)
-  Write-Host "  [ERR] $Message" -ForegroundColor Red
-}
-
-function Show-Info {
-  param([string]$Message)
-  Write-Host "  [INFO] $Message" -ForegroundColor Yellow
-}
-
-# Simple HTTP probe helpers
-function Test-Endpoint200 {
-  param([string]$Url, [int]$TimeoutSec = 2)
-  try {
-    $resp = Invoke-WebRequest -Uri $Url -TimeoutSec $TimeoutSec -ErrorAction Stop
-    return ($resp.StatusCode -eq 200)
-  } catch { return $false }
-}
-
-# Helper: Safely join base URL and relative path (avoid Join-Path for HTTP)
+# HTTP utilities
 function Join-HttpUrl {
   param(
-    [Parameter(Mandatory=$true)][string]$Base,
-    [Parameter(Mandatory=$true)][string]$Relative
+    [Parameter(Mandatory = $true)][string]$Base,
+    [Parameter(Mandatory = $true)][string]$Relative
   )
   if (-not $Base.EndsWith('/')) { $Base = "$Base/" }
   $rel = $Relative.TrimStart('/')
@@ -64,32 +44,66 @@ function Join-HttpUrl {
   return $fullUri.AbsoluteUri
 }
 
-# Replace/define readiness probe to avoid filesystem path APIs on URLs
-function Test-ToolboxReady {
+# Port utilities
+function Test-PortFree {
+  param([int]$Port)
+  try {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $client.Connect('localhost', $Port)
+    $client.Close()
+    return $false
+  } catch { return $true }
+}
+
+function Resolve-PortConflict {
   param(
-    [Parameter(Mandatory=$true)][string]$BaseUrl
+    [int]$Port,
+    [string]$ServiceName
   )
 
-  $probes = @(
-    "health",
-    "api/toolsets",   # preferred (plural)
-    "api/toolset/",   # legacy path (singular)
-    "ui/"
-  )
+  Write-Host ("  [WARN] Port {0} in use. Attempting to free for {1}..." -f $Port, $ServiceName) -ForegroundColor Yellow
+  $containers = & docker ps --filter ("publish={0}" -f $Port) --format "{{.ID}} {{.Names}}" 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $containers) {
+    Write-Host ("  [WARN] Port {0} held by a non-docker process or docker query failed. Please free it manually and rerun." -f $Port) -ForegroundColor Yellow
+    return $false
+  }
 
-  foreach ($rel in $probes) {
+  $resolved = $false
+  foreach ($entry in $containers) {
+    $parts = $entry -split '\s+', 2
+    $id = $parts[0]
+    $name = if ($parts.Length -gt 1) { $parts[1] } else { $id }
+    Write-Host ("  [INFO] Stopping container '{0}' holding port {1}..." -f $name, $Port)
     try {
-      $url = Join-HttpUrl -Base $BaseUrl -Relative $rel
-      $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 3
-      if ($resp -and $resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
-        return @{ Ready = $true; Url = $url }
-      }
+      & docker stop $id | Out-Null
+      & docker rm $id | Out-Null
+      $resolved = $true
     } catch {
-      # Ignore and try next endpoint
+      Write-Host ("  [ERR] Failed to stop/remove container {0}: {1}" -f $name, $_.Exception.Message) -ForegroundColor Red
+      return $false
     }
   }
 
-  return @{ Ready = $false; Url = $null }
+  if ($resolved) {
+    Write-Host ("  [OK]  Port {0} freed for {1}" -f $Port, $ServiceName)
+  }
+  return $resolved
+}
+
+function Ensure-CriticalPortsFree {
+  param([array]$PortInfoList)
+
+  foreach ($info in $PortInfoList) {
+    $port = [int]$info.Port
+    $service = $info.Service
+    if (-not (Test-PortFree -Port $port)) {
+      Write-Host ("  [INFO] Port {0} in use ({1}). Attempting to free existing binding..." -f $port, $service) -ForegroundColor Yellow
+      $null = Resolve-PortConflict -Port $port -ServiceName $service
+      if (-not (Test-PortFree -Port $port)) {
+        throw ("Port {0} remains busy after cleanup. Free the port manually and rerun the quick-start script." -f $port)
+      }
+    }
+  }
 }
 
 # Header
@@ -100,28 +114,16 @@ Write-Host "  Starting: Toolbox + Jaeger + ADK Web + UIs            " -Foregroun
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Step 1: Run Diagnostics
+# Step 1: Diagnostics
 if (-not $SkipDiagnostics) {
   Show-Step "Step 1/6: Running system diagnostics..."
-  try {
-    # Use new location in backend/scripts
-    $diagCandidates = @(
-      (Join-Path $ProjectRoot "backend\scripts\diagnose-setup.ps1")
-    )
-
-    $diagScript = $null
-    foreach ($c in $diagCandidates) {
-      if (Test-Path $c) { $diagScript = $c; break }
-    }
-
-    if ($diagScript) {
-      Show-Info "Found diagnostics script: $diagScript"
-
-      # Always run diagnostics in a separate PowerShell process
+  if (Test-Path $DiagnosticsScript) {
+    Show-Info "Found diagnostics script: $DiagnosticsScript"
+    try {
       Set-Location $ProjectRoot
       $result = Start-Process -FilePath "powershell.exe" `
-        -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $diagScript, `
-                      "-ProjectRoot", "$ProjectRoot" `  # pass real project root
+        -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $DiagnosticsScript, `
+                      "-ProjectRoot", "$ProjectRoot" `
         -Wait -PassThru -NoNewWindow
       if ($result.ExitCode -ne 0) {
         Show-Err "Diagnostics exited with code: $($result.ExitCode)"
@@ -129,42 +131,32 @@ if (-not $SkipDiagnostics) {
       } else {
         Show-Ok "Diagnostics completed successfully"
       }
-    } else {
-      Show-Info "Diagnostics scripts not found. Skipping diagnostics step."
+    } catch {
+      Show-Err "Diagnostics failed: $($_.Exception.Message)"
+      Show-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
     }
-  } catch {
-    Show-Err "Diagnostics failed: $($_.Exception.Message)"
-    Show-Info "Continuing anyway... (use -SkipDiagnostics to skip this step)"
+  } else {
+    Show-Info "Diagnostics script not found. Skipping."
   }
 } else {
   Show-Step "Step 1/6: Skipping diagnostics (-SkipDiagnostics flag)"
 }
 
-# Step 2: Ensure Docker Network Exists
+# Step 2: Ensure Docker network
 Show-Step "Step 2/6: Ensuring Docker network exists..."
 try {
   $networkName = "orkhon-network"
-
-  # Try to inspect the network and capture output (stderr + stdout)
   $inspectOutput = & docker network inspect $networkName 2>&1
   if ($LASTEXITCODE -ne 0) {
     $errText = ($inspectOutput -join "`n").ToString()
-
-    # Detect common signs that the Docker daemon (Docker Desktop) is not reachable
     if ($errText -match "dockerDesktopLinuxEngine" -or
         $errText -match "open //./pipe" -or
         $errText -match "cannot connect to the Docker daemon" -or
         $errText -match "Is the docker daemon running") {
-
-      Show-Err "Docker engine not reachable. This usually means Docker Desktop (daemon) is not running."
-      Show-Info "Action: Start Docker Desktop and ensure the Docker daemon/WSL backend is running."
-      Show-Info "  - On Windows: Start 'Docker Desktop' from the Start Menu or system tray."
-      Show-Info "  - Wait a minute for Docker to finish initializing, then re-run this script."
-      Show-Info "If you prefer to continue without Docker, re-run with -SkipDiagnostics (not recommended)."
+      Show-Err "Docker engine not reachable. Docker Desktop daemon may be stopped."
+      Show-Info "Start Docker Desktop, wait for it to initialize, then rerun this script."
       exit 2
     }
-
-    # Otherwise attempt to create the network (normal create path)
     Show-Info "Creating Docker network: $networkName"
     $createOutput = & docker network create $networkName 2>&1
     if ($LASTEXITCODE -eq 0) {
@@ -177,17 +169,17 @@ try {
     Show-Ok "Docker network already exists: $networkName"
   }
 } catch {
-  Show-Err "Failed to check/create Docker network: $($_.Exception.Message)"
-  Show-Info "Hint: Ensure Docker Desktop is installed and running. Start Docker Desktop and try again."
+  Show-Err "Failed to ensure Docker network: $($_.Exception.Message)"
+  Show-Info "Hint: Verify Docker Desktop is running."
   exit 1
 }
 
-# Step 3: Start GenAI Toolbox Stack (Toolbox + Jaeger + PostgreSQL if configured)
+# Step 3: Start Toolbox + Jaeger stack
 Show-Step "Step 3/6: Starting GenAI Toolbox Stack (Docker)..."
 try {
   Set-Location $ToolboxPath
 
-  # Ensure toolbox .env exists to avoid docker-compose fatal error
+  # Ensure .env exists
   $toolboxEnv = Join-Path $ToolboxPath ".env"
   if (-not (Test-Path $toolboxEnv)) {
     Show-Info "Toolbox .env not found at: $toolboxEnv"
@@ -204,134 +196,138 @@ DNB_SUBSCRIPTION_NAME_PROD=
     Show-Ok "Created $toolboxEnv"
   }
 
-  # Check if containers are already running
+  # Select compose file
+  $composeCandidates = @("docker-compose.dev.yml", "docker-compose.yml")
+  $ComposeFilePath = $null
+  foreach ($candidate in $composeCandidates) {
+    $candidatePath = Join-Path $ToolboxPath $candidate
+    if (Test-Path $candidatePath) {
+      $ComposeFilePath = $candidatePath
+      break
+    }
+  }
+  if (-not $ComposeFilePath) {
+    throw "No compose file found (looked for docker-compose.dev.yml, docker-compose.yml)."
+  }
+  $composeFileName = Split-Path $ComposeFilePath -Leaf
+  Show-Info ("Using compose file: {0}" -f $composeFileName)
+
+  # Ensure critical ports are free
+  $CriticalPorts = @(
+    @{ Port = 4318; Service = "Jaeger OTLP" },
+    @{ Port = 5000; Service = "GenAI Toolbox" },
+    @{ Port = 16686; Service = "Jaeger UI" }
+  )
+  Ensure-CriticalPortsFree -PortInfoList $CriticalPorts
+
+  # Determine current containers
   $runningContainers = & docker ps --filter "name=orkhon-" --format "{{.Names}}" 2>&1
-  
-  # Always restart to ensure latest configuration is loaded
-  if ($runningContainers -and $runningContainers -like "*genai-toolbox*") {
-    Show-Info "MCP Toolbox containers found. Restarting to load latest configuration..."
-    & docker-compose -f docker-compose.dev.yml restart
-    if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers" }
-    Show-Ok "Containers restarted with latest configuration"
-  }
-  elseif ($ForceRecreate) {
+
+  if ($ForceRecreate) {
     Show-Info "Force recreating containers..."
-    & docker-compose -f docker-compose.dev.yml down
-    & docker-compose -f docker-compose.dev.yml up -d --force-recreate
-    if ($LASTEXITCODE -ne 0) { throw "Failed to recreate containers" }
+    & docker-compose -f $ComposeFilePath down --remove-orphans
+    & docker-compose -f $ComposeFilePath up -d --force-recreate
+    if ($LASTEXITCODE -ne 0) { throw "Failed to recreate containers." }
     Show-Ok "Containers recreated successfully"
-  }
-  else {
+  } elseif ($RestartToolbox -or ($runningContainers -and $runningContainers -like "*genai-toolbox*")) {
+    Show-Info "Restarting existing containers to load latest configuration..."
+    & docker-compose -f $ComposeFilePath restart
+    if ($LASTEXITCODE -ne 0) { throw "Failed to restart containers." }
+    Show-Ok "Containers restarted successfully"
+  } else {
     Show-Info "Starting fresh containers..."
-    & docker-compose -f docker-compose.dev.yml up -d
-    if ($LASTEXITCODE -ne 0) { throw "Failed to start containers" }
+    & docker-compose -f $ComposeFilePath up -d
+    if ($LASTEXITCODE -ne 0) { throw "Failed to start containers." }
     Show-Ok "Containers started successfully"
   }
 
-  # Display running containers
   Show-Info "Checking container status..."
   $containers = & docker ps --filter "name=orkhon-" --format "table {{.Names}}\t{{.Status}}" 2>&1
   Write-Host $containers -ForegroundColor Yellow
 
-  # Comprehensive readiness check for multiple services
+  # Service readiness checks
   Show-Info "Waiting for services to be ready (up to $WaitSeconds seconds)..."
-  
-  $services = @{
-    "Toolbox" = @{
-      Url = "http://localhost:5000"
-      Probes = @("health", "api/toolsets", "api/toolset/", "ui/")
-      Ready = $false
-    }
-    "Jaeger" = @{
-      Url = "http://localhost:16686"
-      Probes = @("", "search")  # Root and search endpoint
-      Ready = $false
-    }
+  $services = @{}
+  $services["Toolbox"] = @{
+    Url = "http://localhost:5000"
+    Probes = @("health", "api/toolsets", "api/toolset/", "ui/")
+    Ready = $false
+  }
+  $services["Jaeger"] = @{
+    Url = "http://localhost:16686"
+    Probes = @("", "search")
+    Ready = $false
   }
 
   $elapsed = 0
   $allReady = $false
-  
   while ($elapsed -lt $WaitSeconds -and -not $allReady) {
     $allReady = $true
-    
     foreach ($serviceName in $services.Keys) {
       if (-not $services[$serviceName].Ready) {
         $base = $services[$serviceName].Url
         $probes = $services[$serviceName].Probes
-        
         foreach ($rel in $probes) {
           try {
             $url = if ($rel) { Join-HttpUrl -Base $base -Relative $rel } else { $base }
             $resp = Invoke-WebRequest -Uri $url -UseBasicParsing -Method Get -TimeoutSec 2 -ErrorAction Stop
             if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 500) {
               $services[$serviceName].Ready = $true
-              Show-Ok "$serviceName is ready at: $url"
+              Show-Ok ("{0} is ready at: {1}" -f $serviceName, $url)
               break
             }
-          } catch {
-            # Service not ready yet, continue checking
-          }
+          } catch { }
         }
-        
         if (-not $services[$serviceName].Ready) {
           $allReady = $false
         }
       }
     }
-    
     if (-not $allReady) {
       Start-Sleep -Seconds 3
       $elapsed += 3
       Write-Host "." -NoNewline
     }
   }
+  Write-Host ""
 
-  Write-Host ""  # New line after dots
-  
-  # Report final status
   $anyFailed = $false
   foreach ($serviceName in $services.Keys) {
     if (-not $services[$serviceName].Ready) {
-      Show-Err "$serviceName did not become ready after $WaitSeconds seconds"
-      Show-Info "Check logs: docker-compose -f docker-compose.dev.yml logs $serviceName"
+      Show-Err ("{0} did not become ready after {1} seconds" -f $serviceName, $WaitSeconds)
+      Show-Info ("Check logs: docker-compose -f {0} logs {1}" -f $composeFileName, $serviceName.ToLower())
       $anyFailed = $true
     }
   }
-  
   if ($anyFailed) {
-    Show-Info "Some services may still be starting. Container logs:"
-    Write-Host "  docker-compose -f docker-compose.dev.yml logs --tail=50" -ForegroundColor Yellow
+    Show-Info "Some services may still be starting. Recent logs:"
+    Write-Host ("  docker-compose -f {0} logs --tail=50" -f $composeFileName) -ForegroundColor Yellow
     $continue = Read-Host "`nContinue anyway? (y/n)"
     if ($continue -ne "y") { exit 1 }
   } else {
     Show-Ok "All services are ready!"
   }
-  
 } catch {
   Show-Err "Failed to start GenAI Toolbox Stack: $($_.Exception.Message)"
-  Show-Info "Check Docker Desktop is running"
-  Show-Info "Try: docker-compose -f docker-compose.dev.yml logs"
+  Show-Info "Ensure Docker Desktop is running."
+  Show-Info ("Try: docker-compose -f {0} logs" -f $composeFileName)
   exit 1
 }
 
-# Step 4: Open Web UIs
+# Step 4: Open UIs
 if ($OpenUIs) {
   Show-Step "Step 4/6: Opening Web UIs..."
   try {
-    # Only open UIs for services that are ready
-    if ($services["Toolbox"].Ready) {
+    if ($services.ContainsKey("Toolbox") -and $services["Toolbox"].Ready) {
       Show-Info "Opening GenAI Toolbox UI..."
       Start-Process "http://localhost:5000/ui/"
       Start-Sleep -Seconds 1
     }
-    
-    if ($services["Jaeger"].Ready) {
+    if ($services.ContainsKey("Jaeger") -and $services["Jaeger"].Ready) {
       Show-Info "Opening Jaeger Tracing UI..."
       Start-Process "http://localhost:16686"
       Start-Sleep -Seconds 1
     }
-    
     Show-Ok "Web UIs opened in browser"
     Show-Info "ADK Web UI will open automatically once the server starts..."
   } catch {
@@ -347,30 +343,26 @@ if ($OpenUIs) {
   Write-Host "  - Jaeger UI:  http://localhost:16686" -ForegroundColor Yellow
 }
 
-# Step 5: Verify Virtual Environment
+# Step 5: Verify virtual environment
 Show-Step "Step 5/6: Verifying Python virtual environment..."
 try {
   Set-Location $ProjectRoot
-  
   if (-not (Test-Path $VenvActivate)) {
     Show-Err "Virtual environment not found at: $VenvActivate"
     Show-Info "Run: poetry install"
     exit 1
   }
-  
   Show-Ok "Virtual environment found"
-  
 } catch {
   Show-Err "Virtual environment check failed: $($_.Exception.Message)"
   exit 1
 }
 
-# Step 6: Start ADK Web Server
+# Step 6: Start ADK Web
 Show-Step "Step 6/6: Starting ADK Web Server..."
 try {
   Set-Location $ProjectRoot
 
-  # Load .env if present (simple parser; ignores comments/empty lines)
   if (Test-Path $DotEnv) {
     Show-Info "Loading environment from .env"
     try {
@@ -382,7 +374,6 @@ try {
           $key = $line.Substring(0, $idx).Trim()
           $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
           if (-not [string]::IsNullOrWhiteSpace($key)) {
-            # Only set if not already present in the current process environment
             $current = [System.Environment]::GetEnvironmentVariable($key, 'Process')
             if ([string]::IsNullOrWhiteSpace($current)) {
               [System.Environment]::SetEnvironmentVariable($key, $val, 'Process')
@@ -396,21 +387,10 @@ try {
   } else {
     Show-Info ".env not found (optional). You can copy .env.example and fill values."
   }
-  
-  # Check if port 8000 is in use
-  $portInUse = $false
-  try {
-    $tcp = New-Object System.Net.Sockets.TcpClient
-    $tcp.Connect("localhost", 8000)
-    $tcp.Close()
-    $portInUse = $true
-  } catch {
-    $portInUse = $false
-  }
-  
-  if ($portInUse) {
+
+  if (-not (Test-PortFree -Port 8000)) {
     Show-Err "Port 8000 is already in use!"
-    Show-Info "Find what's using it: netstat -ano | findstr :8000"
+    Show-Info "Find process: netstat -ano | findstr :8000"
     $continue = Read-Host "`nTry to kill the process? (y/n)"
     if ($continue -eq "y") {
       $connections = netstat -ano | Select-String ":8000"
@@ -418,7 +398,7 @@ try {
     }
     exit 1
   }
-  
+
   Show-Ok "Port 8000 is available"
   Show-Info "Activating virtual environment and starting ADK Web..."
   Write-Host ""
@@ -434,8 +414,7 @@ try {
   Write-Host "  (Toolbox services will continue running in Docker)   " -ForegroundColor Green
   Write-Host "========================================================" -ForegroundColor Green
   Write-Host ""
-  
-  # Schedule ADK Web UI to open after server starts (if OpenUIs is true)
+
   if ($OpenUIs) {
     Show-Info "ADK Web UI will open in 5 seconds..."
     Start-Job -ScriptBlock {
@@ -443,10 +422,8 @@ try {
       Start-Process "http://localhost:8000"
     } | Out-Null
   }
-  
-  # Activate venv and start server
+
   & $VenvActivate
-  # If only GEMINI_API_KEY is set, mirror it to GOOGLE_API_KEY for downstream libs
   $gemini = [System.Environment]::GetEnvironmentVariable('GEMINI_API_KEY', 'Process')
   $google = [System.Environment]::GetEnvironmentVariable('GOOGLE_API_KEY', 'Process')
   if ($gemini -and [string]::IsNullOrWhiteSpace($google)) {
@@ -454,15 +431,14 @@ try {
     Show-Info "Mirrored GEMINI_API_KEY -> GOOGLE_API_KEY for this session"
   }
   & adk web --reload_agents --host=0.0.0.0 --port=8000 "$ProjectRoot\backend\adk\agents"
-  
 } catch {
   Show-Err "Failed to start ADK Web: $($_.Exception.Message)"
-  Show-Info "Check the error messages above"
+  Show-Info "Check the error messages above."
   Show-Info "Try running manually: adk web backend\adk\agents"
   exit 1
 }
 
-# If we get here, the server was stopped
+# Shutdown note
 Write-Host ""
 Write-Host "========================================================" -ForegroundColor Yellow
 Write-Host "            ADK Web Server Stopped                      " -ForegroundColor Yellow
@@ -474,7 +450,7 @@ Write-Host "  • Jaeger:        http://localhost:16686" -ForegroundColor Yellow
 Write-Host ""
 Show-Info "To stop all services:"
 Write-Host "  cd backend\toolbox" -ForegroundColor Cyan
-Write-Host "  docker-compose -f docker-compose.dev.yml down" -ForegroundColor Cyan
+Write-Host ("  docker-compose -f {0} down" -f $composeFileName) -ForegroundColor Cyan
 Write-Host ""
 Show-Info "To stop Docker services only:"
 Write-Host "  docker stop orkhon-genai-toolbox-mcp orkhon-jaeger" -ForegroundColor Cyan
