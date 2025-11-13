@@ -68,6 +68,18 @@ What stays the same
 - Fewer silos: Instead of each team building one‑off copilots and copying knowledge, Solven exposes shared capabilities via tools/APIs and Teams/Copilot.
 - Faster onboarding: New use cases plug into the same corpus and policies, reducing time‑to‑value.
 
+### Why centralize instead of departmental agents
+Short answer: colleague‑built, department‑only agents are useful for exploration, but they don’t solve for consistency, security, governance, reuse, cost control, or reliable quality at org scale. A centralized agentic platform gives shared memory, tools, evaluation, and policy that individual teams won’t consistently maintain—and it prevents fragmentation and “shadow AI.”
+
+- Governance and security: Central secrets handling, audited access, content safety, and uniform policies. Department bots tend to sprawl credentials, prompts, and data access patterns.
+- Single source of truth: Shared knowledge/memory and a governed tool registry reduce drift, re‑implementations, and stale integrations across teams.
+- Quality and evaluation: Common eval harnesses, regression tests, and a release process raise baseline quality; ad hoc agents rarely sustain this discipline.
+- Cost and performance: Consolidated model endpoints, caching, and reuse of retrieval indices lower cost per interaction and improve latency.
+- Debuggability and operations: Central tracing, logging, and incident response beat many unmonitored endpoints.
+- Compliance and audit: Consistent controls for data residency, PII handling, and change history.
+
+Bottom line: departmental agents are a good starting point for ideas, but Solven’s centralized platform provides the governed, evaluable, and cost‑efficient substrate needed to run those ideas safely and reliably at scale.
+
 ### The Team Behind Solven: Three Specialist Sub‑Agents
 - Validation Specialist
   - Plain-English: Our spell‑checker for insurance and pension data quality.
@@ -150,6 +162,45 @@ Audience: Leadership, IT, Security, Supervision, Data & Analytics.
 - Safety and governance controls (content safety, logging, approvals).
 - Integration with productivity tools (Teams/Copilot) for fast adoption.
 - Reuse existing, governed data sources and dashboards (no new platforms required at pilot).
+
+### Centralized Agentic Platform vs Departmental Agents
+- Governance and security: Centralized secrets, audited access, content safety policies applied uniformly; avoids credential sprawl and inconsistent prompt/policy handling.
+- Single source of truth: Shared memory/corpus and a governed tool registry prevent drift and duplicated integrations.
+- Quality and evaluation: Common evaluation harnesses, regression tests, and gated releases increase reliability across agents.
+- Cost and performance: Pooled model capacity, shared caches, and reusable retrieval indices reduce cost and latency.
+- Operations: Unified tracing, logging, and incident response; fewer brittle, unmonitored endpoints.
+- Compliance and audit: Consistent enforcement for data residency, PII handling, and change history across all agents.
+
+#### Tying to the repos you provided
+- `agent-framework` (C# and Python): Enforces disciplined patterns (env‑var configuration, Async naming, sealed private types, unit‑test standards). A central platform lets these patterns be defined once and reused, instead of each team diverging.
+- `foundry-samples`: Owned by the AI Platform Docs team and aligned with Azure AI Foundry practices—indicates a supported, governed path for building and showcasing agents in a sandbox without breaking documentation contracts.
+
+#### Why get Azure AI Foundry licensing for a sandbox
+- Enterprise‑grade access to models via the Model Catalog and managed Azure OpenAI endpoints in your tenant, with quota, billing, and approvals.
+- Network isolation, Managed Identity/Key Vault, and Content Safety services to meet compliance from day one.
+- Prompt Flow‑style evaluation, experiments, and lineage to enable CI/CD for prompts/agents.
+- Central registries, projects/workspaces, and monitoring/telemetry to operate agents reliably.
+- Governed data connections (e.g., search/vector indexes) rather than ad hoc connectors.
+
+### Practical, phased approach
+1) Start with public/OSS components (no internal data)
+  - Use `adk-python` locally (uv venv, `adk web`/`adk run`). Build 2–3 minimal agents:
+    - Retrieval‑augmented Q&A on public docs.
+    - Tool‑using “Ops helper” (e.g., call a public API).
+    - Simple multi‑agent workflow showing handoffs.
+  - Use mock LLMs or open model backends (LiteLLM/Ollama) to avoid secrets while prototyping.
+  - Add unit tests and evaluations to create the quality baseline.
+
+2) Stand up a Foundry sandbox (licensed, low‑risk)
+  - Create a Foundry project/workspace with budgeted quota.
+  - Deploy baseline model endpoints; store `AZURE_OPENAI_*` env vars via Key Vault/Managed Identity (consistent with env‑var patterns in the C# samples).
+  - Enable safety filters and observability; wire tracing to central monitoring.
+  - Re‑run the same agents against managed endpoints; collect evaluation and cost/latency baselines.
+
+3) Build the central agentic layer
+  - Shared tool registry (governed connectors, MCP/OpenAPI tools), shared memory/session services, and a policy pack (prompt templates, RAI settings).
+  - CI with evaluation gates; versioning and changelogs; sample repos and templates for inner‑sourcing.
+  - Gradually onboard departmental agents by migrating their tools and prompts into the central registry and memory.
 
 ## Why Azure AI Foundry and not Copilot Studio?
 
@@ -250,6 +301,10 @@ KPIs:
 - Citation/grounding rate ≥0.8 (sampled reviews).
 - Manual correction rate <10% after week 8.
 - Analyst hours shifted from collection to judgment.
+- Reuse ratio of tools/prompts across teams.
+- Evaluation pass rate and regression time‑to‑recovery.
+- Cost per 1k interactions and median latency.
+- Security posture: zero exposed secrets, auditable access.
 
 ## Risks & Mitigations
 
