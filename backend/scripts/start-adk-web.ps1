@@ -17,6 +17,60 @@ function Show-Info { param([string]$m) Write-Host "[INFO] $m" -ForegroundColor Y
 function Show-Ok   { param([string]$m) Write-Host "[OK]  $m" -ForegroundColor Green }
 function Show-Err  { param([string]$m) Write-Host "[ERR] $m" -ForegroundColor Red }
 
+function Ensure-GoogleNamespaceClean {
+  param([string]$PythonExe)
+  try {
+    & $PythonExe -m pip show google *> $null
+    if ($LASTEXITCODE -eq 0) {
+      Show-Info "Detected top-level 'google' package which can block 'google.adk'."
+      $resp = Read-Host "Uninstall 'google' now? (y/N)"
+      if ($resp -eq "y") {
+        & $PythonExe -m pip uninstall -y google
+      } else {
+        Show-Info "Continuing, but 'google' may prevent 'google.adk' imports."
+      }
+    }
+  } catch { }
+}
+
+function Test-AdkInstalled {
+  param([string]$PythonExe)
+  & $PythonExe -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('google.adk') else 1)"
+  return ($LASTEXITCODE -eq 0)
+}
+
+function Ensure-AdkInstalled {
+  param([string]$PythonExe, [string]$ProjectRoot)
+  if (Test-AdkInstalled -PythonExe $PythonExe) { return }
+  $parent = Split-Path $ProjectRoot -Parent
+  $adkDev = Join-Path $parent "adk-python"
+  Ensure-GoogleNamespaceClean -PythonExe $PythonExe
+  if (Test-Path $adkDev) {
+    Show-Info "Installing google-adk from local source: $adkDev"
+    & $PythonExe -m pip install -e "$adkDev"
+  } else {
+    Show-Info "Installing google-adk from PyPI"
+    & $PythonExe -m pip install google-adk
+  }
+  if (-not (Test-AdkInstalled -PythonExe $PythonExe)) {
+    throw "google-adk is not importable after installation. Check for conflicting 'google' package."
+  }
+}
+
+function Start-AdkWeb {
+  param(
+    [string]$PythonExe,
+    [string]$AgentsPath,
+    [int]$Port
+  )
+  try {
+    & adk web --reload_agents --host=0.0.0.0 --port=$Port $AgentsPath
+  } catch {
+    Show-Info "Falling back to python -m google.adk.cli.cli_tools_click web"
+    & $PythonExe -m google.adk.cli.cli_tools_click web --reload_agents --host=0.0.0.0 --port=$Port $AgentsPath
+  }
+}
+
 try {
   if (-not (Test-Path $VenvActivate)) {
     Show-Err "Virtual environment not found at: $VenvActivate"
@@ -72,9 +126,13 @@ try {
 
   & $VenvActivate
   Show-Ok ".venv activated"
+  $pythonExe = Join-Path $ProjectRoot ".venv/Scripts/python.exe"
+
+  # NEW: Ensure ADK present
+  Ensure-AdkInstalled -PythonExe $pythonExe -ProjectRoot $ProjectRoot
 
   Show-Info "Starting ADK Web on http://localhost:$Port"
-  & adk web --reload_agents --host=0.0.0.0 --port=$Port $AgentsPath
+  Start-AdkWeb -PythonExe $pythonExe -AgentsPath $AgentsPath -Port $Port
 }
 catch {
   Show-Err "Failed to start ADK Web: $($_.Exception.Message)"

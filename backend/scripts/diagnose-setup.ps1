@@ -54,6 +54,17 @@ try {
   $venvActivate = Join-Path $ProjectRoot '.venv\Scripts\Activate.ps1'
   if (Test-Path $venvActivate) {
     Write-Host "[OK]  Python virtual environment detected" -ForegroundColor Green
+
+    # NEW: Check google.adk importability
+    $venvPython = Join-Path $ProjectRoot '.venv\Scripts\python.exe'
+    if (Test-Path $venvPython) {
+      & $venvPython -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('google.adk') else 1)"
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "[OK]  google.adk is importable in .venv" -ForegroundColor Green
+      } else {
+        Write-Host "[INFO] google.adk not found in .venv (ADK CLI will fail). It will be auto-installed by quick-start." -ForegroundColor Yellow
+      }
+    }
   } else {
     Write-Host "[INFO] Venv not found. Run 'poetry install' or 'python -m venv .venv'" -ForegroundColor Yellow
   }
