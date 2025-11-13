@@ -1,3 +1,69 @@
+# Solven – DNB’s Agentic AI Assistant
+
+A two-part brief for non-technical and technical readers.
+
+- Part 1 – Meet Solven (plain-language)
+- Part 2 – Technical Appendix (deep-dive, architecture, governance)
+
+## Part 1 – Meet Solven
+
+### Why Solven Exists
+Solven is our digital colleague that answers supervision questions by talking to the same governed data sources we use. Think of it as a concierge who knows the DNB house rules and can fetch the right dossier in seconds.
+
+- Live URL: https://solven-ai.web.app
+- Goal: Faster, cited answers; less time chasing data; more time for judgment.
+
+### How Solven Helps Us
+- Colleagues will ask Solven in plain language. Example: “What’s the latest reported solvency ratio for FI X, and how does it compare quarter-over-quarter?”
+- Solven looks into:
+  - DNB public datasets and registers
+  - Internal sources such as Synapse/Fabric lakehouse and Azure parquet archives
+  - Approved APIs exposed with managed identity
+- The team receives a cited answer with links to sources and a short reasoning trail.
+
+What stays the same
+- Experts remain in control. Solven proposes; reviewers approve.
+- Sensitive actions follow our established approval flows.
+- Data access respects existing RBAC and least‑privilege rules.
+
+### The Team Behind Solven: Three Specialist Sub‑Agents
+- Validation Specialist
+  - Plain-English: Our spell‑checker for insurance and pension data quality.
+  - Focus: DataLoop/MEGA/ATM validations, common quality rules, missing/late filings.
+- Taxonomy Guide
+  - Plain-English: Tracks taxonomy evolutions and explains how a data point changed over time.
+  - Focus: Insurance/pension data point models, historical versions, mapping suggestions during change.
+- Data Navigator
+  - Plain-English: Knows where each dataset lives—Synapse, Fabric, parquet—and fetches the freshest numbers.
+  - Focus: Source selection, freshness checks, and row‑level filters based on assigned access.
+
+Analogy
+- Imagine an orchestra: Solven is the conductor. It cues the right section (Validation, Taxonomy, Data Navigation), keeps tempo (policies and approvals), and produces a reliable performance (cited answers).
+
+### FAQ
+- What data will Solven access?
+  - Only what assigned roles allow. Entra ID and managed identities enforce least privilege.
+- How will we validate answers?
+  - Check citations; ask Solven to show the validation checks it applied.
+- What about sensitive information?
+  - Safety filters, redaction, and governance gates are applied before tool/database actions.
+- How do we report issues?
+  - Open a ticket in the team channel or contact the product owner/security liaison listed below.
+
+### Engagement and Support
+- Access will be provided during pilot via the standard app catalog entry (Solven – DNB).
+- Requirements: Entra ID account, RBAC aligned to governed sources.
+- Support: Product Owner, Solution Architect, Security/Privacy contact.
+- See Appendix C for the deployment and rollout plan in Azure AI Foundry.
+
+---
+
+## Part 2 – Technical Appendix
+
+### Appendix A – Vision Overview
+<!-- Previous full document content begins here, now nested under Appendix A.
+     Keep the text unchanged except for heading levels as needed. -->
+
 # Why Agentic AI at DNB – Management Brief
 
 Purpose: Recommend adoption of agentic AI aligned with Microsoft-first strategy; outline value, risks, and fit for DNB, with an initial focus on Insurance and Pension funds.
@@ -217,4 +283,65 @@ KPIs:
 - Legal & Procurement
   - Data Processing Agreements and EU data boundary requirements for model providers.
   - Licensing constraints for connectors, SDKs, and any third-party components.
+
+### Appendix B – Multi‑Agent Orchestration Architecture
+- Orchestration pattern
+  - Root agent (Solven) plans and delegates to specialists via tool-first prompting and retries.
+  - Multi-agent coordination follows Semantic Kernel/Prompt Flow patterns with evaluation gates.
+  - Identity: End-to-end Entra ID; managed identities for databases/APIs; Key Vault for secrets.
+- Sub-agent responsibilities and contracts
+  - Validation Specialist
+    - Inputs: dataset identifier, period, entity scope, validation profile.
+    - Contract: Validation DSL (rule_id, predicate, severity, remediation_hint).
+    - Outputs: issues[], coverage metrics, provenance.
+  - Taxonomy Guide
+    - Inputs: datapoint id/version, filing period, domain (insurance/pension).
+    - Contract: Taxonomy metadata (concept, lineage, deprecation, mapping candidates).
+    - Outputs: version deltas, migration hints, confidence, citations.
+  - Data Navigator
+    - Inputs: query intent, freshness requirements, user role.
+    - Contract: Storage endpoints (Synapse, Fabric lakehouse, parquet URIs), schema hints, RLS filters.
+    - Outputs: resolved source, query plan, row-count estimate, cost hints.
+- Orchestration triggers
+  - Trigger Validation when the answer affects regulated KPIs or when risk score > threshold.
+  - Trigger Taxonomy on datapoints tied to evolving concepts or historical comparisons.
+  - Trigger Data Navigator when multiple candidate sources exist or freshness is uncertain.
+- Evaluation and safety
+  - Groundedness/relevance checks in Prompt Flow before sensitive actions.
+  - Content Safety filters on user prompts and tool outputs.
+- Observability
+  - Tracing via App Insights and Log Analytics with correlation IDs (user → agent → tool → DB).
+
+References
+- Azure AI Foundry (Prompt Flow, evaluation), Semantic Kernel orchestration, and multi-agent patterns aligned with Microsoft’s evolving agent frameworks.
+
+### Appendix C – Data Source Connectivity Matrix
+| Agent            | DNB Public APIs | Synapse (SQL/Spark) | Fabric Lakehouse | Azure Parquet Containers | Auth Method            | Scope         |
+|------------------|-----------------|---------------------|------------------|--------------------------|------------------------|---------------|
+| Solven (Root)    | Read            | Read                | Read             | Read                     | Entra ID (user), MI    | Read-only     |
+| Validation Spec. | Optional Read   | Read                | Read             | Read                     | Managed Identity (MI)  | Read-only     |
+| Taxonomy Guide   | Read            | Optional Read       | Optional Read    | Optional Read            | MI + Key Vault if any  | Read-only     |
+| Data Navigator   | Read            | Read                | Read             | Read                     | MI + Private Endpoints | Read-only     |
+
+Notes
+- No write operations in pilot phase.
+- Private networking and PE on LLM endpoints and data stores where required.
+- RBAC at source level; row-level security enforced by source.
+
+### Appendix D – Conversation Journey (Diagram)
+- Diagram placeholder: images/conversation_journey.png
+  - Swimlane: User → Solven → Specialist Agent(s) → Data Source(s) → Solven → User
+  - Checkpoints: Safety gate, plan preview (optional), validation, citations.
+
+### Appendix E – Agent Mesh Topology (Diagram)
+- Diagram placeholder: images/agent_mesh_topology.png
+  - Layers: Channels (Teams/Copilot) → Orchestration (Prompt Flow/SK) → Agents/Tools → Data Sources
+  - Boundaries: Entra ID, Managed Identities, Key Vault, Private Endpoints.
+
+### Appendix F – Bridging and Related Docs
+- See Appendix B for orchestration and security details referenced in Part 1.
+- Dutch-language use cases: backend/etl/docs/ECDAP_AGENTIC_AI_USE_CASE_NL.md
+- Future additions: deployment runbooks, CI/CD (bicep/terraform), canary strategy.
+
+<!-- End of Appendix. -->
 
