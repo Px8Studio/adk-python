@@ -116,6 +116,26 @@ docker-compose -f docker-compose.dev.yml restart genai-toolbox
 docker-compose -f docker-compose.dev.yml logs -f genai-toolbox
 ```
 
+### ADK Web fails: ModuleNotFoundError: No module named 'google.adk'
+This means google-adk isn’t installed in .venv or it’s blocked by a stray top-level “google” package.
+
+```powershell
+# Activate venv
+.\.venv\Scripts\Activate.ps1
+
+# If 'google' package exists, uninstall it (it breaks namespace packages)
+python -m pip show google
+python -m pip uninstall -y google  # if present
+
+# Install ADK
+python -m pip install google-adk
+
+# Try again
+adk web --reload_agents --host=0.0.0.0 --port=8000 backend\adk\agents
+```
+
+The quick-start script now auto-installs google-adk (or uses your local c:\Users\rjjaf\_Projects\adk-python if present).
+
 ---
 
 **Pro Tip:** Keep this file open in a pinned tab for quick reference! 📌

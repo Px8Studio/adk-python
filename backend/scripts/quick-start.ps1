@@ -375,6 +375,125 @@ try {
   exit 1
 }
 
+# Port utilities
+function Test-PortFree {
+  param([int]$Port)
+  try {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $client.Connect('localhost', $Port)
+    $client.Close()
+    return $false
+  } catch { return $true }
+}
+
+function Resolve-PortConflict {
+  param(
+    [int]$Port,
+    [string]$ServiceName
+  )
+
+  Write-Host ("  [WARN] Port {0} in use. Attempting to free for {1}..." -f $Port, $ServiceName) -ForegroundColor Yellow
+  $containers = & docker ps --filter ("publish={0}" -f $Port) --format "{{.ID}} {{.Names}}" 2>$null
+  if ($LASTEXITCODE -ne 0 -or -not $containers) {
+    Write-Host ("  [WARN] Port {0} held by a non-docker process or docker query failed. Please free it manually and rerun." -f $Port) -ForegroundColor Yellow
+    return $false
+  }
+
+  $resolved = $false
+  foreach ($entry in $containers) {
+    $parts = $entry -split '\s+', 2
+    $id = $parts[0]
+    $name = if ($parts.Length -gt 1) { $parts[1] } else { $id }
+    Write-Host ("  [INFO] Stopping container '{0}' holding port {1}..." -f $name, $Port)
+    try {
+      & docker stop $id | Out-Null
+      & docker rm $id | Out-Null
+      $resolved = $true
+    } catch {
+      Write-Host ("  [ERR] Failed to stop/remove container {0}: {1}" -f $name, $_.Exception.Message) -ForegroundColor Red
+      return $false
+    }
+  }
+
+  if ($resolved) {
+    Write-Host ("  [OK]  Port {0} freed for {1}" -f $Port, $ServiceName)
+  }
+  return $resolved
+}
+
+function Ensure-CriticalPortsFree {
+  param([array]$PortInfoList)
+
+  foreach ($info in $PortInfoList) {
+    $port = [int]$info.Port
+    $service = $info.Service
+    if (-not (Test-PortFree -Port $port)) {
+      Write-Host ("  [INFO] Port {0} in use ({1}). Attempting to free existing binding..." -f $port, $service) -ForegroundColor Yellow
+      $null = Resolve-PortConflict -Port $port -ServiceName $service
+      if (-not (Test-PortFree -Port $port)) {
+        throw ("Port {0} remains busy after cleanup. Free the port manually and rerun the quick-start script." -f $port)
+      }
+    }
+  }
+}
+
+function Ensure-GoogleNamespaceClean {
+  param([string]$PythonExe)
+  try {
+    & $PythonExe -m pip show google *> $null
+    if ($LASTEXITCODE -eq 0) {
+      Show-Info "Detected top-level 'google' package which can block 'google.adk'."
+      $resp = Read-Host "Uninstall 'google' now? (y/N)"
+      if ($resp -eq "y") {
+        & $PythonExe -m pip uninstall -y google
+      } else {
+        Show-Info "Continuing, but 'google' may prevent 'google.adk' imports."
+      }
+    }
+  } catch { }
+}
+
+function Test-AdkInstalled {
+  param([string]$PythonExe)
+  & $PythonExe -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('google.adk') else 1)"
+  return ($LASTEXITCODE -eq 0)
+}
+
+function Ensure-AdkInstalled {
+  param([string]$PythonExe, [string]$ProjectRoot)
+  if (Test-AdkInstalled -PythonExe $PythonExe) {
+    return
+  }
+  # Prefer local dev install if adk-python sibling exists
+  $parent = Split-Path $ProjectRoot -Parent
+  $adkDev = Join-Path $parent "adk-python"
+  Ensure-GoogleNamespaceClean -PythonExe $PythonExe
+  if (Test-Path $adkDev) {
+    Show-Info "Installing google-adk from local source: $adkDev"
+    & $PythonExe -m pip install -e "$adkDev"
+  } else {
+    Show-Info "Installing google-adk from PyPI"
+    & $PythonExe -m pip install google-adk
+  }
+  if (-not (Test-AdkInstalled -PythonExe $PythonExe)) {
+    throw "google-adk is not importable after installation. Check for conflicting 'google' package."
+  }
+}
+
+function Start-AdkWeb {
+  param(
+    [string]$PythonExe,
+    [string]$AgentsPath,
+    [int]$Port
+  )
+  try {
+    & adk web --reload_agents --host=0.0.0.0 --port=$Port $AgentsPath
+  } catch {
+    Show-Info "Falling back to python -m google.adk.cli.cli_tools_click web"
+    & $PythonExe -m google.adk.cli.cli_tools_click web --reload_agents --host=0.0.0.0 --port=$Port $AgentsPath
+  }
+}
+
 # Step 6: Start ADK Web
 Show-Step "Step 6/6: Starting ADK Web Server..."
 try {
@@ -441,13 +560,19 @@ try {
   }
 
   & $VenvActivate
+  $pythonExe = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
   $gemini = [System.Environment]::GetEnvironmentVariable('GEMINI_API_KEY', 'Process')
   $google = [System.Environment]::GetEnvironmentVariable('GOOGLE_API_KEY', 'Process')
   if ($gemini -and [string]::IsNullOrWhiteSpace($google)) {
     [System.Environment]::SetEnvironmentVariable('GOOGLE_API_KEY', $gemini, 'Process')
     Show-Info "Mirrored GEMINI_API_KEY -> GOOGLE_API_KEY for this session"
   }
-  & adk web --reload_agents --host=0.0.0.0 --port=8000 "$ProjectRoot\backend\adk\agents"
+
+  # NEW: Ensure ADK is installed and importable
+  Ensure-AdkInstalled -PythonExe $pythonExe -ProjectRoot $ProjectRoot
+
+  # Start (with fallback)
+  Start-AdkWeb -PythonExe $pythonExe -AgentsPath "$ProjectRoot\backend\adk\agents" -Port 8000
 } catch {
   Show-Err "Failed to start ADK Web: $($_.Exception.Message)"
   Show-Info "Check the error messages above."
