@@ -42,8 +42,6 @@ from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
-from _common.config import get_model
-
 from .prompts import return_instructions_root
 from .sub_agents.bqml.agent import get_bqml_agent
 from .sub_agents.alloydb.tools import (
@@ -53,6 +51,7 @@ from .sub_agents.bigquery.tools import (
     get_database_settings as get_bq_database_settings,
 )
 from .tools import call_alloydb_agent, call_analytics_agent, call_bigquery_agent
+from _common.config import get_model
 
 # Configure Weave endpoint and authentication
 _WANDB_BASE_URL = "https://trace.wandb.ai"
@@ -227,7 +226,6 @@ _database_settings = init_database_settings(_dataset_config)
 # Fetch the root agent
 root_agent = get_root_agent()
 
-# Expose an App so the runner uses the canonical "data-science" name.
-# (Hyphen variant matches the directory; sample agent doesn't wrap in App,
-# but we keep this to leverage Orkhon tooling expectations.)
-app = App(name="data-science", root_agent=root_agent)
+# Expose an App so the runner uses the canonical "data_science" name.
+# App names must be valid Python identifiers (letters, digits, underscores only).
+app = App(name="data_science", root_agent=root_agent)
