@@ -16,6 +16,7 @@
 
 import logging
 import os
+from typing import Dict, Any
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
@@ -39,6 +40,31 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
         callback_context.state["database_settings"] = (
             tools.get_database_settings()
         )
+
+
+def store_results_in_context(
+    tool: "BaseTool",
+    args: Dict[str, Any],
+    tool_context: "ToolContext",
+    tool_response: Dict,
+) -> Optional[Dict]:
+    """Store AlloyDB results in invocation-level state."""
+
+    if tool.name == ADK_BUILTIN_ALLOYDB_EXECUTE_SQL_TOOL:
+        if tool_response["status"] == "SUCCESS":
+            # Store in tool_context.state (for local use)
+            tool_context.state["alloydb_query_result"] = tool_response["rows"]
+
+            # CRITICAL: Also store in invocation_context.state for cross-agent access
+            invocation_context = tool_context._invocation_context
+            if invocation_context:
+                invocation_context.state["alloydb_query_result"] = tool_response["rows"]
+                logger.info(
+                    "Stored AlloyDB results in invocation state: %d rows",
+                    len(tool_response["rows"]),
+                )
+
+    return None
 
 
 alloydb_agent = DataScienceAlloyDbAgent(

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,6 +34,7 @@ except Exception:  # pragma: no cover
         return get_llm_model()
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.agents.invocation_context import InvocationContext
 from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.bigquery import BigQueryToolset
 from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
@@ -93,32 +96,22 @@ def store_results_in_context(
     tool_context: ToolContext,
     tool_response: Dict,
 ) -> Optional[Dict]:
-    """Store query results in context and log execution details."""
+    """Store BigQuery results in invocation-level state."""
     
-    # We are setting a state for the data science agent to be able to use the
-    # sql query results as context
     if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
         if tool_response["status"] == "SUCCESS":
-            rows = tool_response["rows"]
-            serialized_rows = [_serialize_row(row) for row in rows]
-            preview_rows = serialized_rows[:5]
-            tool_context.state["bigquery_query_result"] = serialized_rows
-            tool_context.state["bigquery_query_result_json"] = json.dumps(
-                serialized_rows, default=_serialize_value
-            )
-            tool_context.state["bigquery_query_result_preview"] = preview_rows
-            tool_context.state["bigquery_row_count"] = len(serialized_rows)  # ← store count
-            logger.info(
-                "BigQuery query succeeded, stored %s rows in context",
-                len(serialized_rows)
-            )
-        else:
-            logger.warning(
-                "BigQuery query failed with status: %s",
-                tool_response.get("status")
-            )
-            tool_context.state["bigquery_row_count"] = 0  # ensure present on failure
-
+            # Store in tool_context.state (for local use)
+            tool_context.state["bigquery_query_result"] = tool_response["rows"]
+            
+            # CRITICAL: Also store in invocation_context.state for cross-agent access
+            invocation_context = tool_context._invocation_context
+            if invocation_context:
+                invocation_context.state["bigquery_query_result"] = tool_response["rows"]
+                logger.info(
+                    "Stored BigQuery results in invocation state: %d rows",
+                    len(tool_response["rows"])
+                )
+    
     return None
 
 

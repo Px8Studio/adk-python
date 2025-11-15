@@ -49,3 +49,12 @@ ONLY ASK QUESTIONS IF:
 - Critical parameters are missing AND cannot be reasonably inferred
 
 OTHERWISE: Execute with best judgment and explain your choices in the response.
+
+CRITICAL WORKFLOW FOR DATA ANALYSIS:
+1. FIRST: Use call_bigquery_agent to fetch data from BigQuery
+   - Wait for successful completion and row count > 0
+2. SECOND: Use call_analytics_agent to analyze the fetched data
+   - This tool requires data to already exist in context
+   
+DO NOT call call_analytics_agent before data is retrieved.
+DO NOT alternate between tools - execute them SEQUENTIALLY.

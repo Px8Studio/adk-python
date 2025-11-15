@@ -124,197 +124,55 @@ async def call_analytics_agent(
 
     """
     logger.debug("call_analytics_agent: %s", question)
-
-    # Prevent infinite loops: cap analytics attempts per turn/session
-    try:
-        attempts = int(tool_context.state.get("analytics_attempts", 0))
-    except Exception:
-        attempts = 0
-
-    # Determine current data fingerprint; reset attempts if data changed.
-    def _safe_str(x) -> str:
-        try:
-            return x if isinstance(x, str) else json.dumps(x, default=str)
-        except Exception:
-            return str(x)
-
-    # Gather any available data blobs for fingerprinting
-    current_json = _safe_str(tool_context.state.get("bigquery_query_result_json", "")) or ""
-    current_preview = _safe_str(tool_context.state.get("bigquery_query_result_preview", "")) or ""
-    current_alloy = _safe_str(tool_context.state.get("alloydb_query_result", "")) or ""
-    data_fingerprint = hashlib.sha1((current_json + "|" + current_preview + "|" + current_alloy).encode("utf-8")).hexdigest()
-
-    if tool_context.state.get("analytics_data_fp") != data_fingerprint:
-        attempts = 0  # reset attempts when input data changes
-        tool_context.state["analytics_data_fp"] = data_fingerprint
-
-    max_attempts = int(os.getenv("ANALYTICS_MAX_ATTEMPTS", "2"))
-    if attempts >= max_attempts:
-        logger.warning("Analytics agent attempt cap reached for current dataset: %s", attempts)
-        return (
-            "Analytics has already been attempted for the current dataset. "
-            "Please adjust the request or fetch different data first."
-        )
-    tool_context.state["analytics_attempts"] = attempts + 1
-
+    
+    # Access invocation-level state
+    invocation_context = tool_context._invocation_context
+    
     bigquery_data = ""
-    bigquery_data_json = ""
-    bigquery_preview = None
     alloydb_data = ""
-
-    # Prefer JSON if available; otherwise, synthesize JSON from Python data
-    if "bigquery_query_result_json" in tool_context.state:
-        bigquery_data_json = tool_context.state["bigquery_query_result_json"]
-        logger.debug("BigQuery JSON payload length: %s", len(bigquery_data_json))
-    if "bigquery_query_result" in tool_context.state:
+    
+    # Check invocation_context.state (shared across all agents)
+    if invocation_context:
+        if "bigquery_query_result" in invocation_context.state:
+            bigquery_data = invocation_context.state["bigquery_query_result"]
+            logger.info("Found BigQuery data in invocation state")
+        if "alloydb_query_result" in invocation_context.state:
+            alloydb_data = invocation_context.state["alloydb_query_result"]
+            logger.info("Found AlloyDB data in invocation state")
+    
+    # Fallback to tool_context.state (for backward compatibility)
+    if not bigquery_data and "bigquery_query_result" in tool_context.state:
         bigquery_data = tool_context.state["bigquery_query_result"]
-        logger.info("Found BigQuery data with %s items/chars", len(bigquery_data))
-        if not bigquery_data_json:
-            try:
-                # If it's a list/dict, turn into JSON; else string-cast
-                if isinstance(bigquery_data, (list, dict)):
-                    bigquery_data_json = json.dumps(bigquery_data, default=str)
-                else:
-                    bigquery_data_json = json.dumps({"data": str(bigquery_data)})
-            except Exception as _:
-                bigquery_data_json = str(bigquery_data)
-
-    if "bigquery_query_result_preview" in tool_context.state:
-        bigquery_preview = tool_context.state["bigquery_query_result_preview"]
-        logger.debug("BigQuery preview sample rows: %s", len(bigquery_preview))
-
-    if "alloydb_query_result" in tool_context.state:
+    if not alloydb_data and "alloydb_query_result" in tool_context.state:
         alloydb_data = tool_context.state["alloydb_query_result"]
-        logger.info(
-            "Found AlloyDB data with %s items/chars",
-            len(alloydb_data) if isinstance(alloydb_data, (list, str)) else "unknown",
-        )
-
-    # Short-circuit if we have no data at all
-    if not (bigquery_data or bigquery_data_json or alloydb_data):
-        logger.warning(
-            "No data found in context for analytics agent. Available keys: %s",
-            list(tool_context.state.to_dict().keys()),
-        )
-        return (
-            "No data available for analysis. Please ensure data has been "
-            "retrieved from BigQuery or AlloyDB first."
-        )
-
-    # Guard: if BigQuery returned zero rows, don't attempt a plot
-    bq_row_count = 0
-    try:
-        if isinstance(tool_context.state.get("bigquery_query_result"), list):
-            bq_row_count = len(tool_context.state["bigquery_query_result"])
-    except Exception:
-        bq_row_count = 0
-
-    if bq_row_count == 0 and not alloydb_data:
-        logger.info("BigQuery returned zero rows; skipping analytics generation.")
-        return (
-            "No rows were returned for the current query. "
-            "Please relax filters or pick another table/measure and try again."
-        )
-
-    # Keep payloads reasonable to avoid token bloating
-    def _trim(s: str, max_len: int = 150_000) -> str:
-        return s if len(s) <= max_len else s[:max_len] + "\n/* trimmed */"
-
-    # Embed data as Python variables so generated code can reference them directly.
-    bigquery_json_literal = _trim(bigquery_data_json or "")
-    bigquery_preview_literal = json.dumps(bigquery_preview, default=str) if bigquery_preview else ""
-    alloydb_json_literal = _trim(
-        alloydb_data if isinstance(alloydb_data, str) else json.dumps(alloydb_data, default=str) if alloydb_data else ""
-    )
-
+    
+    if not bigquery_data and not alloydb_data:
+        return {
+            "error": "No data available for analysis. Please run a database query first using call_bigquery_agent or call_alloydb_agent."
+        }
+    
     question_with_data = f"""
-Question to answer:
-{question}
+Question to answer: {question}
 
-# Data payload for your Python code (ready-to-use variables)
-bigquery_json = r\"\"\"{bigquery_json_literal}\"\"\"
-bigquery_preview_json = r\"\"\"{bigquery_preview_literal}\"\"\" 
-alloydb_json = r\"\"\"{alloydb_json_literal}\"\"\" 
+Actual data to analyze this question is available in the following data tables:
 
-You MUST:
-1) Load BigQuery JSON into a pandas DataFrame:
-   import io, pandas as pd
-   bigquery_df = pd.read_json(io.StringIO(bigquery_json))
-   # If a 'period' or date column exists, use pd.to_datetime and sort values.
+<BIGQUERY>
+{bigquery_data}
+</BIGQUERY>
 
-2) Create the requested visualization with matplotlib. Then SAVE the artifact:
-   import matplotlib.pyplot as plt
-   plt.tight_layout()
-   plt.savefig("chart.png", dpi=150, bbox_inches="tight")
-   # Note: The system collects saved files automatically.
-
-3) Return a short textual RESULT and EXPLANATION. Do NOT print huge tables.
-
-# Optional preview rows (small sample):
-# bigquery_preview_json is a small sample you may print for debugging if needed.
+<ALLOYDB>
+{alloydb_data}
+</ALLOYDB>
 """
-
-    logger.debug("Calling analytics agent with data context")
+    
     agent_tool = AgentTool(agent=analytics_agent)
-
-    try:
-        analytics_agent_output = await agent_tool.run_async(
-            args={"request": question_with_data}, tool_context=tool_context
-        )
-        state_keys_after_run = list(tool_context.state.to_dict().keys())
-        logger.debug("Analytics agent state keys after run: %s", state_keys_after_run)
-        logger.debug(
-            "Analytics agent artifact delta after run: %s",
-            tool_context.actions.artifact_delta,
-        )
-
-        if not analytics_agent_output or analytics_agent_output.strip() == "":
-            logger.error("Analytics agent returned empty text output")
-
-            # Try to extract and display artifacts anyway
-            try:
-                artifact_keys = await tool_context.list_artifacts()
-                if artifact_keys:
-                    logger.info("Found artifacts despite empty output: %s", artifact_keys)
-                    return (
-                        "Result: Visualization artifacts created successfully.\n\n"
-                        "Explanation:\n"
-                        f"- Artifacts: {', '.join(artifact_keys)}\n"
-                        "- The model returned no textual summary; showing artifact names.\n"
-                        "- Open the artifacts panel to view the charts."
-                    )
-            except Exception as artifact_error:
-                logger.warning("Could not list artifacts: %s", artifact_error)
-
-            if tool_context.actions.artifact_delta:
-                artifact_keys = sorted(tool_context.actions.artifact_delta)
-                logger.info(
-                    "Artifacts registered via delta despite empty output: %s",
-                    artifact_keys,
-                )
-                return (
-                    "Result: Charts registered successfully.\n\n"
-                    "Explanation:\n"
-                    f"- Registered artifacts: {', '.join(artifact_keys)}\n"
-                    "- Model omitted text; synthetic summary returned.\n"
-                    "- Open artifacts panel to view visuals."
-                )
-
-            return (
-                "Result: Analytics execution yielded no output.\n\n"
-                "Explanation:\n"
-                "- No text and no artifacts detected.\n"
-                "- Ensure the Python code saves the plot with plt.savefig(...).\n"
-                "- Rephrase request or reduce complexity if this persists."
-            )
-
-        logger.info("Analytics agent returned output of length: %s", len(analytics_agent_output))
-        tool_context.state["analytics_agent_output"] = analytics_agent_output
-        return analytics_agent_output
-
-    except Exception as e:
-        logger.error("Error calling analytics agent: %s", e, exc_info=True)
-        return (
-            f"Error during analytics processing: {str(e)}. "
-            "Please check your request and try again."
-        )
+    
+    analytics_agent_output = await agent_tool.run_async(
+        args={"request": question_with_data}, tool_context=tool_context
+    )
+    
+    # Store output in invocation state for potential re-use
+    if invocation_context:
+        invocation_context.state["analytics_agent_output"] = analytics_agent_output
+    
+    return analytics_agent_output
