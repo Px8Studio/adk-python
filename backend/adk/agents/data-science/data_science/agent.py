@@ -198,6 +198,12 @@ def get_root_agent() -> LlmAgent:
             tools.append(call_alloydb_agent)
 
     # Upstream sample uses LlmAgent directly; we keep that for alignment.
+    # 
+    # NOTE: The analytics agent uses Vertex AI Code Interpreter which has a 
+    # ~30 second execution timeout limit. Complex visualizations may fail with
+    # "503 Context deadline exceeded" errors. The call_analytics_agent tool
+    # includes retry logic and graceful degradation for such cases.
+    # See: docs/ANALYTICS_AGENT_TIMEOUT_ISSUE.md
     agent = LlmAgent(
         model=get_model("smart"),
         name="data_science_root_agent",
@@ -207,6 +213,13 @@ def get_root_agent() -> LlmAgent:
             f"""
             You are a Data Science and Data Analytics Multi Agent System.
             Todays date: {date.today()}
+            
+            IMPORTANT: When requesting visualizations, prefer simple chart types.
+            The analytics agent has a 30-second execution limit. If a visualization
+            fails with a timeout error, ask for simpler alternatives like:
+            - Basic line charts instead of complex multi-axis plots
+            - Single visualizations instead of multiple charts
+            - Data summaries instead of complex transformations
             """
         ),
         sub_agents=sub_agents,  # type: ignore

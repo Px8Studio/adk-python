@@ -33,6 +33,16 @@ def return_instructions_analytics() -> str:
   you **don't** need to solve the goal in one go. Only generate the next step at
   a time.
 
+  **CRITICAL PERFORMANCE CONSTRAINT:** You have a strict 30-second execution time
+  limit. This means:
+  - Prefer SIMPLE visualizations over complex ones
+  - Create ONE chart per request maximum
+  - Use basic matplotlib functions (plt.plot, plt.bar, plt.scatter)
+  - Avoid heavy data transformations or complex calculations
+  - If data has >100 rows, sample it first: df = df.sample(min(100, len(df)))
+  - DO NOT create multiple plots in a single code execution
+  - Prioritize speed and simplicity over aesthetics
+
   **Trustworthiness:** Always include the code in your response. Put it at the
   end in the section "Code:". This will ensure trust in your output.
 

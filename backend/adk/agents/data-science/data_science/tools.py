@@ -25,6 +25,7 @@ import logging
 import os
 import hashlib
 
+from google.api_core.exceptions import ServiceUnavailable
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
@@ -167,12 +168,96 @@ Actual data to analyze this question is available in the following data tables:
     
     agent_tool = AgentTool(agent=analytics_agent)
     
-    analytics_agent_output = await agent_tool.run_async(
-        args={"request": question_with_data}, tool_context=tool_context
-    )
+    # Attempt analytics with automatic timeout handling
+    max_retries = 2
+    last_error = None
     
-    # Store output in invocation state for potential re-use
-    if invocation_context:
-        invocation_context.state["analytics_agent_output"] = analytics_agent_output
+    for attempt in range(max_retries):
+        try:
+            analytics_agent_output = await agent_tool.run_async(
+                args={"request": question_with_data}, tool_context=tool_context
+            )
+            
+            # Store output in invocation state for potential re-use
+            if invocation_context:
+                invocation_context.state["analytics_agent_output"] = analytics_agent_output
+            
+            logger.info("Analytics agent returned output of length: %d", len(str(analytics_agent_output)))
+            return analytics_agent_output
+            
+        except ServiceUnavailable as e:
+            error_msg = str(e).lower()
+            if "deadline exceeded" in error_msg or "timeout" in error_msg:
+                last_error = e
+                logger.error(
+                    "Error calling analytics agent: %s",
+                    str(e),
+                    exc_info=True
+                )
+                
+                if attempt < max_retries - 1:
+                    # Try with simplified request
+                    logger.warning(
+                        "Analytics agent timed out (attempt %d/%d). "
+                        "Simplifying visualization request...",
+                        attempt + 1,
+                        max_retries
+                    )
+                    question_with_data = f"""
+Question to answer: Create a SIMPLE visualization for: {question}
+
+IMPORTANT: Use only basic matplotlib charts. Avoid complex transformations.
+Limit to ONE simple chart maximum.
+
+Actual data to analyze:
+
+<BIGQUERY>
+{bigquery_data if bigquery_data else 'No data'}
+</BIGQUERY>
+
+<ALLOYDB>
+{alloydb_data if alloydb_data else 'No data'}
+</ALLOYDB>
+"""
+                    continue
+                else:
+                    # Final attempt failed - return graceful error
+                    logger.error(
+                        "Analytics agent timed out after %d attempts",
+                        max_retries
+                    )
+                    row_count = len(bigquery_data.split('\n')) if bigquery_data else 0
+                    return {
+                        "status": "timeout",
+                        "error": (
+                            f"The visualization request timed out after {max_retries} attempts. "
+                            "The Vertex AI Code Interpreter has a ~30 second execution limit. "
+                            f"Your query returned {row_count} rows of data, which may be too complex to visualize. "
+                            "Please try one of these alternatives:\n\n"
+                            "1. Request a simpler chart type (e.g., 'show a basic line chart')\n"
+                            "2. Ask for data summary instead of visualization\n"
+                            "3. Request visualization of a subset of the data\n\n"
+                            "The raw data is available in the conversation context."
+                        ),
+                        "data_available": True,
+                        "row_count": row_count,
+                        "last_error": str(last_error),
+                    }
+            else:
+                # Different type of ServiceUnavailable error
+                raise
+        
+        except Exception as e:
+            # Unexpected error - log and re-raise
+            logger.error(
+                "Unexpected error calling analytics agent: %s",
+                str(e),
+                exc_info=True
+            )
+            raise
     
-    return analytics_agent_output
+    # Should not reach here, but handle gracefully
+    return {
+        "error": "Analytics agent failed after retries",
+        "last_error": str(last_error) if last_error else "Unknown error",
+    }
