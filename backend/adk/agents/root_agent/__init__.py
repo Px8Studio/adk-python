@@ -14,8 +14,5 @@
 
 from __future__ import annotations
 
-# ADK requires this: expose the agent module itself, not the variable here.
-# This avoids circular/early imports that can break dynamic loading.
+# Required by ADK: Import the agent module to make root_agent discoverable
 from . import agent
-
-__all__ = ["agent"]
