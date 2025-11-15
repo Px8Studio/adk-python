@@ -1,36 +1,105 @@
 # ADK Web UI Firebase Deployment Plan
 
-Deploy the existing ADK Web UI (Angular app) to Firebase Hosting for `solven-adk-dev.web.app` with backend API integration.
+**Goal:** Deploy the existing ADK Web UI (Angular app) from `adk-web/` to Firebase Hosting with Cloud Run backend integration.
+
+## 🌐 Your URLs Explained
+
+### What You Control
+
+**Firebase Hosting (Frontend):**
+- **Default Firebase URL**: `https://solven-adk-dev.web.app` ✅ **You control this via Firebase project**
+- **Alternative URL**: `https://solven-adk-dev.firebaseapp.com` (also available)
+- **Custom Domain** (optional): `https://orkhon.yourdomain.com` ⚙️ **You can configure this**
+
+**Cloud Run Backend (API):**
+- **Auto-generated URL**: `https://orkhon-adk-backend-[random].run.app` ⚙️ **GCP assigns random suffix**
+- **Custom Domain** (optional): `https://api.orkhon.yourdomain.com` ⚙️ **You can configure this**
+
+### What Firebase Handles for You
+
+Firebase Hosting provides:
+- ✅ **Global CDN** - Automatic worldwide distribution
+- ✅ **SSL Certificate** - Free HTTPS for `.web.app` and `.firebaseapp.com`
+- ✅ **Auto-scaling** - No server management needed
+- ✅ **Zero-downtime deploys** - Atomic deployments with rollback support
+- ✅ **Free tier** - 10GB storage, 360MB/day bandwidth (sufficient for this app)
+
+### Complete Architecture URLs
+
+```
+User Browser
+    │
+    ▼
+https://solven-adk-dev.web.app  ← You access the UI here
+    │ (Firebase Hosting - CDN)
+    │
+    ├─ Static Files (HTML/CSS/JS)
+    │
+    └─ /api/** requests
+       │ (Firebase Rewrites)
+       ▼
+https://orkhon-adk-backend-xyz.run.app
+       │ (Cloud Run Backend)
+       │
+       ├─ /api/v1/agents
+       ├─ /api/v1/sessions
+       └─ /ws (WebSocket)
+```
+
+**Key Point:** Firebase rewrites mean users NEVER see the Cloud Run URL. All requests appear to come from `solven-adk-dev.web.app/api/**`.
 
 ## Current State Analysis
 
 ### ADK Web Architecture
-- **Location**: `c:\Users\rjjaf\_Projects\adk-web`
-- **Framework**: Angular 19.1.0 (Material Design UI)
-- **Build System**: Angular CLI
-- **Output**: `dist/adk_web/` (static files)
+
+**Location**: `c:\Users\rjjaf\_Projects\adk-web` (separate repo from Orkhon)
+
+**Framework**: Angular 19.1.0 (Material Design UI)
+- Production-ready Google ADK Web UI
+- Full agent management, session handling, evaluation UI
+- Real-time WebSocket support for agent streaming
+- Built-in trace visualization with Jaeger integration
+
+**Build System**: Angular CLI
+- **Output**: `dist/agent_framework_web/` (static files)
 - **Bundle Size**: ~90-100 MB production build
+- **Assets**: `dist/agent_framework_web/assets/config/runtime-config.json` (critical!)
+
+### How You Currently Use It (Orkhon Pattern)
+
+**From Orkhon directory** via `quick-start.ps1`:
+
+```powershell
+# This is what you're already doing:
+cd c:\Users\rjjaf\_Projects\orkhon\backend\scripts
+.\quick-start.ps1  # Starts Toolbox + ADK backend
+
+# Behind the scenes it runs:
+adk web --reload_agents --host=0.0.0.0 --port=8000 backend\adk\agents
+```
+
+**Result**: ADK Web UI served at `http://localhost:8000` with Orkhon agents loaded
 
 ### Key Configuration Files
 
-**package.json:**
+**package.json** (from `adk-web/`):
 ```json
 {
-  "name": "adk-web",
+  "name": "agent-framework-web",
   "scripts": {
     "start": "ng serve",
     "build": "ng build",
-    "serve": "npm run clean-config && npm run inject-backend && ng serve"
+    "serve": "npm run clean-config && npm run inject-backend && ng serve --poll 1000"
   }
 }
 ```
 
-**angular.json (production config):**
+**angular.json** (production config):
 ```json
 {
   "configurations": {
     "production": {
-      "outputPath": "dist/adk_web",
+      "outputPath": "dist/agent_framework_web",  // ← Correct output path
       "baseHref": "./",
       "deployUrl": "./",
       "outputHashing": "all"
@@ -41,18 +110,24 @@ Deploy the existing ADK Web UI (Angular app) to Firebase Hosting for `solven-adk
 
 ### Runtime Configuration Pattern
 
-ADK Web uses **runtime configuration injection** instead of build-time environment variables:
+ADK Web uses **runtime configuration injection** instead of build-time environment variables. This is a best practice for single-build, multi-environment deployments.
 
-1. **Development** (`npm run serve --backend=http://localhost:8000`):
+**How It Works:**
+
+1. **Development** (local dev server):
+   ```powershell
+   cd c:\Users\rjjaf\_Projects\adk-web
+   npm run serve --backend=http://localhost:8000
+   ```
    - `set-backend.js` writes to `src/assets/config/runtime-config.json`
-   - Config includes: `{ "backendUrl": "http://localhost:8000" }`
+   - Config: `{ "backendUrl": "http://localhost:8000" }`
 
-2. **Production** (deployed):
-   - `runtime-config.json` must be present in `dist/adk_web/assets/config/`
-   - Frontend reads backend URL from this file at runtime
-   - Allows single build to work across environments
+2. **Production** (Firebase Hosting):
+   - Build Angular app → `dist/agent_framework_web/`
+   - Inject backend URL → `dist/agent_framework_web/assets/config/runtime-config.json`
+   - Deploy to Firebase → Single build works everywhere!
 
-3. **Access in code**:
+3. **Frontend reads config at runtime**:
    ```typescript
    // src/utils/runtime-config-util.ts
    static getRuntimeConfig(): RuntimeConfig {
@@ -65,54 +140,148 @@ ADK Web uses **runtime configuration injection** instead of build-time environme
    }
    ```
 
-## Deployment Requirements
+**Why This Matters for Deployment:**
+- ✅ Build once, deploy anywhere (dev, staging, prod)
+- ✅ No need to rebuild for different backend URLs
+- ✅ Easy to switch backends without code changes
+- ✅ Supports Firebase rewrites (use empty `backendUrl: ""` for relative URLs)
 
-### Prerequisites
+## Deployment Strategy: Two Options
 
-1. **Firebase Project Created**: ✅ You mentioned you already have this
-2. **Firebase CLI Installed**:
-   ```powershell
-   npm install -g firebase-tools
-   ```
+## Deployment Strategy: Two Options
 
-3. **Firebase Login**:
-   ```powershell
-   firebase login
-   ```
+### Option A: Firebase + Cloud Run (Recommended for Production)
 
-4. **Node.js & npm**: Already available (Angular requires it)
+**Best for:** Public internet access, always-on production service
 
-### Required Tools
+```
+User → Firebase Hosting (CDN) → Cloud Run Backend → Toolbox (localhost/cloud)
+       https://solven-adk-dev.web.app
+```
 
-- Node.js 18+ ✅
-- npm 9+ ✅
-- Angular CLI 19+ ✅
-- Firebase CLI ✅ (install if missing)
+**Advantages:**
+- ✅ Global CDN for fast UI loading
+- ✅ Free HTTPS SSL certificate
+- ✅ Auto-scaling backend (pay per request)
+- ✅ Zero server management
+- ✅ Production-grade reliability
+
+**Estimated Cost:**
+- Frontend (Firebase): **$0/month** (free tier: 10GB storage, 360MB/day)
+- Backend (Cloud Run): **$20-60/month** (depends on usage, can scale to zero)
+
+---
+
+### Option B: Firebase + Local Backend (For Testing/Development)
+
+**Best for:** Testing deployment workflow while keeping backend local
+
+```
+User → Firebase Hosting (CDN) → Local Orkhon Backend → Local Toolbox
+       https://solven-adk-dev.web.app     (your machine)
+```
+
+**Advantages:**
+- ✅ Test Firebase deployment workflow
+- ✅ Keep existing local backend setup
+- ✅ No backend cloud costs
+- ⚠️ **Limitation:** Only accessible when your machine is running and reachable
+
+**Estimated Cost:**
+- Frontend (Firebase): **$0/month**
+- Backend: **$0** (local)
+
+**Note:** This requires exposing your local port 8000 via:
+- Ngrok/Cloudflare Tunnel (easiest)
+- Your router's port forwarding (if public IP)
+- VPN (if accessing from specific networks)
+
+---
+
+## Recommended Approach: Start with Option A
+
+Deploy both frontend AND backend to cloud for best results:
+
+1. **Deploy Backend to Cloud Run** (one-time setup)
+2. **Deploy Frontend to Firebase Hosting** (connects to Cloud Run)
+3. **Access from anywhere** at `https://solven-adk-dev.web.app`
+
+You can always switch backends later by just updating `runtime-config.json`!
+
+## Prerequisites & Setup
+
+### 1. Firebase CLI & Authentication
+
+**Install Firebase CLI globally:**
+
+```powershell
+npm install -g firebase-tools
+```
+
+**Login to Firebase:**
+
+```powershell
+firebase login
+```
+
+**Verify your project exists:**
+
+```powershell
+firebase projects:list
+# Should show: solven-adk-dev
+```
+
+### 2. Required Environment
+
+Already have from Orkhon setup:
+- ✅ Node.js 18+ (Angular requirement)
+- ✅ npm 9+ (Angular requirement)
+- ✅ Python 3.11+ with `uv` (ADK backend)
+- ✅ Google Cloud SDK (if deploying backend to Cloud Run)
+
+### 3. Firebase Project Structure
+
+You mentioned you already have `solven-adk-dev` Firebase project. Verify it has:
+
+```powershell
+# Check project details
+firebase projects:describe solven-adk-dev
+
+# Check if Hosting is enabled (should auto-enable on first deploy)
+firebase deploy --only hosting --dry-run
+```
 
 ## Step-by-Step Deployment Guide
 
-### Step 1: Initialize Firebase in ADK Web Project
+### Phase 1: Initialize Firebase in ADK Web Project (One-Time Setup)
+
+**Navigate to ADK Web directory:**
 
 ```powershell
 cd c:\Users\rjjaf\_Projects\adk-web
-
-# Initialize Firebase (select Hosting only)
-firebase init hosting
-
-# When prompted:
-# ? What do you want to use as your public directory? dist/agent_framework_web
-# ? Configure as a single-page app (rewrite all urls to /index.html)? Yes
-# ? Set up automatic builds and deploys with GitHub? No
-# ? File dist/agent_framework_web/index.html already exists. Overwrite? No
 ```
 
-This creates:
+**Initialize Firebase Hosting:**
+
+```powershell
+firebase init hosting
+```
+
+**Answer the prompts:**
+- `? What do you want to use as your public directory?` → **`dist/agent_framework_web`**
+- `? Configure as a single-page app (rewrite all urls to /index.html)?` → **`Yes`**
+- `? Set up automatic builds and deploys with GitHub?` → **`No`**
+- `? File dist/agent_framework_web/index.html already exists. Overwrite?` → **`No`**
+
+**What this creates:**
 - `firebase.json` - Hosting configuration
-- `.firebaserc` - Project selection
+- `.firebaserc` - Project selection (points to `solven-adk-dev`)
 
-### Step 2: Configure Firebase Hosting
+---
 
-**Create/Update `firebase.json`** in `c:\Users\rjjaf\_Projects\adk-web\firebase.json`:
+### Phase 2: Configure Firebase Hosting
+
+**Create `firebase.json`** in `c:\Users\rjjaf\_Projects\adk-web\firebase.json`:
 
 ```json
 {
@@ -132,21 +301,17 @@ This creates:
         }
       },
       {
-        "source": "/dev-ui/**",
-        "destination": "/index.html"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.@(js|css|map)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=31536000"
+            "value": "max-age=31536000, immutable"
           }
         ]
       },
@@ -158,11 +323,30 @@ This creates:
             "value": "max-age=86400"
           }
         ]
+      },
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          }
+        ]
       }
     ]
   }
 }
 ```
+
+**Key configuration explained:**
+- `"public": "dist/agent_framework_web"` - Where your Angular build outputs
+- `/api/**` rewrite - Routes API calls to Cloud Run backend (optional, see Phase 4)
+- `**` rewrite - SPA routing (all routes go to index.html)
+- Headers - CDN caching + security headers
 
 **Create `.firebaserc`** in `c:\Users\rjjaf\_Projects\adk-web\.firebaserc`:
 
@@ -174,7 +358,9 @@ This creates:
 }
 ```
 
-### Step 3: Create Runtime Config Injection Script
+---
+
+### Phase 3: Create Runtime Config Injection Script
 
 **Create `inject-firebase-config.js`** in `c:\Users\rjjaf\_Projects\adk-web\inject-firebase-config.js`:
 
@@ -188,11 +374,12 @@ const fs = require('fs');
 const path = require('path');
 
 const distPath = './dist/agent_framework_web/assets/config/runtime-config.json';
-const backendUrl = process.env.BACKEND_URL || '';
+const backendUrl = process.env.BACKEND_URL;
 
-if (!backendUrl) {
+if (backendUrl === undefined) {
     console.error('ERROR: BACKEND_URL environment variable not set');
-    console.error('Usage: BACKEND_URL=https://your-backend.run.app node inject-firebase-config.js');
+    console.error('Usage: $env:BACKEND_URL="https://your-backend.run.app"; node inject-firebase-config.js');
+    console.error('   OR: $env:BACKEND_URL=""; node inject-firebase-config.js  # For Firebase rewrites');
     process.exit(1);
 }
 
@@ -209,179 +396,305 @@ if (!fs.existsSync(dir)) {
 fs.writeFileSync(distPath, JSON.stringify(config, null, 2));
 
 console.log('✅ Firebase runtime config injected successfully');
-console.log(`   Backend URL: ${backendUrl}`);
+console.log(`   Backend URL: ${backendUrl || '(empty - using Firebase rewrites)'}`);
 console.log(`   Config file: ${distPath}`);
 ```
 
-### Step 4: Update package.json Scripts
+**Update `package.json`** scripts in `c:\Users\rjjaf\_Projects\adk-web\package.json`:
 
-**Add to `package.json` scripts**:
+Add these scripts:
 
 ```json
 {
   "scripts": {
     "build:firebase": "ng build --configuration production",
+    "inject-config": "node inject-firebase-config.js",
     "deploy:firebase": "npm run build:firebase && firebase deploy --only hosting",
-    "inject-firebase-config": "node inject-firebase-config.js"
+    "serve:firebase": "firebase serve --only hosting"
   }
 }
 ```
 
-### Step 5: Build and Deploy Workflow
+---
 
-#### Option A: Deploy with Local Backend (Testing)
+### Phase 4A: Deploy Frontend Only (Local Backend)
 
-```powershell
-cd c:\Users\rjjaf\_Projects\adk-web
+**Use this if:** You want to test Firebase deployment while keeping your local Orkhon backend running.
 
-# 1. Build production
-npm run build:firebase
-
-# 2. Inject local backend URL (for testing)
-$env:BACKEND_URL = "http://localhost:8000"
-node inject-firebase-config.js
-
-# 3. Test locally before deploying
-firebase serve
-
-# 4. Deploy to Firebase Hosting
-firebase deploy --only hosting
-```
-
-**Note**: This will work but frontend will try to connect to localhost:8000 (won't work for remote users).
-
-#### Option B: Deploy with Cloud Run Backend (Production)
+**Steps:**
 
 ```powershell
 cd c:\Users\rjjaf\_Projects\adk-web
 
-# 1. Build production
+# 1. Build production Angular app
 npm run build:firebase
 
-# 2. Inject Cloud Run backend URL
-$env:BACKEND_URL = "https://orkhon-adk-backend-xyz.run.app"
-node inject-firebase-config.js
+# 2. Get your local machine's IP address
+ipconfig
+# Look for "IPv4 Address" under your active network adapter
+# Example: 192.168.1.100
 
-# 3. Test locally with Cloud Run backend
-firebase serve
+# 3. Inject local backend URL
+$env:BACKEND_URL = "http://192.168.1.100:8000"
+npm run inject-config
 
-# 4. Deploy to Firebase Hosting
+# 4. Test locally before deploying
+npm run serve:firebase
+# Opens http://localhost:5000 (Firebase local emulator)
+# Test that it connects to your local backend
+
+# 5. Deploy to Firebase
 firebase deploy --only hosting
+
+# 6. Access your deployed app
+# URL: https://solven-adk-dev.web.app
 ```
 
-#### Option C: Use Firebase Hosting Rewrites (Recommended)
+**Important Notes:**
+- ⚠️ Your local backend must be running (`quick-start.ps1` in Orkhon)
+- ⚠️ Your machine must be reachable from the internet (router port forwarding or ngrok)
+- ⚠️ Update firewall rules to allow port 8000 access
 
-With Firebase Hosting rewrites configured in `firebase.json`, the frontend can use **relative URLs** (`/api/*`) that Firebase automatically routes to Cloud Run.
+**CORS Configuration Required** in Orkhon backend:
 
-**Modify runtime-config.json injection**:
-
-```javascript
-// inject-firebase-config.js (modified for rewrites)
-const config = {
-    backendUrl: ''  // Empty = use relative URLs (Firebase rewrites handle routing)
-};
-```
-
-**Frontend will make calls to**:
-- `/api/v1/agents` → Firebase rewrites to → `https://orkhon-adk-backend.run.app/api/v1/agents`
-
-**Build & Deploy**:
-
-```powershell
-cd c:\Users\rjjaf\_Projects\adk-web
-
-# 1. Build
-npm run build:firebase
-
-# 2. Inject empty backend URL (use rewrites)
-$env:BACKEND_URL = ""
-node inject-firebase-config.js
-
-# 3. Deploy
-firebase deploy --only hosting
-```
-
-### Step 6: Verify Deployment
-
-```powershell
-# Check deployment status
-firebase hosting:sites:list
-
-# Open deployed site
-firebase open hosting:site
-```
-
-**Manual verification**:
-1. Go to `https://solven-adk-dev.web.app`
-2. Open browser DevTools → Network tab
-3. Check that API calls route correctly
-4. Verify runtime-config.json loads: `https://solven-adk-dev.web.app/assets/config/runtime-config.json`
-
-## Backend Integration Requirements
-
-### For Local Development Backend
-
-**Start ADK backend** (in Orkhon project):
-
-```powershell
-cd c:\Users\rjjaf\_Projects\orkhon\backend
-adk web --reload_agents --host=0.0.0.0 --port=8000 --allow_origins=https://solven-adk-dev.web.app adk\agents
-```
-
-**CORS Configuration** (add to backend):
 ```python
-# Backend CORS must allow Firebase domain
+# backend/adk/run_dnb_openapi_agent.py (or wherever CORS is configured)
 allow_origins = [
     "https://solven-adk-dev.web.app",
     "https://solven-adk-dev.firebaseapp.com",
-    "http://localhost:4200"  # For local Angular dev
+    "http://localhost:4200",  # For local Angular dev
+    "http://localhost:5000",  # For Firebase emulator
 ]
 ```
 
-### For Cloud Run Backend (Production)
+---
 
-**Deploy Orkhon backend to Cloud Run** (from earlier plan):
+### Phase 4B: Deploy Frontend + Backend to Cloud (Recommended)
+
+**Use this for:** Production deployment accessible from anywhere.
+
+#### Step 1: Deploy Backend to Cloud Run
 
 ```powershell
 cd c:\Users\rjjaf\_Projects\orkhon\backend
 
+# Build and deploy ADK backend to Cloud Run
 gcloud run deploy orkhon-adk-backend `
   --source . `
   --region us-central1 `
   --allow-unauthenticated `
   --set-env-vars ALLOWED_ORIGINS=https://solven-adk-dev.web.app `
-  --set-secrets=GOOGLE_API_KEY=gemini-api-key:latest `
-  --min-instances=1 `
+  --set-env-vars TOOLBOX_BASE_URL=http://localhost:5000 `
+  --set-secrets=GEMINI_API_KEY=gemini-api-key:latest `
+  --min-instances=0 `
+  --max-instances=10 `
   --memory=2Gi `
-  --cpu=2
-```
+  --cpu=2 `
+  --port=8000 `
+  --timeout=300
 
-**Get Cloud Run URL**:
-```powershell
+# Get the deployed URL
 $backendUrl = gcloud run services describe orkhon-adk-backend --region us-central1 --format 'value(status.url)'
-Write-Host "Backend URL: $backendUrl"
+Write-Host "Backend deployed at: $backendUrl"
 ```
 
-**Update firebase.json rewrites** with actual service name:
-```json
-{
-  "hosting": {
-    "rewrites": [
-      {
-        "source": "/api/**",
-        "run": {
-          "serviceId": "orkhon-adk-backend",
-          "region": "us-central1"
-        }
-      }
-    ]
-  }
-}
+**Create Dockerfile** in `c:\Users\rjjaf\_Projects\orkhon\backend\Dockerfile` if not exists:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv package manager
+RUN pip install --no-cache-dir uv
+
+# Copy dependency files
+COPY pyproject.toml ./
+COPY uv.lock* ./
+
+# Install dependencies
+RUN uv pip install --system -e .
+
+# Copy application code
+COPY adk/ ./adk/
+
+# Expose port
+EXPOSE 8000
+
+# Run ADK web server
+CMD ["adk", "web", "--host=0.0.0.0", "--port=8000", "--reload_agents", "adk/agents"]
 ```
 
-## Configuration Files Summary
+#### Step 2: Deploy Frontend to Firebase
 
-### Files to Create in `c:\Users\rjjaf\_Projects\adk-web\`
+```powershell
+cd c:\Users\rjjaf\_Projects\adk-web
+
+# 1. Build production Angular app
+npm run build:firebase
+
+# 2. Use Firebase rewrites (empty backend URL)
+$env:BACKEND_URL = ""
+npm run inject-config
+
+# 3. Deploy to Firebase
+firebase deploy --only hosting
+
+# 4. Access your deployed app
+# URL: https://solven-adk-dev.web.app
+```
+
+**With Firebase rewrites**, API calls work like this:
+
+```
+User browser makes: GET https://solven-adk-dev.web.app/api/v1/agents
+                         ↓
+Firebase rewrites to:   GET https://orkhon-adk-backend-xyz.run.app/api/v1/agents
+                         ↓
+Cloud Run backend responds
+                         ↓
+User sees response from: https://solven-adk-dev.web.app/api/v1/agents
+```
+
+**Advantages:**
+- ✅ No CORS issues (same origin for user)
+- ✅ Backend URL hidden from users
+- ✅ Easy to switch backends (just update `firebase.json`)
+
+---
+
+### Phase 5: Verify Deployment
+
+```powershell
+# Open deployed site
+firebase open hosting:site
+
+# Or manually visit
+Start-Process "https://solven-adk-dev.web.app"
+```
+
+**Manual Testing Checklist:**
+
+- [ ] **Homepage loads** - No blank screen, no 404s
+- [ ] **Runtime config accessible** - Check `https://solven-adk-dev.web.app/assets/config/runtime-config.json`
+- [ ] **Agent list loads** - Can see available agents
+- [ ] **Agent chat works** - Can send messages and get responses
+- [ ] **Sessions persist** - Refresh page, session continues
+- [ ] **Evaluation runs** - Can run evaluation sets
+- [ ] **Traces display** - Can view agent execution traces
+- [ ] **WebSocket connects** - Real-time streaming works
+- [ ] **No console errors** - Check browser DevTools console
+
+**Debugging Commands:**
+
+```powershell
+# View Firebase Hosting logs
+firebase hosting:channel:list
+
+# View Cloud Run logs (if using Cloud Run backend)
+gcloud run services logs read orkhon-adk-backend --region us-central1 --limit 50
+
+# Check deployment status
+firebase deploy --only hosting --debug
+
+# Check runtime config
+Invoke-WebRequest https://solven-adk-dev.web.app/assets/config/runtime-config.json
+```
+
+---
+
+## Complete Deployment Workflow (Copy-Paste Ready)
+
+### Option 1: Production Deployment (Firebase + Cloud Run)
+
+**Full cloud deployment - accessible from anywhere.**
+
+```powershell
+### Step 1: One-time setup (Firebase configuration)
+cd c:\Users\rjjaf\_Projects\adk-web
+firebase login
+firebase init hosting  # Select dist/agent_framework_web as public directory
+
+### Step 2: Deploy backend to Cloud Run
+cd c:\Users\rjjaf\_Projects\orkhon\backend
+gcloud run deploy orkhon-adk-backend `
+  --source . `
+  --region us-central1 `
+  --allow-unauthenticated `
+  --set-env-vars ALLOWED_ORIGINS=https://solven-adk-dev.web.app `
+  --min-instances=0 `
+  --memory=2Gi `
+  --cpu=2 `
+  --port=8000
+
+### Step 3: Build and deploy frontend
+cd c:\Users\rjjaf\_Projects\adk-web
+npm run build:firebase
+$env:BACKEND_URL = ""  # Use Firebase rewrites
+npm run inject-config
+firebase deploy --only hosting
+
+### Step 4: Access your app
+Start-Process "https://solven-adk-dev.web.app"
+```
+
+**Result:** Your app is live at `https://solven-adk-dev.web.app` with Cloud Run backend!
+
+---
+
+### Option 2: Testing Deployment (Firebase + Local Backend)
+
+**Test Firebase deployment while keeping backend local.**
+
+```powershell
+### Step 1: Start local Orkhon stack
+cd c:\Users\rjjaf\_Projects\orkhon\backend\scripts
+.\quick-start.ps1  # Starts Toolbox + ADK backend on localhost:8000
+
+### Step 2: Get your machine's IP
+ipconfig  # Look for IPv4 Address (e.g., 192.168.1.100)
+
+### Step 3: Build and deploy frontend
+cd c:\Users\rjjaf\_Projects\adk-web
+npm run build:firebase
+$env:BACKEND_URL = "http://YOUR_IP:8000"  # Replace with your IP
+npm run inject-config
+firebase deploy --only hosting
+
+### Step 4: Access your app
+Start-Process "https://solven-adk-dev.web.app"
+```
+
+**Note:** Your local backend must be reachable from the internet (port forwarding or ngrok).
+
+---
+
+### Option 3: Quick Update (Frontend Only)
+
+**Rebuild and redeploy just the frontend (assumes backend hasn't changed).**
+
+```powershell
+cd c:\Users\rjjaf\_Projects\adk-web
+
+# Build
+npm run build:firebase
+
+# Inject config (use existing backend URL)
+$env:BACKEND_URL = ""  # Or your Cloud Run URL
+npm run inject-config
+
+# Deploy
+firebase deploy --only hosting
+```
+
+---
+
+## Configuration Files Reference
 
 1. **firebase.json** - Hosting configuration with rewrites
 2. **.firebaserc** - Firebase project selection (`solven-adk-dev`)
