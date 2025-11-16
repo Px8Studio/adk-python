@@ -24,14 +24,8 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from ...utils.utils import get_env_var, USER_AGENT
-try:
-    from _common.config import get_llm_model, get_model  # type: ignore
-except Exception:  # pragma: no cover
-    def get_llm_model() -> str:
-        return os.getenv("ORKHON_LLM_MODEL") or os.getenv("ROOT_AGENT_MODEL") or os.getenv("GOOGLE_GEMINI_MODEL") or "gemini-2.5-flash"
-    def get_model(profile: str) -> str:
-        return get_llm_model()
+import pandas as pd
+from ...utils.utils import USER_AGENT, get_env_var
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.agents.invocation_context import InvocationContext
@@ -39,6 +33,7 @@ from google.adk.tools import BaseTool, ToolContext
 from google.adk.tools.bigquery import BigQueryToolset
 from google.adk.tools.bigquery.config import BigQueryToolConfig, WriteMode
 from google.genai import types
+from google.genai.types import FunctionResponse  # Add FunctionResponse import
 from . import tools
 from .chase_sql import chase_db_tools
 from .prompts import return_instructions_bigquery
@@ -51,8 +46,7 @@ NL2SQL_METHOD = os.getenv("NL2SQL_METHOD", "BASELINE")
 # https://google.github.io/adk-docs/tools/built-in-tools/#bigquery
 ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL = "execute_sql"
 
-
-def setup_before_agent_call(callback_context: CallbackContext) -> None:
+def setup_before_agent_call(callback_context: CallbackContext, tool: Any = None) -> None:
     """Setup the agent and cache database settings to avoid repeated queries."""
     
     # Cache database settings on first call to avoid repeated schema queries
@@ -64,7 +58,6 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
         callback_context.state["bigquery_schema_cached"] = True
     else:
         logger.debug("Using cached BigQuery database settings")
-
 
 def _serialize_value(value: Any) -> Any:
     """Serialize BigQuery values so they are JSON friendly for downstream use."""
@@ -91,36 +84,37 @@ def _serialize_row(row: Any) -> Any:
 
 
 def store_results_in_context(
-    tool: BaseTool,
-    args: Dict[str, Any],
     tool_context: ToolContext,
-    tool_response: Dict,
-) -> Optional[Dict]:
-    """Store BigQuery results in invocation-level state."""
+    function_response: types.FunctionResponse,
+) -> types.FunctionResponse:
+    """Store BigQuery results in tool context for downstream agents."""
+    # If you need tool information, extract it from function_response
+    tool_name = function_response.name
     
-    if tool.name == ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL:
-        if tool_response["status"] == "SUCCESS":
-            # Store in tool_context.state (for local use)
-            tool_context.state["bigquery_query_result"] = tool_response["rows"]
-            
-            # CRITICAL: Also store in invocation_context.state for cross-agent access
-            invocation_context = tool_context._invocation_context
-            if invocation_context:
-                invocation_context.state["bigquery_query_result"] = tool_response["rows"]
-                logger.info(
-                    "Stored BigQuery results in invocation state: %d rows",
-                    len(tool_response["rows"])
-                )
-    
-    return None
+    # Check if the function execution was successful
+    if function_response.output:
+        result_df = function_response.output
+        # Store the DataFrame in the context
+        if result_df is not None and not result_df.empty:
+            tool_context.state["query_result"] = result_df
+        else:
+            tool_context.state["query_result"] = pd.DataFrame()
+    else:
+        # Store an empty DataFrame if the query failed
+        tool_context.state["query_result"] = pd.DataFrame()
+
+    return function_response
 
 
 bigquery_tool_filter = [ADK_BUILTIN_BQ_EXECUTE_SQL_TOOL]
 bigquery_tool_config = BigQueryToolConfig(
-    write_mode=WriteMode.BLOCKED, application_name=USER_AGENT
+    application_name=USER_AGENT,
 )
+
+# Fix: Change 'config' to 'bigquery_tool_config'
 bigquery_toolset = BigQueryToolset(
-    tool_filter=bigquery_tool_filter, bigquery_tool_config=bigquery_tool_config
+    tool_filter=bigquery_tool_filter,
+    bigquery_tool_config=bigquery_tool_config  # Changed from config=
 )
 
 
@@ -129,7 +123,7 @@ class DataScienceBigQueryAgent(LlmAgent):
 
 
 bigquery_agent = DataScienceBigQueryAgent(
-    model=os.getenv("BIGQUERY_AGENT_MODEL") or get_model("smart"),
+    model=os.getenv("BIGQUERY_AGENT_MODEL", ""),
     name="bigquery_agent",
     instruction=return_instructions_bigquery(),
     tools=[

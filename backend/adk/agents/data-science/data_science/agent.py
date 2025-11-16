@@ -51,7 +51,6 @@ from .sub_agents.bigquery.tools import (
     get_database_settings as get_bq_database_settings,
 )
 from .tools import call_alloydb_agent, call_analytics_agent, call_bigquery_agent
-from _common.config import get_model
 
 # Configure Weave endpoint and authentication
 _WANDB_BASE_URL = "https://trace.wandb.ai"
@@ -205,7 +204,7 @@ def get_root_agent() -> LlmAgent:
     # includes retry logic and graceful degradation for such cases.
     # See: docs/ANALYTICS_AGENT_TIMEOUT_ISSUE.md
     agent = LlmAgent(
-        model=get_model("smart"),
+        model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.5-flash"),
         name="data_science_root_agent",
         instruction=return_instructions_root()
         + get_dataset_definitions_for_instructions(),

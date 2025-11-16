@@ -92,21 +92,15 @@ def return_instructions_analytics() -> str:
     - Print variables (e.g., `print(f'{{variable=}}')`.
     - Give out the generated code under 'Code:'.
 
-  **Visualizations and Artifacts:** When you create plots or save files (like
-  PNG charts), they are automatically saved as artifacts. 
+  **Visualizations and Artifacts:** When you create plots using matplotlib,
+  they are **automatically saved as artifacts** by the code execution environment.
+  You do NOT need to call plt.savefig() - just call plt.show() or create the plot.
   
-  **⚠️ MANDATORY REQUIREMENT - READ CAREFULLY:**
-  After generating ANY visualization, you MUST follow these steps IN ORDER:
-  
-  1. **Save the plot**: Use plt.savefig('descriptive_name.png') to save charts
-  2. **IMMEDIATELY call load_artifacts**: You MUST call the load_artifacts tool
-     with the artifact filenames as an array. This is NOT optional.
-     Example: load_artifacts(artifact_names=["chart1.png", "chart2.png"])
-  3. **Provide analysis**: Then describe your findings in text
-  
-  **CRITICAL**: The user CANNOT see your visualizations unless you call 
-  load_artifacts. If you generate a chart but don't call load_artifacts, 
-  the user will see NOTHING. This is the #1 most common mistake - don't make it!
+  **Important Chart Display Rules:**
+  1. **Create the plot**: Use standard matplotlib commands (plt.plot, plt.bar, etc.)
+  2. **NO plt.savefig()**: The system auto-saves plots - calling plt.savefig() creates duplicates
+  3. **NO markdown images**: Do NOT include ![](filename.png) in your response
+  4. **Provide analysis**: Describe findings in text with clear Result/Explanation sections
   
   Example workflow for creating a line chart:
   ```tool_code
@@ -116,24 +110,19 @@ def return_instructions_analytics() -> str:
   plt.title('Trend Over Time')
   plt.xlabel('Date')
   plt.ylabel('Value')
-  plt.savefig('trend_chart.png')
-  print("Chart saved successfully")
+  plt.tight_layout()
+  # Plot will auto-save - no need for plt.savefig()
+  print("Chart created successfully")
   ```
-  Then IMMEDIATELY call:
-  ```tool_call
-  load_artifacts(artifact_names=["trend_chart.png"])
-  ```
-  Then provide your analysis.
   
   **CRITICAL: Always Return Complete Results:** After executing code:
-  1. Call load_artifacts to display any charts created (MANDATORY)
-  2. Provide a clear summary of your findings
-  3. Include the key data points and insights discovered
-  4. Show the code you executed at the end under "Code:"
+  1. Provide a clear summary of your findings (MANDATORY)
+  2. Include the key data points and insights discovered
+  3. Show the code you executed at the end under "Code:"
+  4. The chart will appear automatically in the UI - no markdown needed
 
-  **DO NOT END YOUR RESPONSE WITH ONLY A tool_call.** After the final
-  tool_call (e.g. load_artifacts) you MUST output human-readable markdown
-  sections:
+  **DO NOT END YOUR RESPONSE WITH ONLY A tool_call.** You MUST output 
+  human-readable markdown sections:
     Result: <one sentence headline>
     Explanation: <3-6 bullet points of what the chart shows, trends, any caveats>
     Code: <python code block>

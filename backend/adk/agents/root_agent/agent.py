@@ -21,17 +21,14 @@ coordinator based on the user's intent.
 
 from __future__ import annotations
 
-import importlib.util
-import importlib.machinery
 import logging
+import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
-import types as _pytypes
+from typing import Optional
 
 from google.adk.agents import Agent
 
-from _common.config import get_model
 from api_coordinators.dnb_coordinator.agent import (
   get_dnb_coordinator_agent,
 )
@@ -56,7 +53,6 @@ def _try_import_data_science_agent() -> Optional[object]:
 
     # Ensure dataset config has a sane default if not provided by env/CLI
     # This avoids fatal logs inside the data_science module during import.
-    os_env = sys.modules.get('os')
     import os as _os  # local import to avoid polluting module scope
     if not _os.getenv("DATASET_CONFIG_FILE"):
       # Prefer a DNB-oriented config if present, else fall back to flights.
@@ -117,7 +113,9 @@ def get_root_agent() -> Agent:
         "Data-science root agent unavailable; continuing without it"
     )
 
-  model_name = get_model("fast")
+  # Follow ADK sample pattern: pick model from env with a sensible default.
+  # Use ROOT_AGENT_MODEL for consistency with data-science sample.
+  model_name = _os.getenv("ROOT_AGENT_MODEL", "gemini-2.5-flash")
 
   root = Agent(
       model=model_name,

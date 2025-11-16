@@ -14,22 +14,30 @@
 
 """Database Agent: get data from database (BigQuery) using NL2SQL."""
 
+from __future__ import annotations
+
 import logging
 import os
-from typing import Dict, Any
+from typing import Any, Dict, Optional
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools import BaseTool, ToolContext
 from google.genai import types
 
-from . import tools
+from ....config import get_model
 from .prompts import return_instructions_alloydb
+from .tools import get_database_settings, store_results_in_context
 
 
 class DataScienceAlloyDbAgent(LlmAgent):
     """Subclass to keep the runner aligned with the data_science app."""
 
 logger = logging.getLogger(__name__)
+
+# AlloyDB built-in tool constant
+ADK_BUILTIN_ALLOYDB_EXECUTE_SQL_TOOL = "execute_sql"
+
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
@@ -38,14 +46,14 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
 
     if "database_settings" not in callback_context.state:
         callback_context.state["database_settings"] = (
-            tools.get_database_settings()
+            get_database_settings()
         )
 
 
 def store_results_in_context(
-    tool: "BaseTool",
+    tool: BaseTool,
     args: Dict[str, Any],
-    tool_context: "ToolContext",
+    tool_context: ToolContext,
     tool_response: Dict,
 ) -> Optional[Dict]:
     """Store AlloyDB results in invocation-level state."""
@@ -68,7 +76,7 @@ def store_results_in_context(
 
 
 alloydb_agent = DataScienceAlloyDbAgent(
-    model=os.getenv("ALLOYDB_AGENT_MODEL", ""),
+    model=get_model("ALLOYDB_AGENT_MODEL", ""),
     name="alloydb_agent",
     instruction=return_instructions_alloydb(),
     output_key="alloydb_agent_output",
