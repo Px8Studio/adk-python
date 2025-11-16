@@ -14,30 +14,20 @@
 
 """Database Agent: get data from database (BigQuery) using NL2SQL."""
 
-from __future__ import annotations
-
 import logging
 import os
-from typing import Any, Dict, Optional
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.tools import BaseTool, ToolContext
 from google.genai import types
 
-from ....config import get_model
+from . import tools
 from .prompts import return_instructions_alloydb
-from .tools import get_database_settings, store_results_in_context
-
-
-class DataScienceAlloyDbAgent(LlmAgent):
-    """Subclass to keep the runner aligned with the data_science app."""
 
 logger = logging.getLogger(__name__)
 
 # AlloyDB built-in tool constant
 ADK_BUILTIN_ALLOYDB_EXECUTE_SQL_TOOL = "execute_sql"
-
 
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
@@ -46,37 +36,12 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
 
     if "database_settings" not in callback_context.state:
         callback_context.state["database_settings"] = (
-            get_database_settings()
+            tools.get_database_settings()
         )
 
 
-def store_results_in_context(
-    tool: BaseTool,
-    args: Dict[str, Any],
-    tool_context: ToolContext,
-    tool_response: Dict,
-) -> Optional[Dict]:
-    """Store AlloyDB results in invocation-level state."""
-
-    if tool.name == ADK_BUILTIN_ALLOYDB_EXECUTE_SQL_TOOL:
-        if tool_response["status"] == "SUCCESS":
-            # Store in tool_context.state (for local use)
-            tool_context.state["alloydb_query_result"] = tool_response["rows"]
-
-            # CRITICAL: Also store in invocation_context.state for cross-agent access
-            invocation_context = tool_context._invocation_context
-            if invocation_context:
-                invocation_context.state["alloydb_query_result"] = tool_response["rows"]
-                logger.info(
-                    "Stored AlloyDB results in invocation state: %d rows",
-                    len(tool_response["rows"]),
-                )
-
-    return None
-
-
-alloydb_agent = DataScienceAlloyDbAgent(
-    model=get_model("ALLOYDB_AGENT_MODEL", ""),
+alloydb_agent = LlmAgent(
+    model=os.getenv("ALLOYDB_AGENT_MODEL", ""),
     name="alloydb_agent",
     instruction=return_instructions_alloydb(),
     output_key="alloydb_agent_output",
