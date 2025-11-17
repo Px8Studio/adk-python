@@ -93,16 +93,30 @@ bq_execute_sql = BigQueryToolset(
     bigquery_tool_config=bigquery_tool_config  # Ensure this is correct
 )
 
-def get_bqml_agent() -> Agent:
-    """Factory function to create a fresh BQML agent instance."""
-    return DataScienceBqmlAgent(
-        model=os.getenv("BQML_AGENT_MODEL", ""),
+def create_bqml_agent() -> LlmAgent:
+    """Factory function to create a fresh BQML agent instance.
+    
+    Returns:
+        New LlmAgent instance configured for BQML operations.
+    """
+    bigquery_tool_config = BigQueryToolConfig(
+        project_id=os.getenv("GOOGLE_CLOUD_PROJECT"),
+        location=os.getenv("GOOGLE_CLOUD_LOCATION"),
+    )
+    
+    bq_execute_sql = BigQueryToolset(
+        config=bigquery_tool_config,
+        tools=[BigQueryTool.EXECUTE_SQL],
+    )
+    
+    return LlmAgent(
         name="bq_ml_agent",
-        instruction=return_instructions_bqml(),
-        before_agent_callback=setup_before_agent_call,
-        tools=[bq_execute_sql, check_bq_models, call_db_agent, rag_response],
+        model="gemini-2.5-flash-001",
+        instruction=_get_instructions(),
+        description=_DESCRIPTION,
+        code_executor=code_executor,
+        tools=[bq_execute_sql],
     )
 
-
-# Maintain backward compatibility
-root_agent = get_bqml_agent()
+# For backwards compatibility with existing imports
+bqml_agent = create_bqml_agent()

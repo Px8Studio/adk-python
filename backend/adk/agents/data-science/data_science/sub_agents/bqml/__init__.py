@@ -12,3 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""BigQuery ML agent module."""
+
+from __future__ import annotations
+
+from .agent import root_agent as bqml_agent
+
+__all__ = ["bqml_agent"]
+

@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Sub-agents for the data science agent.
+
+This module exports all sub-agents with consistent naming:
+- analytics_agent: Code execution and data analysis
+- bigquery_agent: BigQuery SQL queries and data access  
+- bqml_agent: BigQuery ML model creation and inference
+- alloydb_agent: AlloyDB database operations
+"""
+
+from __future__ import annotations
+
 from .alloydb.agent import alloydb_agent
 from .analytics.agent import analytics_agent
 from .bigquery.agent import bigquery_agent

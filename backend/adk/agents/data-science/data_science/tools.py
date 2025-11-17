@@ -12,20 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tools for the ADK Samples Data Science Agent.
+"""Tools for the ADK Sampmles Data Science Agent."""
 
-This file diverged from the upstream reference by adding retry / artifact
-fallback logic and richer data packaging. We retain those enhancements but
-add the required forward-annotation import and fix typos.
-"""
-from __future__ import annotations
-
-import json
 import logging
-import os
-import hashlib
 
-from google.api_core.exceptions import ServiceUnavailable
 from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 
@@ -43,37 +33,11 @@ async def call_bigquery_agent(
 
     agent_tool = AgentTool(agent=bigquery_agent)
 
-    try:
-        result = await agent_tool.run_async(
-            args={"request": question}, tool_context=tool_context
-        )
-        logger.info("BigQuery agent completed successfully")
-        tool_context.state["bigquery_agent_output"] = result
-        return result
-        
-    except Exception as e:
-        error_msg = str(e).lower()
-        logger.error("BigQuery agent error: %s", e, exc_info=True)
-        
-        # Provide helpful error messages for common issues
-        if "invalid column" in error_msg or "unrecognized name" in error_msg:
-            return (
-                f"Query failed - column not found: {str(e)}. "
-                "Please check the database schema and use valid column names."
-            )
-        elif "table not found" in error_msg or "not found: table" in error_msg:
-            return (
-                f"Query failed - table not found: {str(e)}. "
-                "Please check the dataset configuration and table names."
-            )
-        elif "syntax error" in error_msg:
-            return (
-                f"SQL syntax error: {str(e)}. "
-                "The generated query has syntax issues. Please try rephrasing."
-            )
-        else:
-            # Re-raise unexpected errors
-            raise
+    bigquery_agent_output = await agent_tool.run_async(
+        args={"request": question}, tool_context=tool_context
+    )
+    tool_context.state["bigquery_agent_output"] = bigquery_agent_output
+    return bigquery_agent_output
 
 
 async def call_alloydb_agent(
@@ -125,139 +89,38 @@ async def call_analytics_agent(
 
     """
     logger.debug("call_analytics_agent: %s", question)
-    
-    # Access invocation-level state
-    invocation_context = tool_context._invocation_context
-    
+
+    # if question == "N/A":
+    #    return tool_context.state["db_agent_output"]
+
     bigquery_data = ""
     alloydb_data = ""
-    
-    # Check invocation_context.state (shared across all agents)
-    if invocation_context:
-        if "bigquery_query_result" in invocation_context.state:
-            bigquery_data = invocation_context.state["bigquery_query_result"]
-            logger.info("Found BigQuery data in invocation state")
-        if "alloydb_query_result" in invocation_context.state:
-            alloydb_data = invocation_context.state["alloydb_query_result"]
-            logger.info("Found AlloyDB data in invocation state")
-    
-    # Fallback to tool_context.state (for backward compatibility)
-    if not bigquery_data and "bigquery_query_result" in tool_context.state:
+
+    if "bigquery_query_result" in tool_context.state:
         bigquery_data = tool_context.state["bigquery_query_result"]
-    if not alloydb_data and "alloydb_query_result" in tool_context.state:
+    if "alloydb_query_result" in tool_context.state:
         alloydb_data = tool_context.state["alloydb_query_result"]
-    
-    if not bigquery_data and not alloydb_data:
-        return {
-            "error": "No data available for analysis. Please run a database query first using call_bigquery_agent or call_alloydb_agent."
-        }
-    
+
     question_with_data = f"""
-Question to answer: {question}
+  Question to answer: {question}
 
-Actual data to analyze this question is available in the following data tables:
+  Actual data to analyze this question is available in the following data
+  tables:
 
-<BIGQUERY>
-{bigquery_data}
-</BIGQUERY>
+  <BIGQUERY>
+  {bigquery_data}
+  </BIGQUERY>
 
-<ALLOYDB>
-{alloydb_data}
-</ALLOYDB>
-"""
-    
+  <ALLOYDB>
+  {alloydb_data}
+  </ALLOYDB>
+
+  """
+
     agent_tool = AgentTool(agent=analytics_agent)
-    
-    # Attempt analytics with automatic timeout handling
-    max_retries = 2
-    last_error = None
-    
-    for attempt in range(max_retries):
-        try:
-            analytics_agent_output = await agent_tool.run_async(
-                args={"request": question_with_data}, tool_context=tool_context
-            )
-            
-            # Store output in invocation state for potential re-use
-            if invocation_context:
-                invocation_context.state["analytics_agent_output"] = analytics_agent_output
-            
-            logger.info("Analytics agent returned output of length: %d", len(str(analytics_agent_output)))
-            return analytics_agent_output
-            
-        except ServiceUnavailable as e:
-            error_msg = str(e).lower()
-            if "deadline exceeded" in error_msg or "timeout" in error_msg:
-                last_error = e
-                logger.error(
-                    "Error calling analytics agent: %s",
-                    str(e),
-                    exc_info=True
-                )
-                
-                if attempt < max_retries - 1:
-                    # Try with simplified request
-                    logger.warning(
-                        "Analytics agent timed out (attempt %d/%d). "
-                        "Simplifying visualization request...",
-                        attempt + 1,
-                        max_retries
-                    )
-                    question_with_data = f"""
-Question to answer: Create a SIMPLE visualization for: {question}
 
-IMPORTANT: Use only basic matplotlib charts. Avoid complex transformations.
-Limit to ONE simple chart maximum.
-
-Actual data to analyze:
-
-<BIGQUERY>
-{bigquery_data if bigquery_data else 'No data'}
-</BIGQUERY>
-
-<ALLOYDB>
-{alloydb_data if alloydb_data else 'No data'}
-</ALLOYDB>
-"""
-                    continue
-                else:
-                    # Final attempt failed - return graceful error
-                    logger.error(
-                        "Analytics agent timed out after %d attempts",
-                        max_retries
-                    )
-                    row_count = len(bigquery_data.split('\n')) if bigquery_data else 0
-                    return {
-                        "status": "timeout",
-                        "error": (
-                            f"The visualization request timed out after {max_retries} attempts. "
-                            "The Vertex AI Code Interpreter has a ~30 second execution limit. "
-                            f"Your query returned {row_count} rows of data, which may be too complex to visualize. "
-                            "Please try one of these alternatives:\n\n"
-                            "1. Request a simpler chart type (e.g., 'show a basic line chart')\n"
-                            "2. Ask for data summary instead of visualization\n"
-                            "3. Request visualization of a subset of the data\n\n"
-                            "The raw data is available in the conversation context."
-                        ),
-                        "data_available": True,
-                        "row_count": row_count,
-                        "last_error": str(last_error),
-                    }
-            else:
-                # Different type of ServiceUnavailable error
-                raise
-        
-        except Exception as e:
-            # Unexpected error - log and re-raise
-            logger.error(
-                "Unexpected error calling analytics agent: %s",
-                str(e),
-                exc_info=True
-            )
-            raise
-    
-    # Should not reach here, but handle gracefully
-    return {
-        "error": "Analytics agent failed after retries",
-        "last_error": str(last_error) if last_error else "Unknown error",
-    }
+    analytics_agent_output = await agent_tool.run_async(
+        args={"request": question_with_data}, tool_context=tool_context
+    )
+    tool_context.state["analytics_agent_output"] = analytics_agent_output
+    return analytics_agent_output

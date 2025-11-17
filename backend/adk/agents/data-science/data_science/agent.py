@@ -12,38 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Top level agent for the data-science multi-agent system.
-
-Responsibilities:
-  * Retrieve data from databases (BigQuery / AlloyDB) via NL2SQL.
-  * Perform analytics / visualization (NL2Py) on retrieved data.
-
-This file diverged from the upstream ADK sample by adding a duplicate
-subclass and custom App creation. We streamline it here to better align
-with the official sample while retaining the App wrapper for discovery.
-"""
-
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import os
 from datetime import date
+from pathlib import Path
+from typing import Any
 
 from google.adk.agents import LlmAgent
 from google.adk.agents.callback_context import CallbackContext
-from google.adk.apps import App
 from google.genai import types
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter,
-)
-from opentelemetry.sdk import trace as trace_sdk
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from .prompts import return_instructions_root
-from .sub_agents.bqml.agent import get_bqml_agent
+from .sub_agents import bqml_agent
 from .sub_agents.alloydb.tools import (
     get_database_settings as get_alloydb_database_settings,
 )
@@ -52,38 +35,7 @@ from .sub_agents.bigquery.tools import (
 )
 from .tools import call_alloydb_agent, call_analytics_agent, call_bigquery_agent
 
-# Configure Weave endpoint and authentication
-_WANDB_BASE_URL = "https://trace.wandb.ai"
-_WANDB_PROJECT_ID = os.getenv("WANDB_PROJECT_ID")
-_OTEL_EXPORTER_OTLP_ENDPOINT = f"{_WANDB_BASE_URL}/otel/v1/traces"
-
-# Set up authentication
-_WANDB_API_KEY = os.getenv("WANDB_API_KEY")
-_WANDB_AUTH = base64.b64encode(f"api:{_WANDB_API_KEY}".encode()).decode()
-
-_OTEL_EXPORTER_OTLP_HEADERS = {
-    "Authorization": f"Basic {_WANDB_AUTH}",
-    "project_id": _WANDB_PROJECT_ID,
-}
-
-# Create the OTLP span exporter with endpoint and headers
-exporter = OTLPSpanExporter(
-    endpoint=_OTEL_EXPORTER_OTLP_ENDPOINT,
-    headers=_OTEL_EXPORTER_OTLP_HEADERS,
-)
-
-# Create a tracer provider and add the exporter
-_tracer_provider = trace_sdk.TracerProvider()
-_tracer_provider.add_span_processor(SimpleSpanProcessor(exporter))
-
-# Set the global tracer provider BEFORE importing/using ADK
-trace.set_tracer_provider(_tracer_provider)
-
-# Set up logging
-# Note this level can be overridden by adk web on the command line;
-# e.g. running `adk web --log_level DEBUG` or `adk web -v`
-logging.basicConfig(level=logging.INFO)
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 # Initialize module-level config variables
 _dataset_config = {}
@@ -92,33 +44,64 @@ _supported_dataset_types = ["bigquery", "alloydb"]
 _required_dataset_config_params = ["name", "description"]
 
 
-def load_dataset_config():
-    """Load the dataset configurations for the agent from the config file"""
+def load_dataset_config() -> dict[str, Any]:
+    """Load the dataset configuration from a JSON file.
+    
+    The config file path is determined in the following priority:
+    1. DATASET_CONFIG_FILE environment variable (absolute or relative path)
+    2. Default: dnb_dataset_config.json in the agent directory
+    
+    For Orkhon project, this should point to the DNB-specific configuration
+    with BigQuery datasets for DNB statistics and public register data.
+    """
+    # Get the directory where this agent.py file is located
+    agent_dir = Path(__file__).parent.parent
+    
+    # Check environment variable first
+    dataset_config_file_env = os.getenv("DATASET_CONFIG_FILE", "")
+    
+    if dataset_config_file_env:
+        # Use environment variable (support both absolute and relative paths)
+        config_path = Path(dataset_config_file_env)
+        if not config_path.is_absolute():
+            # Try relative to agent directory first
+            config_path = agent_dir / dataset_config_file_env
+            if not config_path.exists():
+                # Try relative to current working directory
+                config_path = Path(dataset_config_file_env).resolve()
+        dataset_config_file = str(config_path)
+    else:
+        # Default to DNB config in agent directory
+        dataset_config_file = str(agent_dir / "dnb_dataset_config.json")
+    
+    if not os.path.exists(dataset_config_file):
+        raise FileNotFoundError(
+            f"Dataset config file not found: {dataset_config_file}\n"
+            f"Agent directory: {agent_dir}\n"
+            f"Current working directory: {os.getcwd()}\n"
+            f"DATASET_CONFIG_FILE env var: {dataset_config_file_env or '(not set)'}\n"
+            f"\nTo fix:\n"
+            f"1. Set DATASET_CONFIG_FILE=dnb_dataset_config.json in your .env file\n"
+            f"2. Or create {agent_dir / 'dnb_dataset_config.json'}"
+        )
 
-    dataset_config_file = os.getenv("DATASET_CONFIG_FILE", "")
-    if not dataset_config_file:
-        _logger.fatal("DATASET_CONFIG_FILE env var not set")
-
-    # Resolve path relative to agent directory if not absolute
-    if not os.path.isabs(dataset_config_file):
-        agent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        dataset_config_file = os.path.join(agent_dir, dataset_config_file)
-
+    logger.info(f"Loading dataset config from: {dataset_config_file}")
+    
     with open(dataset_config_file, "r", encoding="utf-8") as f:
         dataset_config = json.load(f)
 
     if "datasets" not in dataset_config:
-        _logger.fatal("No 'datasets' entry in dataset config")
+        logger.fatal("No 'datasets' entry in dataset config")
 
     for dataset in dataset_config["datasets"]:
         if "type" not in dataset:
-            _logger.fatal("Missing dataset type")
+            logger.fatal("Missing dataset type")
         if dataset["type"] not in _supported_dataset_types:
-            _logger.fatal("Dataset type '%s' not supported", dataset["type"])
+            logger.fatal("Dataset type '%s' not supported", dataset["type"])
 
         for p in _required_dataset_config_params:
             if p not in dataset:
-                _logger.fatal(
+                logger.fatal(
                     "Missing required param '%s' from %s dataset config",
                     p,
                     dataset["type"],
@@ -142,6 +125,12 @@ def init_database_settings(dataset_config: dict) -> dict:
     for dataset in dataset_config["datasets"]:
         db_settings[dataset["type"]] = get_database_settings(dataset["type"])
     return db_settings
+
+
+def load_database_settings_in_context(callback_context: CallbackContext):
+    """Load database settings into the callback context on first use."""
+    if "database_settings" not in callback_context.state:
+        callback_context.state["database_settings"] = _database_settings
 
 
 def get_dataset_definitions_for_instructions() -> str:
@@ -179,55 +168,56 @@ def get_dataset_definitions_for_instructions() -> str:
     return dataset_definitions
 
 
-def load_database_settings_in_context(callback_context: CallbackContext):
-    """Load database settings into the callback context on first use."""
-    if "database_settings" not in callback_context.state:
-        callback_context.state["database_settings"] = _database_settings
+# Global variable to prevent re-initialization
+_root_agent_instance = None
 
+# Import factory functions, not singleton instances
+from .sub_agents.bqml.agent import create_bqml_agent
+# Add factories for other sub-agents too
 
 def get_root_agent() -> LlmAgent:
-    tools = [call_analytics_agent]
-    sub_agents = []
-    for dataset in _dataset_config["datasets"]:
-        if dataset["type"] == "bigquery":
-            tools.append(call_bigquery_agent)
-            # Create a fresh BQML agent instance
-            sub_agents.append(get_bqml_agent())
-        elif dataset["type"] == "alloydb":
-            tools.append(call_alloydb_agent)
-
-    # Upstream sample uses LlmAgent directly; we keep that for alignment.
-    # 
-    # NOTE: The analytics agent uses Vertex AI Code Interpreter which has a 
-    # ~30 second execution timeout limit. Complex visualizations may fail with
-    # "503 Context deadline exceeded" errors. The call_analytics_agent tool
-    # includes retry logic and graceful degradation for such cases.
-    # See: docs/ANALYTICS_AGENT_TIMEOUT_ISSUE.md
-    agent = LlmAgent(
-        model=os.getenv("ROOT_AGENT_MODEL", "gemini-2.5-flash"),
+    """Factory function creating fresh agent hierarchy.
+    
+    Returns:
+        New root agent with fresh sub-agent instances.
+    """
+    
+    # Create fresh sub-agent instances
+    analytics_agent = LlmAgent(
+        name="analytics_agent",
+        model=_MODEL_ID,
+        instruction=return_instructions_analytics_agent(_MODEL_ID),
+        description=_ANALYTICS_AGENT_DESCRIPTION,
+        tools=[call_alloydb_agent, call_bigquery_agent],
+        config=_get_agent_config(_MODEL_ID, temperature=0.01),
+    )
+    
+    # Create fresh BQML agent instance
+    bqml_agent_instance = create_bqml_agent()
+    
+    # Create fresh BigQuery agent instance
+    bigquery_agent = create_bigquery_agent()  # Similar factory
+    
+    # Create fresh AlloyDB agent instance
+    alloydb_agent = create_alloydb_agent()  # Similar factory
+    
+    return LlmAgent(
         name="data_science_root_agent",
-        instruction=return_instructions_root()
-        + get_dataset_definitions_for_instructions(),
-        global_instruction=(
-            f"""
-            You are a Data Science and Data Analytics Multi Agent System.
-            Todays date: {date.today()}
-            
-            IMPORTANT: When requesting visualizations, prefer simple chart types.
-            The analytics agent has a 30-second execution limit. If a visualization
-            fails with a timeout error, ask for simpler alternatives like:
-            - Basic line charts instead of complex multi-axis plots
-            - Single visualizations instead of multiple charts
-            - Data summaries instead of complex transformations
-            """
-        ),
-        sub_agents=sub_agents,  # type: ignore
-        tools=tools,  # type: ignore
-        before_agent_callback=load_database_settings_in_context,
-        generate_content_config=types.GenerateContentConfig(temperature=0.01),
+        model=_MODEL_ID,
+        instruction=return_instructions_root(),
+        description=_ROOT_AGENT_DESCRIPTION,
+        sub_agents=[
+            analytics_agent,
+            bqml_agent_instance,  # Use fresh instance
+            bigquery_agent,
+            alloydb_agent,
+        ],
+        tools=[call_analytics_agent],
+        config=_get_agent_config(_MODEL_ID, temperature=0.01),
     )
 
-    return agent
+# Create singleton for module-level access
+root_agent = get_root_agent()
 
 
 # Initialize dataset configurations and database info before the agent starts
@@ -237,7 +227,3 @@ _database_settings = init_database_settings(_dataset_config)
 
 # Fetch the root agent
 root_agent = get_root_agent()
-
-# Expose an App so the runner uses the canonical "data_science" name.
-# App names must be valid Python identifiers (letters, digits, underscores only).
-app = App(name="data_science", root_agent=root_agent)

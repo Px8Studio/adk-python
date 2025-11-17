@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Database Agent: get data from database (BigQuery) using NL2SQL."""
+"""Database Agent: get data from database (AlloyDB) using NL2SQL."""
 
 import logging
 import os
@@ -26,9 +28,6 @@ from .prompts import return_instructions_alloydb
 
 logger = logging.getLogger(__name__)
 
-# AlloyDB built-in tool constant
-ADK_BUILTIN_ALLOYDB_EXECUTE_SQL_TOOL = "execute_sql"
-
 
 def setup_before_agent_call(callback_context: CallbackContext) -> None:
     """Setup the agent."""
@@ -41,7 +40,7 @@ def setup_before_agent_call(callback_context: CallbackContext) -> None:
 
 
 alloydb_agent = LlmAgent(
-    model=os.getenv("ALLOYDB_AGENT_MODEL", ""),
+    model=os.getenv("ALLOYDB_AGENT_MODEL", "gemini-2.5-flash"),
     name="alloydb_agent",
     instruction=return_instructions_alloydb(),
     output_key="alloydb_agent_output",
@@ -50,6 +49,6 @@ alloydb_agent = LlmAgent(
         tools.run_alloydb_query,
         # tools.get_toolbox_toolset(),
     ],
-    # before_agent_callback=setup_before_agent_call,
+    before_agent_callback=setup_before_agent_call,
     generate_content_config=types.GenerateContentConfig(temperature=0.01),
 )

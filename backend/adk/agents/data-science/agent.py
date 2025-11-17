@@ -12,9 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Data science root agent entry point.
+
+This module re-exports the root agent from the nested data_science package
+to comply with ADK's agent loading conventions.
+
+ADK Agent Structure Convention:
+  data-science/
+    ├── __init__.py      # MUST contain: from . import agent
+    └── agent.py         # MUST define: root_agent = Agent(...)
+"""
+
 from __future__ import annotations
 
-from .agent import analytics_agent
+# Re-export the root agent from the actual implementation
+from .data_science.agent import root_agent
 
-__all__ = ["analytics_agent"]
-
+__all__ = ["root_agent"]

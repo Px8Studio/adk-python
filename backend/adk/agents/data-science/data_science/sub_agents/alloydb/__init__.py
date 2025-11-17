@@ -12,3 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""AlloyDB agent module."""
+
+from __future__ import annotations
+
+from .agent import alloydb_agent
+
+__all__ = ["alloydb_agent"]
+

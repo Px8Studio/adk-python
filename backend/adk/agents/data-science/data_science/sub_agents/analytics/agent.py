@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # Copyright 2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +15,19 @@
 # limitations under the License.
 
 """Analytics Agent: generate nl2py and use code interpreter to run the code."""
-
 import os
+
 from google.adk.agents import Agent
 from google.adk.code_executors import VertexAiCodeExecutor
-from google.genai import types
 
 from .prompts import return_instructions_analytics
 
-
 analytics_agent = Agent(
-    model=os.getenv("ANALYTICS_AGENT_MODEL", ""),
+    model=os.getenv("ANALYTICS_AGENT_MODEL", "gemini-2.5-flash"),
     name="analytics_agent",
     instruction=return_instructions_analytics(),
     code_executor=VertexAiCodeExecutor(
         optimize_data_file=True,
         stateful=True,
-    ),
-    generate_content_config=types.GenerateContentConfig(
-        temperature=0.1,
     ),
 )
