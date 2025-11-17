@@ -16,214 +16,131 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-from datetime import date
 from pathlib import Path
-from typing import Any
 
 from google.adk.agents import LlmAgent
-from google.adk.agents.callback_context import CallbackContext
-from google.genai import types
+from google.adk.models import GeminiConfig
+from google.adk.tools import vertex_ai_search
 
-from .prompts import return_instructions_root
-from .sub_agents import bqml_agent
-from .sub_agents.alloydb.tools import (
-    get_database_settings as get_alloydb_database_settings,
-)
-from .sub_agents.bigquery.tools import (
-    get_database_settings as get_bq_database_settings,
-)
-from .tools import call_alloydb_agent, call_analytics_agent, call_bigquery_agent
+from .prompts import DATA_SCIENCE_INSTRUCTIONS
+from .sub_agents.alloydb.agent import create_alloydb_agent
+from .sub_agents.analytics.agent import create_analytics_agent
+from .sub_agents.bigquery.agent import create_bigquery_agent
+from .sub_agents.bqml.agent import create_bqml_agent
+from .tools import create_hand_off_to_analytics_agent, create_hand_off_to_other_agent
+
 
 logger = logging.getLogger(__name__)
 
-# Initialize module-level config variables
-_dataset_config = {}
-_database_settings = {}
-_supported_dataset_types = ["bigquery", "alloydb"]
-_required_dataset_config_params = ["name", "description"]
+# Module-level cache for singleton root agent
+_root_agent_instance: LlmAgent | None = None
 
 
-def load_dataset_config() -> dict[str, Any]:
-    """Load the dataset configuration from a JSON file.
-    
-    The config file path is determined in the following priority:
-    1. DATASET_CONFIG_FILE environment variable (absolute or relative path)
-    2. Default: dnb_dataset_config.json in the agent directory
-    
-    For Orkhon project, this should point to the DNB-specific configuration
-    with BigQuery datasets for DNB statistics and public register data.
-    """
-    # Get the directory where this agent.py file is located
-    agent_dir = Path(__file__).parent.parent
-    
-    # Check environment variable first
-    dataset_config_file_env = os.getenv("DATASET_CONFIG_FILE", "")
-    
-    if dataset_config_file_env:
-        # Use environment variable (support both absolute and relative paths)
-        config_path = Path(dataset_config_file_env)
-        if not config_path.is_absolute():
-            # Try relative to agent directory first
-            config_path = agent_dir / dataset_config_file_env
-            if not config_path.exists():
-                # Try relative to current working directory
-                config_path = Path(dataset_config_file_env).resolve()
-        dataset_config_file = str(config_path)
-    else:
-        # Default to DNB config in agent directory
-        dataset_config_file = str(agent_dir / "dnb_dataset_config.json")
-    
-    if not os.path.exists(dataset_config_file):
-        raise FileNotFoundError(
-            f"Dataset config file not found: {dataset_config_file}\n"
-            f"Agent directory: {agent_dir}\n"
-            f"Current working directory: {os.getcwd()}\n"
-            f"DATASET_CONFIG_FILE env var: {dataset_config_file_env or '(not set)'}\n"
-            f"\nTo fix:\n"
-            f"1. Set DATASET_CONFIG_FILE=dnb_dataset_config.json in your .env file\n"
-            f"2. Or create {agent_dir / 'dnb_dataset_config.json'}"
-        )
+def load_dataset_config(config_path: str | Path) -> dict:
+  """Load dataset configuration from JSON file."""
+  config_path = Path(config_path)
+  if not config_path.exists():
+    raise FileNotFoundError(f"Dataset config not found: {config_path}")
 
-    logger.info(f"Loading dataset config from: {dataset_config_file}")
-    
-    with open(dataset_config_file, "r", encoding="utf-8") as f:
-        dataset_config = json.load(f)
-
-    if "datasets" not in dataset_config:
-        logger.fatal("No 'datasets' entry in dataset config")
-
-    for dataset in dataset_config["datasets"]:
-        if "type" not in dataset:
-            logger.fatal("Missing dataset type")
-        if dataset["type"] not in _supported_dataset_types:
-            logger.fatal("Dataset type '%s' not supported", dataset["type"])
-
-        for p in _required_dataset_config_params:
-            if p not in dataset:
-                logger.fatal(
-                    "Missing required param '%s' from %s dataset config",
-                    p,
-                    dataset["type"],
-                )
-
-    return dataset_config
+  logger.info(f"Loading dataset config from: {config_path}")
+  with open(config_path, "r", encoding="utf-8") as f:
+    return json.load(f)
 
 
-def get_database_settings(db_type: str) -> dict:
-    """Wrapper function to get database settings by type"""
-    assert db_type in _supported_dataset_types
-    if db_type == "bigquery":
-        return get_bq_database_settings()
-    else:
-        return get_alloydb_database_settings()
+def get_project_root() -> Path:
+  """Get the data-science agent root directory."""
+  return Path(__file__).parent.resolve()
 
 
-def init_database_settings(dataset_config: dict) -> dict:
-    """Initializes the database settings for the configured datasets"""
-    db_settings = {}
-    for dataset in dataset_config["datasets"]:
-        db_settings[dataset["type"]] = get_database_settings(dataset["type"])
-    return db_settings
+def get_dataset_config_path() -> Path:
+  """Get the path to dnb_dataset_config.json."""
+  # Go up one level from data_science/ to data-science/
+  return get_project_root().parent / "dnb_dataset_config.json"
 
 
-def load_database_settings_in_context(callback_context: CallbackContext):
-    """Load database settings into the callback context on first use."""
-    if "database_settings" not in callback_context.state:
-        callback_context.state["database_settings"] = _database_settings
+def create_sub_agents() -> dict[str, LlmAgent]:
+  """Create all sub-agents and return them in a dictionary.
+  
+  This ensures each agent is only created once.
+  """
+  # Load dataset configuration
+  config_path = get_dataset_config_path()
+  dataset_config = load_dataset_config(config_path)
 
+  # Create each sub-agent exactly once
+  sub_agents = {}
+  
+  try:
+    sub_agents["alloydb"] = create_alloydb_agent(dataset_config)
+  except Exception as e:
+    logger.warning(f"Failed to create AlloyDB agent: {e}")
 
-def get_dataset_definitions_for_instructions() -> str:
-    """Returns the dataset definitions instructions block"""
+  try:
+    sub_agents["bigquery"] = create_bigquery_agent(dataset_config)
+  except Exception as e:
+    logger.warning(f"Failed to create BigQuery agent: {e}")
 
-    dataset_definitions = """
-<DATASETS>
-"""
-    for dataset in _dataset_config["datasets"]:
-        dataset_type = dataset["type"]
-        dataset_definitions += f"""
-<{dataset_type.upper()}>
-<DESCRIPTION>
-{dataset["description"]}
-</DESCRIPTION>
-<SCHEMA>
---------- The schema of the relevant database with a few sample rows. --------
-{_database_settings[dataset_type]["schema"]}
-</SCHEMA>
-</{dataset_type.upper()}>
+  try:
+    sub_agents["bqml"] = create_bqml_agent(dataset_config)
+  except Exception as e:
+    logger.warning(f"Failed to create BQML agent: {e}")
 
-"""
-    dataset_definitions += """
-</DATASETS>
-"""
+  try:
+    sub_agents["analytics"] = create_analytics_agent(dataset_config)
+  except Exception as e:
+    logger.warning(f"Failed to create Analytics agent: {e}")
 
-    if "cross_dataset_relations" in _dataset_config:
-        dataset_definitions += f"""
-<CROSS_DATASET_RELATIONS>
---------- The cross dataset relations between the configured datasets. ---------
-{_dataset_config["cross_dataset_relations"]}
-</CROSS_DATASET_RELATIONS>
-"""
+  return sub_agents
 
-    return dataset_definitions
-
-
-# Global variable to prevent re-initialization
-_root_agent_instance = None
-
-# Import factory functions, not singleton instances
-from .sub_agents.bqml.agent import create_bqml_agent
-# Add factories for other sub-agents too
 
 def get_root_agent() -> LlmAgent:
-    """Factory function creating fresh agent hierarchy.
-    
-    Returns:
-        New root agent with fresh sub-agent instances.
-    """
-    
-    # Create fresh sub-agent instances
-    analytics_agent = LlmAgent(
-        name="analytics_agent",
-        model=_MODEL_ID,
-        instruction=return_instructions_analytics_agent(_MODEL_ID),
-        description=_ANALYTICS_AGENT_DESCRIPTION,
-        tools=[call_alloydb_agent, call_bigquery_agent],
-        config=_get_agent_config(_MODEL_ID, temperature=0.01),
-    )
-    
-    # Create fresh BQML agent instance
-    bqml_agent_instance = create_bqml_agent()
-    
-    # Create fresh BigQuery agent instance
-    bigquery_agent = create_bigquery_agent()  # Similar factory
-    
-    # Create fresh AlloyDB agent instance
-    alloydb_agent = create_alloydb_agent()  # Similar factory
-    
-    return LlmAgent(
-        name="data_science_root_agent",
-        model=_MODEL_ID,
-        instruction=return_instructions_root(),
-        description=_ROOT_AGENT_DESCRIPTION,
-        sub_agents=[
-            analytics_agent,
-            bqml_agent_instance,  # Use fresh instance
-            bigquery_agent,
-            alloydb_agent,
-        ],
-        tools=[call_analytics_agent],
-        config=_get_agent_config(_MODEL_ID, temperature=0.01),
-    )
+  """Get or create the data science root agent.
+  
+  This implements a singleton pattern to ensure agents are only created once
+  per module load.
+  """
+  global _root_agent_instance
 
-# Create singleton for module-level access
-root_agent = get_root_agent()
+  if _root_agent_instance is not None:
+    return _root_agent_instance
+
+  # Create all sub-agents once
+  sub_agents = create_sub_agents()
+
+  # Collect agents to add as sub-agents
+  agents_list = []
+  if "alloydb" in sub_agents:
+    agents_list.append(sub_agents["alloydb"])
+  if "bigquery" in sub_agents:
+    agents_list.append(sub_agents["bigquery"])
+  if "bqml" in sub_agents:
+    agents_list.append(sub_agents["bqml"])
+  if "analytics" in sub_agents:
+    agents_list.append(sub_agents["analytics"])
+
+  # Create hand-off tools
+  tools = []
+  if "analytics" in sub_agents:
+    tools.append(create_hand_off_to_analytics_agent(sub_agents["analytics"]))
+  if agents_list:
+    tools.append(create_hand_off_to_other_agent(agents_list))
+
+  # Add vertex AI search tool
+  tools.append(vertex_ai_search)
+
+  # Create the root agent with all sub-agents
+  _root_agent_instance = LlmAgent(
+    name="data_science_root_agent",
+    model="gemini-2.5-flash",
+    instruction=DATA_SCIENCE_INSTRUCTIONS,
+    description="Data Science Expert Agent for BQML and Analytics",
+    model_config=GeminiConfig(temperature=0.01),
+    tools=tools,
+    sub_agents=agents_list,  # Add all agents at once
+  )
+
+  return _root_agent_instance
 
 
-# Initialize dataset configurations and database info before the agent starts
-_dataset_config = load_dataset_config()
-_database_settings = init_database_settings(_dataset_config)
-
-
-# Fetch the root agent
+# Create the root agent when module is imported
 root_agent = get_root_agent()
