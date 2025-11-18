@@ -75,3 +75,16 @@ Specifically, you will build an agent that will develop a pitch document for a n
 In the end, your multi-agent system will look like this (you can click on the image to see it larger):
 
 ![alt text](image-2.png)
+
+
+Deploy to Agent Engine using the command line deploy method
+ADK's command line interface provides shortcuts to deploy agents to Agent Engine, Cloud Run, and Google Kubernetes Engine (GKE). You can use the following base commands to deploy to each of these services:
+
+adk deploy agent_engine (with its command line args described under the @deploy.command("agent_engine") decorator)
+adk deploy cloud_run (with its command line args described under the @deploy.command("cloud_run") decorator)
+adk deploy gke (with its command line args described under the @deploy.command("gke") decorator)
+The adk deploy agent_engine command wraps your agent in a reasoning_engines.AdkApp class and deploys this app to Agent Engine's managed runtime, ready to receive agentic queries.
+
+When an AdkApp is deployed to Agent Engine, it automatically uses a VertexAiSessionService for persistent, managed session state. This provides multi-turn conversational memory without any additional configuration. For local testing, the application defaults to a temporary, InMemorySessionService.
+
+![alt text](image-3.png)
