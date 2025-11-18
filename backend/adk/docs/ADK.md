@@ -66,8 +66,18 @@ Draft and Revise: When you want to have one agent prepare a draft of a document,
 To accomplish these kinds of tasks, workflow agents have sub-agents and guarantee that each of their sub-agents acts. Agent Development Kit provides three built-in workflow agents and the opportunity to define your own:
 
 SequentialAgent
+
+![alt text](image-4.png)
+
 LoopAgent
+
+![alt text](image-5.png)
+
 ParallelAgent
+
+![alt text](image-6.png)
+
+
 Throughout the rest of this lab, you will build a multi-agent system that uses multiple LLM agents, workflow agents, and tools to help control the flow of the agent.
 
 Specifically, you will build an agent that will develop a pitch document for a new hit movie: a biographical film based on the life of a historical character. Your sub-agents will handle the research, an iterative writing loop with a screenwriter and a critic, and finally some additional sub-agents will help brainstorm casting ideas and use historical box office data to make some predictions about box office results.
