@@ -77,7 +77,6 @@ ParallelAgent
 
 ![alt text](image-6.png)
 
-
 Throughout the rest of this lab, you will build a multi-agent system that uses multiple LLM agents, workflow agents, and tools to help control the flow of the agent.
 
 Specifically, you will build an agent that will develop a pitch document for a new hit movie: a biographical film based on the life of a historical character. Your sub-agents will handle the research, an iterative writing loop with a screenwriter and a critic, and finally some additional sub-agents will help brainstorm casting ideas and use historical box office data to make some predictions about box office results.
@@ -85,7 +84,6 @@ Specifically, you will build an agent that will develop a pitch document for a n
 In the end, your multi-agent system will look like this (you can click on the image to see it larger):
 
 ![alt text](image-2.png)
-
 
 Deploy to Agent Engine using the command line deploy method
 
@@ -101,3 +99,21 @@ The adk deploy agent_engine command wraps your agent in a reasoning_engines.AdkA
 When an AdkApp is deployed to Agent Engine, it automatically uses a VertexAiSessionService for persistent, managed session state. This provides multi-turn conversational memory without any additional configuration. For local testing, the application defaults to a temporary, InMemorySessionService.
 
 ![alt text](image-3.png)
+
+What is Model Context Protocol (MCP)?
+
+Model Context Protocol (MCP) is an open standard designed to standardize how Large Language Models (LLMs) like Gemini and Claude communicate with external applications, data sources, and tools. Think of it as a universal connection mechanism that simplifies how LLMs obtain context, execute actions, and interact with various systems.
+
+MCP follows a client-server architecture, defining how data (resources), interactive templates (prompts), and actionable functions (tools) are exposed by an MCP server and consumed by an MCP client (which could be an LLM host application or an AI agent).
+
+Using Google Maps MCP server with ADK agents (ADK as an MCP client) in adk web
+This section demonstrates how to integrate tools from an external Google Maps MCP server into your ADK agents. This is the most common integration pattern when your ADK agent needs to use capabilities provided by an existing service that exposes an MCP interface. You will see how the MCPToolset class can be directly added to your agent's tools list, enabling seamless connection to an MCP server, discovery of its tools, and making them available for your agent to use. These examples primarily focus on interactions within the adk web development environment.
+
+MCPToolset
+The MCPToolset class is ADK's primary mechanism for integrating tools from an MCP server. When you include an MCPToolset instance in your agent's tools list, it automatically handles the interaction with the specified MCP server. Here's how it works:
+
+Connection Management: On initialization, MCPToolset establishes and manages the connection to the MCP server. This can be a local server process (using StdioServerParameters for communication over standard input/output) or a remote server (using SseServerParams for Server-Sent Events). The toolset also handles the graceful shutdown of this connection when the agent or application terminates.
+Tool Discovery & Adaptation: Once connected, MCPToolset queries the MCP server for its available tools (via the list_tools MCP method). It then converts the schemas of these discovered MCP tools into ADK-compatible BaseTool instances.
+Exposure to Agent: These adapted tools are then made available to your LlmAgent as if they were native ADK tools.
+Proxying Tool Calls: When your LlmAgent decides to use one of these tools, MCPToolset transparently proxies the call (using the call_tool MCP method) to the MCP server, sends the necessary arguments, and returns the server's response back to the agent.
+Filtering (Optional): You can use the tool_filter parameter when creating an MCPToolset to select a specific subset of tools from the MCP server, rather than exposing all of them to your agent.
