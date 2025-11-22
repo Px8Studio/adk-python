@@ -467,13 +467,6 @@ $repos = @(
     Name = "A2A Samples"
   },
   @{
-    Path = "C:\Users\rjjaf\_Projects\agent-framework"
-    Upstream = "https://github.com/microsoft/semantic-kernel.git"
-    Origin = "https://github.com/Px8Studio/agent-framework.git"
-    Branch = "main"
-    Name = "Agent Framework"
-  },
-  @{
     Path = "C:\Users\rjjaf\_Projects\foundry-samples"
     Upstream = "https://github.com/Azure-Samples/azureai-samples.git"
     Origin = "https://github.com/Px8Studio/foundry-samples.git"
