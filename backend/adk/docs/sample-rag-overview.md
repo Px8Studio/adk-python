@@ -19,9 +19,9 @@ Here’s a breakdown of the typical folders and files in this repository and the
 This is the offline process where we prepare our knowledge base. It reads your source documents, processes them, and stores them in a way that's efficient for searching.
 ### Component / Folder | What it is | Why it's needed
 |---|---|---|
-| `data/` | A directory to store your source documents (e.g., .pdf, .txt, .md). | This is the raw knowledge base the RAG system will learn from. |
+| `data/` | A directory for your source documents. The sample supports multiple formats like PDF, text, and Markdown (`.pdf`, `.txt`, `.md`). | This is the raw knowledge base the RAG system will learn from. |
 | `scripts/ingest.py` | A Python script that orchestrates the entire data ingestion process. | This script automates the steps needed to prepare your data, making the process repeatable and reliable. |
-| Document Loader | A module that loads documents from the `data/` directory. | Different file types require different loading logic. This component abstracts that complexity. |
+| Document Loader | A module that loads documents from the `data/` directory. It contains specific logic for each supported file type (e.g., a PDF parser, a text file reader). | This component abstracts the complexity of reading various file formats. It can be extended to support new file types (like `.docx` or `.html`) by adding new loading logic. |
 | Text Splitter | A module that breaks large documents into smaller, manageable chunks. | LLMs have a limited context window. Splitting text ensures we can fit the most relevant information into the prompt. It also improves retrieval accuracy. |
 | Embedding Model | A machine learning model that converts text chunks into numerical vectors (embeddings). | Computers work with numbers, not text. Embeddings capture the semantic meaning of the text, allowing us to find chunks that are conceptually similar to the user's query. |
 | Vector Store | A specialized database (e.g., ChromaDB, FAISS) that stores the embeddings and their corresponding text chunks. | Vector stores are optimized for fast similarity searches. They allow the system to quickly find the most relevant text chunks for a given query vector. |
