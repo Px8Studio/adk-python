@@ -4073,6 +4073,17 @@ toml = ["tomli (>=2.0.1)"]
 yaml = ["pyyaml (>=6.0.1)"]
 
 [[package]]
+name = "pydf"
+version = "12"
+description = "colourised df(1)-clone"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pydf-12-cp27-none-macosx_10_10_x86_64.whl", hash = "sha256:99cfbc6c9bb2cc366bfcc82f5123bd60cf6f0b7d7b603e3d3e671064371b85d5"},
+    {file = "pydf-12.tar.gz", hash = "sha256:7f47a7c3abfceb1ac04fc009ded538df1ae449c31203962a1471a4eb3bf21439"},
+]
+
+[[package]]
 name = "pyjwt"
 version = "2.10.1"
 description = "JSON Web Token implementation in Python"
@@ -5774,4 +5785,4 @@ cffi = ["cffi (>=1.17,<2.0)", "cffi (>=2.0.0b)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "69676bb7524a123aa99bcb9b0ab7cbe27b4b3fd0742fd0a2974aef52696e7bb9"
+content-hash = "e72ebcbc3492fe8f16cb2d4984f841e9ee7026ac7c7be7919010849bcdd22f0f"
