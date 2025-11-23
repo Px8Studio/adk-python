@@ -1,6 +1,7 @@
 # In a file like adk-samples/python/agents/greeter_agent.py
 
 import logging
+from dataclasses import dataclass, field
 from adk.agent import Agent
 from adk.message import Message, MessageType
 
@@ -8,6 +9,18 @@ from adk.message import Message, MessageType
 logger = logging.getLogger(__name__)
 
 class GreeterAgent(Agent):
+    # Suggested Improvement: A dedicated state class
+    @dataclass
+    class GreeterState:
+        known_users: set[str] = field(default_factory=set)
+
+        def to_dict(self) -> dict:
+            return {"known_users": list(self.known_users)}
+
+        @classmethod
+        def from_dict(cls, data: dict) -> "GreeterState":
+            return cls(known_users=set(data.get("known_users", [])))
+
     """
     A simple agent that greets users when they connect and
     responds to their messages.
@@ -23,7 +36,7 @@ class GreeterAgent(Agent):
         """
         super().__init__(agent_id)
         # Load state or set defaults
-        self.known_users = set(state.get("known_users", []))
+        self.state = self.GreeterState.from_dict(state or {})
         logger.info(f"GreeterAgent '{self.agent_id}' initialized.")
 
     async def on_start(self):
@@ -45,8 +58,8 @@ class GreeterAgent(Agent):
         logger.debug(f"Received message from '{message.sender_id}': {message.content}")
 
         # Greet new users
-        if message.sender_id not in self.known_users:
-            self.known_users.add(message.sender_id)
+        if message.sender_id not in self.state.known_users:
+            self.state.known_users.add(message.sender_id)
             response_content = f"Hello, {message.sender_id}! Welcome. It's nice to meet you."
         else:
             response_content = f"Welcome back, {message.sender_id}! You said: '{message.content}'"
@@ -62,10 +75,8 @@ class GreeterAgent(Agent):
         """
         Serializes the agent's current state to a dictionary.
         This is crucial for persistence and recovery.
-        """
-        return {
-            "known_users": list(self.known_users)
-        }
+        """ # In GreeterAgent.get_state:
+        return self.state.to_dict()
 
     async def on_stop(self):
         """
