@@ -104,4 +104,15 @@ uvicorn app.main:app --reload
 ### Interact with the API:
 You can now send requests to the API (e.g., at `http://127.0.0.1:8000/docs`) to ask questions and get answers.
 
-This markdown file should give you a solid foundation for understanding the repository. Let me know if you'd like to dive deeper into any specific component!
+## A Note on Structured Data (like CSV or Excel)
+
+While this sample project is pre-configured for unstructured text documents (`.pdf`, `.txt`, `.md`), the RAG pattern is flexible enough to work with structured data from files like `.csv` or Excel (`.xlsx`).
+
+To handle this, you would need to extend the **Document Loader** component:
+
+1.  **Read the File**: Use a library like `pandas` to load the Excel or CSV file.
+2.  **Serialize Rows**: Iterate through each row of the table and convert it into a descriptive text string. For example, a row could be formatted as: `"Row [N]: [Column 1 Name] is [Value 1], [Column 2 Name] is [Value 2], ..."`.
+3.  **Process as Text**: These generated text strings can then be processed by the rest of the ingestion pipeline (splitting, embedding, and storing).
+
+This approach allows the retrieval mechanism to find the specific rows in your spreadsheet that are most relevant to a user's query.
+
